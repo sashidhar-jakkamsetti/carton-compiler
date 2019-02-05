@@ -65,6 +65,7 @@ public class Token
         eofToken, // ("\0", 255)
     }
     
+    @SuppressWarnings("serial")
     private static final HashMap<String, Tuple<TokenType, Integer>> tokenValueMap = new HashMap<String, Tuple<TokenType, Integer>>() 
     {
         {

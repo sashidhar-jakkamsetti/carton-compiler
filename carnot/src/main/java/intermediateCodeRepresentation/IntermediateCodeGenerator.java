@@ -1,6 +1,6 @@
 package intermediateCodeRepresentation;
 
-public class PhiManager
+public class IntermediateCodeGenerator
 {
     
 }
