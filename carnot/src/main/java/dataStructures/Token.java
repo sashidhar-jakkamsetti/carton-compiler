@@ -7,7 +7,6 @@ public class Token
     public String value;
     public TokenType type;
     public Integer id;
-    public Integer ssaId;
 
     public enum TokenType 
     {
@@ -123,46 +122,45 @@ public class Token
         }
     };
 
-    private Token(String value, TokenType type, int id, int ssaid)
+    private Token(String value, TokenType type, int id)
     {
         this.value = value;
         this.type = type;
         this.id = id;
-        this.ssaId = ssaid;
     }
 
     public static Token getToken(String tokenCharacters) 
     {        
         if(tokenValueMap.containsKey(tokenCharacters))
         {
-            return new Token(tokenCharacters, tokenValueMap.get(tokenCharacters).x, tokenValueMap.get(tokenCharacters).y, 0);
+            return new Token(tokenCharacters, tokenValueMap.get(tokenCharacters).x, tokenValueMap.get(tokenCharacters).y);
         }
         else
         {
             if(tokenCharacters.matches("[0-9]+"))
             {
-                return new Token(tokenCharacters, TokenType.number, 60, 1);
+                return new Token(tokenCharacters, TokenType.number, 60);
             }
             else if(tokenCharacters.matches("([a-zA-Z])([a-zA-Z0-9])*")) 
             {
-                return new Token(tokenCharacters, TokenType.ident, 61, 1);
+                return new Token(tokenCharacters, TokenType.ident, 61);
             }
             else 
             {
-                return new Token(tokenCharacters, TokenType.errorToken, 0, 0);
+                return new Token(tokenCharacters, TokenType.errorToken, 0);
             }
         }
     }
 
     public Token Clone() 
     {
-        return new Token(value, type, id, ssaId);
+        return new Token(value, type, id);
     }
 
     @Override
     public String toString()
     {
-        return String.format("{0}_{1}", value, ssaId);
+        return String.format("{0}_{1}", value);
     }
 
     public boolean isSameType(Token token) 
@@ -175,14 +173,24 @@ public class Token
         return this.type == type;
     }
 
+    public boolean isTermOp()
+    {
+        return (0 < id && id < 10) ? true : false;
+    }
+
+    public boolean isExpressionOp()
+    {
+        return (10 < id && id < 20) ? true : false;
+    }
+
+    public boolean isRelationOp()
+    {
+        return (20 <= id && id < 30) ? true : false;
+    }
+
     public boolean compare(Token token)
     {
         return (value == token.value && type == token.type);
-    }
-
-    public boolean deepCompare(Token token)
-    {
-        return (value == token.value && type == token.type && ssaId == token.ssaId);
     }
 
     public static boolean containsKnownKey(String key)

@@ -1,18 +1,29 @@
 package dataStructures.Blocks;
 
 import dataStructures.*;
+import dataStructures.Blocks.*;
+import dataStructures.Results.*;
+import dataStructures.Instructions.*;
+import intermediateCodeRepresentation.*;
 
 import java.util.*;
 
 public class IfBlock extends Block implements IBlock
 {
-    private BasicBlock thenBlock;
-    private BasicBlock elseBlock;
-    private BasicBlock joinBlock = (BasicBlock)child;
+    private Block thenBlock;
+    private Block elseBlock;
+    private Block joinBlock = (Block)child;
+
+    public IfBlock(Integer id)
+    {
+        super(id);
+        thenBlock = null;
+        elseBlock = null;
+    }
 
     public void setThenBlock(IBlock block)
     {
-        thenBlock = (BasicBlock)block;
+        thenBlock = (Block)block;
     }
 
     public IBlock getThenBlock()
@@ -22,7 +33,7 @@ public class IfBlock extends Block implements IBlock
 
     public void setElseBlock(IBlock block)
     {
-        elseBlock = (BasicBlock)block;
+        elseBlock = (Block)block;
     }
 
     public IBlock getElseBlock(IBlock block)

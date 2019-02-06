@@ -1,20 +1,30 @@
 package dataStructures.Blocks;
 
 import dataStructures.*;
-import intermediateCodeRepresentation.PhiManager;
+import dataStructures.Blocks.*;
+import dataStructures.Results.*;
+import dataStructures.Instructions.*;
+import intermediateCodeRepresentation.*;
 
 import java.util.*;
 
 public class JoinBlock extends Block implements IBlock
 {
-    private BasicBlock thenBlock;
-    private BasicBlock elseBlock;
+    private Block thenBlock;
+    private Block elseBlock;
 
     private PhiManager phiManager;
 
+    public JoinBlock(Integer id)
+    {
+        super(id);
+        thenBlock = null;
+        elseBlock = null;
+    }
+
     public void setThenBlock(IBlock block)
     {
-        thenBlock = (BasicBlock)block;
+        thenBlock = (Block)block;
     }
 
     public IBlock getThenBlock()
@@ -24,7 +34,7 @@ public class JoinBlock extends Block implements IBlock
 
     public void setElseBlock(IBlock block)
     {
-        elseBlock = (BasicBlock)block;
+        elseBlock = (Block)block;
     }
 
     public IBlock getElseBlock(IBlock block)

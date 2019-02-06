@@ -1,5 +1,7 @@
 package parser;
 
+import java.util.HashMap;
+
 import dataStructures.Token;
 import dataStructures.Token.TokenType;
 import exceptions.InvalidTokenException;
@@ -11,6 +13,10 @@ public class Scanner {
 
     private Token prevToken;
     private String stringUnderConstruction;
+    private Integer identifierAddressCounter;
+
+    public HashMap<String, Integer> identifier2Address;
+    public HashMap<Integer, String> address2Identifier;
 
     public enum ScannerState
     {
@@ -38,6 +44,10 @@ public class Scanner {
 
     private Scanner(String fileName) 
     {
+        identifierAddressCounter = 0;
+        identifier2Address = new HashMap<String, Integer>();
+        address2Identifier = new HashMap<Integer, String>();
+
         reader = FileReader.getInstance(fileName);
         next();
     }
@@ -70,6 +80,15 @@ public class Scanner {
         if(token.isSameType(TokenType.errorToken))
         {
             error(new InvalidTokenException(String.format("Unknown token: {0}", stringUnderConstruction))); 
+        }
+
+        if(token.isSameType(TokenType.ident))
+        {
+            if(!identifier2Address.containsKey(token.value))
+            {
+                identifier2Address.put(token.value, identifierAddressCounter++);
+                address2Identifier.put(identifierAddressCounter - 1, token.value);
+            }
         }
 
         prevToken = token;

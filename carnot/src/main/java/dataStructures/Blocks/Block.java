@@ -1,14 +1,27 @@
 package dataStructures.Blocks;
 
 import dataStructures.*;
+import dataStructures.Blocks.*;
+import dataStructures.Results.*;
+import dataStructures.Instructions.*;
+import intermediateCodeRepresentation.*;
+
 import java.util.*;
 
-public abstract class Block implements IBlock
+public class Block implements IBlock
 {
     protected Integer id;
     protected List<Instruction> instructions;
     protected Block parent;
     protected Block child;
+
+    public Block(Integer id)
+    {
+        this.id = id;
+        instructions = new ArrayList<Instruction>();
+        parent = null;
+        child = null;
+    }
 
     public Integer getId()
     {
@@ -20,9 +33,9 @@ public abstract class Block implements IBlock
         return instructions;
     }
 
-    public void addInstruction(int opcode, Result x, Result y)
+    public void addInstruction(Instruction instruction)
     {
-
+        instructions.add(instruction);
     }
 
     public Instruction getInstruction(int programCounter)
@@ -48,5 +61,10 @@ public abstract class Block implements IBlock
     public IBlock getChild(IBlock block)
     {
         return child;
+    }
+
+    public String toString()
+    {
+        return "";
     }
 }

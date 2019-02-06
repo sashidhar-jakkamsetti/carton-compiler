@@ -1,21 +1,31 @@
 package dataStructures.Blocks;
 
 import dataStructures.*;
-import intermediateCodeRepresentation.PhiManager;
+import dataStructures.Blocks.*;
+import dataStructures.Results.*;
+import dataStructures.Instructions.*;
+import intermediateCodeRepresentation.*;
 
 import java.util.*;
 
 public class WhileBlock extends Block implements IBlock
 {
-    private BasicBlock doBlock;
-    private BasicBlock loopBlock;
-    private BasicBlock followBlock = (BasicBlock)child;
+    private Block doBlock;
+    private Block loopBlock;
+    private Block followBlock = (Block)child;
 
     private PhiManager phiManager;
 
+    public WhileBlock(Integer id)
+    {
+        super(id);
+        doBlock = null;
+        loopBlock = null;
+    }
+
     public void setDoBlock(IBlock block)
     {
-        doBlock = (BasicBlock)block;
+        doBlock = (Block)block;
     }
 
     public IBlock getDoBlock()
@@ -25,7 +35,7 @@ public class WhileBlock extends Block implements IBlock
 
     public void setLoopBlock(IBlock block)
     {
-        loopBlock = (BasicBlock)block;
+        loopBlock = (Block)block;
     }
 
     public IBlock getLoopBlock(IBlock block)
