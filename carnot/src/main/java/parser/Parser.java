@@ -1,6 +1,7 @@
 package parser;
 
 import dataStructures.*;
+import dataStructures.Blocks.*;
 import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
 import exceptions.*;
@@ -67,7 +68,7 @@ public class Parser
             }
             else 
             {
-                error(new IllegalVariableException("Undeclared variable found while parsing designator"));
+                error(new IllegalVariableException("Undeclared variable found while parsing designator."));
                 return vResult;
             }
 
@@ -80,7 +81,7 @@ public class Parser
         }
         else
         {
-            error(new IncorrectSyntaxException("Identifier not found while parsing designator"));
+            error(new IncorrectSyntaxException("Identifier not found while parsing designator."));
         }
 
         return vResult;
@@ -122,7 +123,7 @@ public class Parser
                     }
                     else 
                     {
-                        error(new IncorrectSyntaxException("Closing parenthesis not found while parsing factor"));
+                        error(new IncorrectSyntaxException("Closing parenthesis not found while parsing factor."));
                     }
                 }
                 break;
@@ -228,13 +229,160 @@ public class Parser
     private IResult funcCall()
     {
         IResult fResult = null;
+        if(inputSym.isSameType(TokenType.callToken))
+        {
+            next();
+
+            
+        }
 
         return fResult;
     }
 
+    private IBlock ifStatement()
+    {
+        IBlock ifBlock = null;
+        if(inputSym.isSameType(TokenType.ifToken))
+        {
+            next();
+
+            
+        }
+
+        return ifBlock;
+    }
+
+    private IBlock whileStatement()
+    {
+        IBlock whileBlock = null;
+        if(inputSym.isSameType(TokenType.whileToken))
+        {
+            next();
+
+            
+        }
+
+        return whileBlock;
+    }
+
+    private IResult returnStatement()
+    {
+        IResult rResult = null;
+        if(inputSym.isSameType(TokenType.returnToken))
+        {
+            next();
+
+            
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("Return token not found while parsing return statement."));
+        }
+
+        return rResult;
+    }
+
+    private IBlock statement()
+    {
+        IBlock statementBlock = null;
+        
+
+        return statementBlock;
+    }
+
+    private IBlock statSequence()
+    {
+        IBlock statSequenceBlock = null;
+        
+
+        return statSequenceBlock;
+    }
+
+    private void typeDecl()
+    {
+        if(inputSym.isSameType(TokenType.varToken))
+        {
+            next();
+        }
+        else if(inputSym.isSameType(TokenType.arrToken))
+        {
+            next();
+            // Dimension declaration
+        }
+        else 
+        {
+            error(new IncorrectSyntaxException("Variable/Array declaration not found while parsing type declaration."));
+        }
+    }
+
+    private void varDecl()
+    {
+        typeDecl();
+
+    }
+
+    private void formalParam()
+    {
+        if(inputSym.isSameType(TokenType.openparenToken))
+        {
+
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("Open parenthesis not found while parsing formal parameters declaration."));
+        }
+    }
+
+    private void funcDecl()
+    {
+        if(inputSym.isSameType(TokenType.funcToken) || inputSym.isSameType(TokenType.procToken))
+        {
+
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("Function or Procedure tokens not found while parsing function declaration."));
+        }
+    }
+
+    private void funcBody()
+    {
+        while(inputSym.isSameType(TokenType.varToken) || inputSym.isSameType(TokenType.arrToken)) 
+        {
+            varDecl();
+
+        }
+
+        if(inputSym.isSameType(TokenType.beginToken))
+        {
+
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("Begin token not found while parsing function body."));
+        }
+    }
+
     private void computation()
     {
+        if(inputSym.isSameType(TokenType.mainToken))
+        {
+            varDecl();
+            funcDecl();
 
+            if(inputSym.isSameType(TokenType.beginToken))
+            {
+                statSequence();
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("Begin token not found while parsing function body."));
+            }
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("Main token not found while parsing the program."));
+        }
     }
 
     public void error(Exception exception)

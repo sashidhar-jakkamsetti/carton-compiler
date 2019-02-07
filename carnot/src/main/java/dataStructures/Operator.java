@@ -38,14 +38,6 @@ public class Operator
             put(TokenType.gtrToken, OperatorCode.cmp);
         }
     };
-    
-    public static final HashMap<TokenType, OperatorCode> assignmentOperator = new HashMap<TokenType, OperatorCode>()
-    {
-        {
-            put(TokenType.letToken, OperatorCode.move);
-            put(TokenType.becomesToken, OperatorCode.move);
-        }
-    };
 
     public static final HashMap<TokenType, OperatorCode> branchingOperator = new HashMap<TokenType, OperatorCode>()
     {
@@ -58,6 +50,14 @@ public class Operator
             put(TokenType.geqToken, OperatorCode.bge);
         }
     };
+    
+    public static final HashMap<TokenType, OperatorCode> assignmentOperator = new HashMap<TokenType, OperatorCode>()
+    {
+        {
+            put(TokenType.letToken, OperatorCode.move);
+            put(TokenType.becomesToken, OperatorCode.move);
+        }
+    };
 
     public static final HashMap<String, OperatorCode> standardIoOperator = new HashMap<String, OperatorCode>()
     {
@@ -68,6 +68,3 @@ public class Operator
         }
     };
 }
-
-
-
