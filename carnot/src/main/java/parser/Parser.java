@@ -1,7 +1,13 @@
 package parser;
 
+import java.util.ArrayList;
+
+import javax.lang.model.util.ElementScanner6;
+
 import dataStructures.*;
 import dataStructures.Blocks.*;
+import dataStructures.Instructions.*;
+import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
 import exceptions.*;
@@ -254,15 +260,42 @@ public class Parser
 
     private IBlock whileStatement()
     {
-        IBlock whileBlock = null;
+        WhileBlock whileBlock = null;
         if(inputSym.isSameType(TokenType.whileToken))
         {
             next();
+            whileBlock = (WhileBlock)cfg.initializeWhileBlock(); // Current changes to whileBlock
+            IResult result = relation(); // Adds relation inst. to current
+            if(result != null)
+            {
+                if(inputSym.isSameType(TokenType.doToken))
+                {
+                    next();
+                    IBlock loopBlock = statSequence(); // Current changes to loopBlock
+                    // Issue: we have to switch to whileBlock to set the phi function and switch back to loopBlock
+                    // to add further instructions, but the current implementation does not allow any interactions
+                    // What we have to do: we have to at detect the end of a sequence OR make the sequence add phi functions
+                    whileBlock.setLoopBlock(loopBlock);
+                    loopBlock.setParent(whileBlock);
+                    if(inputSym.isSameType(TokenType.odToken))
+                    {
+                        next();
+                        // add branch instr. to loopBlock
+                        Integer pc = iCodeGenerator.getPC();
+                        Instruction instruction = new Instruction(pc++, OperatorCode.bra, null, null);
+                        cfg.current.addInstruction(instruction);
 
+                        // add follow block
+                        IBlock followBlock = cfg.initializeBlock(); // Current changes to followBlock
+                        whileBlock.setChild(followBlock);
+                        followBlock.setParent(whileBlock);
+                    }
+                }
+            }
             
         }
 
-        return whileBlock;
+        return (IBlock)whileBlock;
     }
 
     private IResult returnStatement()
@@ -298,8 +331,9 @@ public class Parser
         return statSequenceBlock;
     }
 
-    private void typeDecl()
+    private ArrayList<Integer> typeDecl()
     {
+        ArrayList<Integer> dimensionList = new ArrayList<Integer>();
         if(inputSym.isSameType(TokenType.varToken))
         {
             next();
@@ -308,17 +342,133 @@ public class Parser
         {
             next();
             // Dimension declaration
+            if(inputSym.isSameType(TokenType.openbracketToken))
+            {
+                next();
+                // Get first dimention
+                if(inputSym.isSameType(TokenType.number))
+                {
+                    // Extract number from inputSym
+                    dimensionList.add(Integer.parseInt(inputSym.value));
+                    next();
+                    if(inputSym.isSameType(TokenType.closebracketToken))
+                    {
+                        next();
+                        // Get the remaining dimentions until we hit the end
+                        while(inputSym.isSameType(TokenType.openbracketToken))
+                        {
+                            next(); // Number
+                            if(inputSym.isSameType(TokenType.number))
+                            {
+                                dimensionList.add(Integer.parseInt(inputSym.value));
+                            }
+                            else
+                            {
+                                error(new IncorrectSyntaxException("Number not found in array declaration."));
+                            }
+                            next(); // Close bracket
+                            if(!inputSym.isSameType(TokenType.closebracketToken))
+                            {
+                                error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                            }
+                            next(); // Open bracket
+                        }
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                    }
+                }
+                else
+                {
+                    error(new IncorrectSyntaxException("Number not found in array declaration."));
+                }
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
+            }
         }
         else 
         {
             error(new IncorrectSyntaxException("Variable/Array declaration not found while parsing type declaration."));
         }
+        return dimensionList;
     }
 
     private void varDecl()
     {
-        typeDecl();
-
+        ArrayList<Integer> dimentionList = new ArrayList<Integer>();
+        dimentionList = typeDecl();
+        next();
+        if(inputSym.isSameType(TokenType.ident))
+        {
+            if(dimentionList.isEmpty()) // var
+            {
+                Variable var = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
+                vManager.updateSsaMap(var.address, var.version);
+                vManager.updateDefUseChain(var.address, var.version, var.version);
+            }
+            else // array
+            {
+                ArrayVar var = new ArrayVar(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC(), dimentionList);
+                vManager.updateSsaMap(var.address, var.version);
+                vManager.updateDefUseChain(var.address, var.version, var.version);
+            }
+            try 
+            {
+                vManager.addGlobalVariable(scanner.identifier2Address.get(inputSym.value));
+            }
+            catch(Exception e)
+            {
+                error(e);
+            }
+            next();
+            // Consume the rest of the variables if they exist
+            if(inputSym.isSameType(TokenType.commaToken))
+            {
+                next();
+                while(inputSym.isSameType(TokenType.ident))
+                {
+                    if(dimentionList.isEmpty()) // var
+                    {
+                        Variable var = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
+                        vManager.updateSsaMap(var.address, var.version);
+                        vManager.updateDefUseChain(var.address, var.version, var.version);
+                    }
+                    else // array
+                    {
+                        ArrayVar var = new ArrayVar(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC(), dimentionList);
+                        vManager.updateSsaMap(var.address, var.version);
+                        vManager.updateDefUseChain(var.address, var.version, var.version);
+                        try{
+                            vManager.addArrayBaseAddress(var.address, var.arraySize);
+                        }
+                        catch(Exception e)
+                        {
+                            error(e);
+                        }
+                    }
+                    next();
+                    if(inputSym.isSameType(TokenType.commaToken))
+                    {
+                        next();
+                    }
+                }
+            }
+            else if(inputSym.isSameType(TokenType.semiToken))
+            {
+                next();
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("Incorrect Syntax found in Variable Declaration."));
+            }
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("No Identifier found in Variable Declaration."));
+        }
     }
 
     private void formalParam()

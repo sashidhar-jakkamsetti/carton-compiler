@@ -10,14 +10,21 @@ public class VariableManager
     private static HashSet<Integer> globalVariables;
     private static HashMap<Integer, ArrayList<Integer>> ssaMap;
     private static HashMap<Integer, HashMap<Integer, ArrayList<Integer>>> defUseChain;
+    // private static HashMap<Integer, ArrayList<Integer>> dimentionMap;
+    private static Integer addresses;
+    private static HashMap<Integer, Integer> addressMap; // Stores base address for all array
 
     private static VariableManager variableManager;
 
     private VariableManager()
     {
+        variables = new HashSet<Integer>();
         globalVariables = new HashSet<Integer>();
         ssaMap = new HashMap<Integer, ArrayList<Integer>>();
         defUseChain = new HashMap<Integer, HashMap<Integer, ArrayList<Integer>>>();
+        // dimentionMap = new HashMap<Integer, ArrayList<Integer>>();
+        addressMap  = new HashMap<Integer, Integer>();
+        addresses = 0;
     }
 
     public static VariableManager getInstance()
@@ -62,6 +69,41 @@ public class VariableManager
     public boolean isVariable(Integer variable)
     {
         return variables.contains(variable);
+    }
+
+    // public void addArrayDimention(Integer variable, ArrayList<Integer> dimentionList) throws IllegalVariableException
+    // {
+    //     if(dimentionMap.containsKey(variable))
+    //     {
+    //         throw new IllegalVariableException("Array: " + variable + " already declared!");
+    //     }
+    //     else
+    //     {
+    //         dimentionMap.put(variable, dimentionList);
+    //     }
+    // }
+
+    // public ArrayList<Integer> getArrayDimention(Integer variable)
+    // {
+    //     return dimentionMap.get(variable);
+    // }
+
+    public void addArrayBaseAddress(Integer variable, Integer arraySize) throws IllegalVariableException
+    {
+        if(addressMap.containsKey(variable))
+        {
+            throw new IllegalVariableException("Array: " + variable + " already declared!");
+        }
+        else
+        {
+            addressMap.put(variable, addresses);
+            addresses += arraySize;
+        }
+    }
+
+    public Integer getArrayBaseAddress(Integer variable)
+    {
+        return addressMap.get(variable);
     }
 
     @SuppressWarnings("serial")
