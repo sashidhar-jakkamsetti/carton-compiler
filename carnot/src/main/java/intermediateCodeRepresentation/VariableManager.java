@@ -2,32 +2,23 @@ package intermediateCodeRepresentation;
 
 import java.util.*;
 
+import dataStructures.Array;
 import exceptions.*;
 
 public class VariableManager
 {
     private static HashSet<Integer> variables;
     private static HashSet<Integer> globalVariables;
+    private static HashMap<Integer, Array> arrays;
     private static HashMap<Integer, ArrayList<Integer>> ssaMap;
     private static HashMap<Integer, HashMap<Integer, ArrayList<Integer>>> defUseChain;
 
-    private static VariableManager variableManager;
-
-    private VariableManager()
+    public VariableManager()
     {
+        variables = new HashSet<Integer>();
         globalVariables = new HashSet<Integer>();
         ssaMap = new HashMap<Integer, ArrayList<Integer>>();
         defUseChain = new HashMap<Integer, HashMap<Integer, ArrayList<Integer>>>();
-    }
-
-    public static VariableManager getInstance()
-    {
-        if(variableManager == null)
-        {
-            variableManager = new VariableManager();
-        }
-
-        return variableManager;
     }
 
     public void addVariable(Integer variable) throws IllegalVariableException
@@ -42,17 +33,20 @@ public class VariableManager
         }
     }
 
-    public void addGlobalVariable(Integer variable) throws IllegalVariableException
+    public void setGlobalVariables(HashSet<Integer> gVariables)
     {
-        if(globalVariables.contains(variable))
-        {
-            throw new IllegalVariableException("Global variable: " + variable + " already declared!");
-        }
-        else
-        {
-            globalVariables.add(variable);
-        }
+        globalVariables = gVariables;
     }
+
+    public HashSet<Integer> getGlobalVariables()
+    {
+        return globalVariables;
+    }
+
+    public HashSet<Integer> getVariables()
+    {
+        return variables;
+    } 
 
     public boolean isGlobalVariable(Integer variable)
     {
@@ -62,6 +56,11 @@ public class VariableManager
     public boolean isVariable(Integer variable)
     {
         return variables.contains(variable);
+    }
+
+    public boolean isArray(Integer array)
+    {
+        return arrays.containsKey(array);
     }
 
     @SuppressWarnings("serial")

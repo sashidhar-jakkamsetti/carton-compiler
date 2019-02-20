@@ -1,9 +1,12 @@
 package intermediateCodeRepresentation;
 
+import dataStructures.Function;
 import dataStructures.Token;
+import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
 import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
+import exceptions.IllegalVariableException;
 
 public class IntermediateCodeGenerator
 {
@@ -38,5 +41,10 @@ public class IntermediateCodeGenerator
         Instruction instruction = new Instruction(pc++, opcode, x, y);
 
         return instruction;
+    }
+
+    public void declareVariable(IBlock block, VariableManager vManager, VariableResult vResult) throws IllegalVariableException
+    {
+
     }
 }

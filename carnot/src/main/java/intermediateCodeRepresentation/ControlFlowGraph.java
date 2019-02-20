@@ -2,7 +2,7 @@ package intermediateCodeRepresentation;
 
 import java.util.*;
 
-import dataStructures.*;
+import dataStructures.Function;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
 
@@ -13,6 +13,9 @@ public class ControlFlowGraph
     public static List<Instruction> instructions;
     public static List<Block> blocks;
 
+    public Function cfunction;
+    public static List<Function> functions;
+
     private static Integer bc;
     private static ControlFlowGraph cfg;
 
@@ -22,6 +25,8 @@ public class ControlFlowGraph
         head = new Block(bc++);
         current = head;
         blocks = new ArrayList<Block>();
+        cfunction = null;
+        functions = new ArrayList<Function>();
         blocks.add(head);
     }
 
@@ -71,5 +76,13 @@ public class ControlFlowGraph
         return block;
     }
 
+    public boolean isExists(Function function)
+    {
+        return functions.stream().anyMatch(f -> f.address == function.address);
+    }
 
+    public void addFunction(Function function)
+    {
+        functions.add(function);
+    }
 }

@@ -1,20 +1,31 @@
 package dataStructures.Results;
 
-import dataStructures.Instructions.Instruction;
-
 public class InstructionResult implements IResult
 {
-    public Instruction instruction;
+    //public Instruction instruction;
+    public Integer iid;
 
     public InstructionResult()
     {
-        instruction = null;
+        iid = -1;
     }
     
     @Override
     public void set(Object value) 
     {
-        instruction = (Instruction)value;
+        iid = (Integer)value;
+    }
+
+    @Override
+    public void setIid(Integer iid) 
+    {
+        this.iid = iid;
+    }
+
+    @Override
+    public Integer getIid()
+    {
+        return iid;
     }
 
     @Override
@@ -27,6 +38,15 @@ public class InstructionResult implements IResult
     public Integer compareTo(IResult result) 
     {
         return null;
+    }
+
+    @Override
+    public IResult toInstruction()
+    {
+        InstructionResult result = new InstructionResult();
+        result.set(iid);
+
+        return result;
     }
 
     @Override 

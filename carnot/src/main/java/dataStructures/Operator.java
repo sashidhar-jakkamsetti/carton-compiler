@@ -56,6 +56,7 @@ public class Operator
         {
             put(TokenType.letToken, OperatorCode.move);
             put(TokenType.becomesToken, OperatorCode.move);
+            put(TokenType.returnToken, OperatorCode.move);
         }
     };
 

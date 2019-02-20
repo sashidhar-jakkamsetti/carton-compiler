@@ -49,7 +49,7 @@ public class Parser
     {
         cfg = ControlFlowGraph.getInstance();
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
-        vManager = VariableManager.getInstance();
+        vManager = new VariableManager();
         next();
         computation();
         return cfg;
@@ -73,7 +73,7 @@ public class Parser
             }
 
             next();
-            // Array check
+            // TODO: Array check
             while(inputSym.isSameType(TokenType.openbracketToken))
             {
                 // Get dimension info
@@ -149,6 +149,7 @@ public class Parser
                 IResult yResult = factor();
                 if(yResult != null)
                 {
+                    xResult.setIid(iCodeGenerator.getPC());
                     cfg.current.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
                 }
             }
@@ -170,6 +171,7 @@ public class Parser
                 IResult yResult = term();
                 if(yResult != null)
                 {
+                    xResult.setIid(iCodeGenerator.getPC());
                     cfg.current.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
                 }
             }    
@@ -214,6 +216,10 @@ public class Parser
                     IResult rhsResult = expression();
                     if(rhsResult != null)
                     {
+                        if(rhsResult.getIid() > 0) 
+                        {
+                            rhsResult = rhsResult.toInstruction();
+                        }
                         Variable variable = ((VariableResult)lhsResult).variable;
                         variable.version = iCodeGenerator.getPC();
 
@@ -233,23 +239,27 @@ public class Parser
         {
             next();
 
-            
         }
 
         return fResult;
     }
 
-    private IBlock ifStatement()
+    private void ifStatement()
     {
-        IBlock ifBlock = null;
         if(inputSym.isSameType(TokenType.ifToken))
         {
             next();
+            IBlock temp = cfg.current;
+            cfg.initializeIfBlock();
+            temp.setChild(cfg.current);
+            cfg.current.setParent(temp);
+            IBlock ifBlock = cfg.current;
+            cfg.initializeBlock();
+            IBlock followBlock = cfg.current;
+            cfg.current = ifBlock;
 
-            
+
         }
-
-        return ifBlock;
     }
 
     private IBlock whileStatement()
@@ -271,8 +281,7 @@ public class Parser
         if(inputSym.isSameType(TokenType.returnToken))
         {
             next();
-
-            
+            rResult = expression();
         }
         else
         {
@@ -282,50 +291,173 @@ public class Parser
         return rResult;
     }
 
-    private IBlock statement()
+    private void statement()
     {
-        IBlock statementBlock = null;
-        
-
-        return statementBlock;
+        if(inputSym.isSameType(TokenType.letToken))
+        {
+            assignment();
+        }
+        else if(inputSym.isSameType(TokenType.callToken))
+        {
+            funcCall();
+        }
+        else if(inputSym.isSameType(TokenType.ifToken))
+        {
+            ifStatement();
+        }
+        else if(inputSym.isSameType(TokenType.whileToken))
+        {
+            whileStatement();
+        }
+        else if(inputSym.isSameType(TokenType.returnToken))
+        {
+            IResult result = returnStatement();
+            if(result != null)
+            {
+                Token opToken = inputSym;
+                InstructionResult iResult = new InstructionResult();
+                iResult.set(iCodeGenerator.getPC());
+                cfg.cfunction.returnInstruction = iResult;
+                cfg.current.addInstruction(iCodeGenerator.Compute(opToken, result, iResult));
+            }
+        }
     }
 
-    private IBlock statSequence()
+    private void statSequence()
     {
-        IBlock statSequenceBlock = null;
-        
-
-        return statSequenceBlock;
+        do
+        {
+            statement();
+            if(inputSym.isSameType(TokenType.semiToken))
+            {
+                next();
+            }
+            else
+            {
+                break;
+            }
+        }while(true);
     }
 
-    private void typeDecl()
+    // TODO: array handling.
+    private Array typeDecl()
     {
+        Array arrayDec = new Array();
         if(inputSym.isSameType(TokenType.varToken))
         {
             next();
+            arrayDec = null;
         }
         else if(inputSym.isSameType(TokenType.arrToken))
         {
             next();
-            // Dimension declaration
+            // Get Dimensions
         }
-        else 
-        {
-            error(new IncorrectSyntaxException("Variable/Array declaration not found while parsing type declaration."));
-        }
+
+        return arrayDec;
     }
 
+    // TODO: array handling. need to add support in VariableManager too.
     private void varDecl()
     {
-        typeDecl();
+        // while(inputSym.isSameType(TokenType.varToken) || inputSym.isSameType(TokenType.arrToken))
+        // {
+        //     Array arrayDec = typeDecl();
+        //     if(inputSym.isSameType(TokenType.ident))
+        //     {
+        //         do
+        //         {
+        //             Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
+        //             VariableResult vResult = new VariableResult();
+        //             vResult.set(v);
+        //             vResult.setIid(iCodeGenerator.getPC());
+        
+        //             try
+        //             {
+        //                 if(cfg.cfunction == null)
+        //                 {
+        //                     iCodeGenerator.declareVariable(cfg.current, vManager, vResult);
+        //                 }
+        //                 else
+        //                 {
+        //                     iCodeGenerator.declareVariable(cfg.current, cfg.cfunction.vManager, vResult);
+        //                 }
+        //                 next();
+        //             }
+        //             catch(IllegalVariableException e)
+        //             {
+        //                 error(e);
+        //             }
+                    
+        //             if(inputSym.isSameType(TokenType.commaToken))
+        //             {
+        //                 next();
+        //             }
+        //             else
+        //             {
+        //                 break;
+        //             }
+        //         }while(inputSym.isSameType(TokenType.ident));
+        //     }
+        //     else 
+        //     {
+        //         error(new IncorrectSyntaxException("Identifier in variable/array declaration not found while parsing variable declaration."));
+        //     }
 
+        //     if(inputSym.isSameType(TokenType.semiToken))
+        //     {
+        //         next();
+        //     }
+        //     else
+        //     {
+        //         error(new IncorrectSyntaxException("Semi comma not found while parsing variable declaration."));
+        //     }
+        // }
     }
 
     private void formalParam()
     {
         if(inputSym.isSameType(TokenType.openparenToken))
         {
+            next();
+            while(inputSym.isSameType(TokenType.ident))
+            {
+                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
+                VariableResult vResult = new VariableResult();
+                vResult.set(v);
+                try
+                {
+                    iCodeGenerator.declareVariable(cfg.current, cfg.cfunction.vManager, vResult);
+                }
+                catch(IllegalVariableException e)
+                {
+                    error(e);
+                }
+                cfg.cfunction.addParameter(vResult);
+                next();
 
+                if(inputSym.isSameType(TokenType.commaToken))
+                {
+                    next();
+                    if(!inputSym.isSameType(TokenType.ident))
+                    {
+                        error(new IncorrectSyntaxException("Identifier not found while parsing formal paramters declaration."));
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if(inputSym.isSameType(TokenType.closeparenToken))
+            {
+                next();
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("Close parenthesis not found while parsing formal parameters declaration."));
+            }
         }
         else
         {
@@ -335,27 +467,59 @@ public class Parser
 
     private void funcDecl()
     {
-        if(inputSym.isSameType(TokenType.funcToken) || inputSym.isSameType(TokenType.procToken))
+        while(inputSym.isSameType(TokenType.funcToken) || inputSym.isSameType(TokenType.procToken))
         {
+            next();
+            if(inputSym.isSameType(TokenType.ident))
+            {
+                Function function = new Function(inputSym.value, scanner.identifier2Address.get(inputSym.value));
+                if(cfg.isExists(function))
+                {
+                    error(new IncorrectSyntaxException("Function already exists."));
+                }
+                cfg.initializeBlock();
+                cfg.cfunction = function;
+                cfg.cfunction.head = (Block)cfg.current;
+                cfg.cfunction.setGlobalVariables(vManager.getVariables());
+                formalParam();
 
-        }
-        else
-        {
-            error(new IncorrectSyntaxException("Function or Procedure tokens not found while parsing function declaration."));
+                if(inputSym.isSameType(TokenType.semiToken))
+                {
+                    next();
+                    funcBody();
+
+                    if(inputSym.isSameType(TokenType.semiToken))
+                    {
+                        next();
+                    }
+                    else 
+                    {
+                        error(new IncorrectSyntaxException("Semi comma not found while parsing function declaration."));
+                    }
+                }
+                else
+                {
+                    error(new IncorrectSyntaxException("Semi comma not found while parsing function declaration."));
+                }
+            }
         }
     }
 
     private void funcBody()
     {
-        while(inputSym.isSameType(TokenType.varToken) || inputSym.isSameType(TokenType.arrToken)) 
-        {
-            varDecl();
-
-        }
+        varDecl();
 
         if(inputSym.isSameType(TokenType.beginToken))
         {
-
+            statSequence();
+            if(inputSym.isSameType(TokenType.endToken))
+            {
+                next();
+            }
+            else 
+            {
+                error(new IncorrectSyntaxException("End token not found while parsing function body."));
+            }
         }
         else
         {
@@ -367,16 +531,35 @@ public class Parser
     {
         if(inputSym.isSameType(TokenType.mainToken))
         {
+            next();
             varDecl();
             funcDecl();
 
             if(inputSym.isSameType(TokenType.beginToken))
             {
                 statSequence();
+                if(inputSym.isSameType(TokenType.endToken))
+                {
+                    next();
+                    if(inputSym.isSameType(TokenType.periodToken))
+                    {
+                        Token opToken = inputSym;
+                        next();
+                        cfg.current.addInstruction(iCodeGenerator.Compute(opToken, null, null));
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Period token not found while parsing main function body."));
+                    }
+                }
+                else 
+                {
+                    error(new IncorrectSyntaxException("End token not found while parsing main function body."));
+                }
             }
             else
             {
-                error(new IncorrectSyntaxException("Begin token not found while parsing function body."));
+                error(new IncorrectSyntaxException("Begin token not found while parsing main function body."));
             }
         }
         else
