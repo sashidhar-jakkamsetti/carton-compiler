@@ -1,5 +1,9 @@
 package parser;
 
+import java.util.ArrayList;
+
+import javax.lang.model.util.ElementScanner6;
+
 import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Results.*;
@@ -55,7 +59,7 @@ public class Parser
         return cfg;
     }
 
-    private IResult designator()
+    private IResult designator(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
         VariableResult vResult = null;
         if(inputSym.isSameType(TokenType.ident))
@@ -87,13 +91,13 @@ public class Parser
         return vResult;
     }
 
-    private IResult factor()
+    private IResult factor(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
         IResult result = null;
         switch(inputSym.type)
         {
             case ident:
-                result = designator();
+                result = designator(cBlock, jBlocks, function);
                 if(result != null)
                 {
                     Variable variable = ((VariableResult)result).variable;
@@ -114,7 +118,7 @@ public class Parser
             
             case openparenToken:
                 next();
-                result = expression();
+                result = expression(cBlock, jBlocks, function);
                 if(result != null)
                 {
                     if(inputSym.isSameType(TokenType.closeparenToken))
@@ -129,16 +133,16 @@ public class Parser
                 break;
 
             case callToken:
-                result = funcCall();
+                result = funcCall(cBlock, jBlocks, function);
                 break;
         }
 
         return result;
     }
 
-    private IResult term()
+    private IResult term(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
-        IResult xResult = factor();
+        IResult xResult = factor(cBlock, jBlocks, function);
         if(xResult != null)
         {
             while(inputSym.isTermOp())
@@ -146,11 +150,11 @@ public class Parser
                 Token opToken = inputSym;
                 next();
     
-                IResult yResult = factor();
+                IResult yResult = factor(cBlock, jBlocks, function);
                 if(yResult != null)
                 {
                     xResult.setIid(iCodeGenerator.getPC());
-                    cfg.current.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
+                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
                 }
             }
         }
@@ -158,9 +162,9 @@ public class Parser
         return xResult;
     }
 
-    private IResult expression()
+    private IResult expression(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
-        IResult xResult = term();
+        IResult xResult = term(cBlock, jBlocks, function);
         if(xResult != null)
         {
             while(inputSym.isExpressionOp()) 
@@ -168,11 +172,11 @@ public class Parser
                 Token opToken = inputSym;
                 next();
     
-                IResult yResult = term();
+                IResult yResult = term(cBlock, jBlocks, function);
                 if(yResult != null)
                 {
                     xResult.setIid(iCodeGenerator.getPC());
-                    cfg.current.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
+                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
                 }
             }    
         }
@@ -180,9 +184,9 @@ public class Parser
         return xResult;
     }
 
-    private IResult relation()
+    private IResult relation(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
-        IResult xResult = expression();
+        IResult xResult = expression(cBlock, jBlocks, function);
         if(xResult != null)
         {
             while(inputSym.isRelationOp())
@@ -190,10 +194,10 @@ public class Parser
                 Token opToken = inputSym;
                 next();
     
-                IResult yResult = expression();
+                IResult yResult = expression(cBlock, jBlocks, function);
                 if(yResult != null)
                 {
-                    cfg.current.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
+                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
                 }
             }
         }
@@ -201,11 +205,11 @@ public class Parser
         return xResult;
     }
 
-    private void assignment()
+    private void assignment(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
         if(inputSym.isSameType(TokenType.letToken))
         {
-            IResult lhsResult = designator();
+            IResult lhsResult = designator(cBlock, jBlocks, function);
             if(lhsResult != null)
             {
                 if(inputSym.isSameType(TokenType.becomesToken))
@@ -213,7 +217,7 @@ public class Parser
                     Token opToken = inputSym;
                     next();
 
-                    IResult rhsResult = expression();
+                    IResult rhsResult = expression(cBlock, jBlocks, function);
                     if(rhsResult != null)
                     {
                         if(rhsResult.getIid() > 0) 
@@ -225,14 +229,14 @@ public class Parser
 
                         vManager.updateSsaMap(variable.address, variable.version);
                         vManager.updateDefUseChain(variable.address, variable.version, variable.version);
-                        cfg.current.addInstruction(iCodeGenerator.Compute(opToken, lhsResult, rhsResult));
+                        cBlock.addInstruction(iCodeGenerator.Compute(opToken, lhsResult, rhsResult));
                     }
                 }
             }
         }
     }
 
-    private IResult funcCall()
+    private IResult funcCall(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
         IResult fResult = null;
         if(inputSym.isSameType(TokenType.callToken))
@@ -244,25 +248,20 @@ public class Parser
         return fResult;
     }
 
-    private void ifStatement()
+    private IBlock ifStatement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
+        IBlock ifBlock = null;
         if(inputSym.isSameType(TokenType.ifToken))
         {
             next();
-            IBlock temp = cfg.current;
-            cfg.initializeIfBlock();
-            temp.setChild(cfg.current);
-            cfg.current.setParent(temp);
-            IBlock ifBlock = cfg.current;
-            cfg.initializeBlock();
-            IBlock followBlock = cfg.current;
-            cfg.current = ifBlock;
 
 
         }
+
+        return ifBlock;
     }
 
-    private IBlock whileStatement()
+    private IBlock whileStatement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
         IBlock whileBlock = null;
         if(inputSym.isSameType(TokenType.whileToken))
@@ -275,13 +274,13 @@ public class Parser
         return whileBlock;
     }
 
-    private IResult returnStatement()
+    private IResult returnStatement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
         IResult rResult = null;
         if(inputSym.isSameType(TokenType.returnToken))
         {
             next();
-            rResult = expression();
+            rResult = expression(cBlock, jBlocks, function);
         }
         else
         {
@@ -291,43 +290,54 @@ public class Parser
         return rResult;
     }
 
-    private void statement()
+    private IBlock statement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
+        IBlock block = null;
         if(inputSym.isSameType(TokenType.letToken))
         {
-            assignment();
+            assignment(cBlock, jBlocks, function);
+            block = cBlock;
         }
         else if(inputSym.isSameType(TokenType.callToken))
         {
-            funcCall();
+            funcCall(cBlock, jBlocks, function);
+            block = cBlock;
         }
         else if(inputSym.isSameType(TokenType.ifToken))
         {
-            ifStatement();
+            block = ifStatement(cBlock, jBlocks, function);
         }
         else if(inputSym.isSameType(TokenType.whileToken))
         {
-            whileStatement();
+            block = whileStatement(cBlock, jBlocks, function);
         }
         else if(inputSym.isSameType(TokenType.returnToken))
         {
-            IResult result = returnStatement();
+            IResult result = returnStatement(cBlock, jBlocks, function);
             if(result != null)
             {
                 Token opToken = inputSym;
                 InstructionResult iResult = new InstructionResult();
                 iResult.set(iCodeGenerator.getPC());
-                cfg.cfunction.returnInstruction = iResult;
-                cfg.current.addInstruction(iCodeGenerator.Compute(opToken, result, iResult));
+                function.returnInstruction = iResult;
+                cBlock.addInstruction(iCodeGenerator.Compute(opToken, result, iResult));
             }
+            block = cBlock;
         }
+        else
+        {
+            error(new IncorrectSyntaxException("No valid token found while parsing statement."));
+        }
+
+        return block;
     }
 
-    private void statSequence()
+    private IBlock statSequence(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
     {
+        IBlock block = null;
         do
         {
-            statement();
+            block = statement(cBlock, jBlocks, function);
             if(inputSym.isSameType(TokenType.semiToken))
             {
                 next();
@@ -337,6 +347,8 @@ public class Parser
                 break;
             }
         }while(true);
+        
+        return block;
     }
 
     // TODO: array handling.
@@ -358,7 +370,7 @@ public class Parser
     }
 
     // TODO: array handling. need to add support in VariableManager too.
-    private void varDecl()
+    private void varDecl(Function function)
     {
         // while(inputSym.isSameType(TokenType.varToken) || inputSym.isSameType(TokenType.arrToken))
         // {
@@ -415,7 +427,7 @@ public class Parser
         // }
     }
 
-    private void formalParam()
+    private void formalParam(Function function)
     {
         if(inputSym.isSameType(TokenType.openparenToken))
         {
@@ -427,13 +439,13 @@ public class Parser
                 vResult.set(v);
                 try
                 {
-                    iCodeGenerator.declareVariable(cfg.current, cfg.cfunction.vManager, vResult);
+                    iCodeGenerator.declareVariable(function.head, function.vManager, vResult);
                 }
                 catch(IllegalVariableException e)
                 {
                     error(e);
                 }
-                cfg.cfunction.addParameter(vResult);
+                function.addParameter(vResult);
                 next();
 
                 if(inputSym.isSameType(TokenType.commaToken))
@@ -477,16 +489,14 @@ public class Parser
                 {
                     error(new IncorrectSyntaxException("Function already exists."));
                 }
-                cfg.initializeBlock();
-                cfg.cfunction = function;
-                cfg.cfunction.head = (Block)cfg.current;
-                cfg.cfunction.setGlobalVariables(vManager.getVariables());
-                formalParam();
+                function.head = (Block)cfg.initializeBlock();
+                function.setGlobalVariables(vManager.getVariables());
+                formalParam(function);
 
                 if(inputSym.isSameType(TokenType.semiToken))
                 {
                     next();
-                    funcBody();
+                    funcBody(function);
 
                     if(inputSym.isSameType(TokenType.semiToken))
                     {
@@ -505,13 +515,13 @@ public class Parser
         }
     }
 
-    private void funcBody()
+    private void funcBody(Function function)
     {
-        varDecl();
+        varDecl(function);
 
         if(inputSym.isSameType(TokenType.beginToken))
         {
-            statSequence();
+            statSequence(function.head, null, function);
             if(inputSym.isSameType(TokenType.endToken))
             {
                 next();
@@ -532,12 +542,12 @@ public class Parser
         if(inputSym.isSameType(TokenType.mainToken))
         {
             next();
-            varDecl();
+            varDecl(null);
             funcDecl();
 
             if(inputSym.isSameType(TokenType.beginToken))
             {
-                statSequence();
+                IBlock lBlock = statSequence(cfg.head, null, null);
                 if(inputSym.isSameType(TokenType.endToken))
                 {
                     next();
@@ -545,7 +555,7 @@ public class Parser
                     {
                         Token opToken = inputSym;
                         next();
-                        cfg.current.addInstruction(iCodeGenerator.Compute(opToken, null, null));
+                        lBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
                     }
                     else
                     {

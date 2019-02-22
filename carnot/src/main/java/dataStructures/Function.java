@@ -21,6 +21,7 @@ public class Function
     {
         this.name = name;
         this.address = address;
+        head = null;
         vManager = new VariableManager();
         parameters = new ArrayList<IResult>();
     }

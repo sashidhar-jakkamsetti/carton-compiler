@@ -9,11 +9,9 @@ import dataStructures.Instructions.*;
 public class ControlFlowGraph
 {
     public static Block head;
-    public IBlock current;
     public static List<Instruction> instructions;
     public static List<Block> blocks;
 
-    public Function cfunction;
     public static List<Function> functions;
 
     private static Integer bc;
@@ -23,9 +21,7 @@ public class ControlFlowGraph
     {
         bc = 0;
         head = new Block(bc++);
-        current = head;
         blocks = new ArrayList<Block>();
-        cfunction = null;
         functions = new ArrayList<Function>();
         blocks.add(head);
     }
@@ -44,7 +40,6 @@ public class ControlFlowGraph
     {
         Block block = new Block(bc++);
         blocks.add(block);
-        current = block;
 
         return block;
     }
@@ -53,7 +48,6 @@ public class ControlFlowGraph
     {
         IfBlock block = new IfBlock(bc++);
         blocks.add(block);
-        current = block;
 
         return block;
     }
@@ -62,7 +56,6 @@ public class ControlFlowGraph
     {
         JoinBlock block = new JoinBlock(bc++);
         blocks.add(block);
-        current = block;
 
         return block;
     }
@@ -71,7 +64,6 @@ public class ControlFlowGraph
     {
         WhileBlock block = new WhileBlock(bc++);
         blocks.add(block);
-        current = block;
 
         return block;
     }
