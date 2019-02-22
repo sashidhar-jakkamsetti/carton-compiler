@@ -1,8 +1,12 @@
 package intermediateCodeRepresentation;
 
+import java.util.ArrayList;
+
+import dataStructures.Operator;
 import dataStructures.Token;
+import dataStructures.Variable;
 import dataStructures.Instructions.*;
-import dataStructures.Operator.OperatorCode;
+import dataStructures.Operator.*;
 import dataStructures.Results.*;
 
 public class IntermediateCodeGenerator
@@ -30,13 +34,41 @@ public class IntermediateCodeGenerator
         return pc;
     }
 
-    public Instruction Compute(Token opToken, IResult x, IResult y)
+    public ArrayList<Instruction> Compute(Token opToken, IResult x, IResult y)
     {
-        OperatorCode opcode = OperatorCode.read;
-        //TODO: get appropriate opcode
+        ArrayList<Instruction> instructions = new  ArrayList<Instruction>();
+        ArrayList<OperatorCode> opCodes = new  ArrayList<OperatorCode>();
+        opCodes = Operator.getOpCode(opToken);
 
-        Instruction instruction = new Instruction(pc++, opcode, x, y);
+        for(OperatorCode opCode : opCodes)
+        {
+            Instruction instruction = null;
+            if(opCode == OperatorCode.load || opCode == OperatorCode.bra)
+            {
+                instruction = new Instruction(pc++, opCode, y, null);
+            }
+            else if(opCode == OperatorCode.store || opCode == OperatorCode.move)
+            {
+                instruction = new Instruction(pc++, opCode, y, x);
+            }
+            else if(opCode == OperatorCode.read || opCode == OperatorCode.writeNL)
+            {
+                instruction = new Instruction(pc++, opCode, null, null);
+            }
+            else if(opCode == OperatorCode.phi)
+            {
+                VariableResult varResult = (VariableResult)x;
+                Variable varX = varResult.variable;
+                Variable variable = new Variable(varX.name, varX.address, pc++);
+                instruction = new PhiInstruction(pc++, variable, x, y);
+            }
+            else
+            {
+                instruction = new Instruction(pc++, opCode, x, y);
+            }
+            instructions.add(instruction);
+        }
 
-        return instruction;
+        return instructions;
     }
 }

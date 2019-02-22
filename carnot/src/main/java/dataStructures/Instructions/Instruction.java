@@ -1,6 +1,5 @@
 package dataStructures.Instructions;
 
-import dataStructures.*;
 import dataStructures.Results.*;
 import dataStructures.Operator.OperatorCode;
 
@@ -33,6 +32,15 @@ public class Instruction
     @Override
     public String toString()
     {
-        return "";
+        String ret = "";
+        if(operandX != null && operandY != null)
+        {
+            ret = String.format("{0} : {1} {2} {3}", id, opcode.toString(), operandX.toString(), operandY.toString());
+        }
+        else if(operandY == null)
+        {
+            ret = String.format("{0} : {1} {2}", id, opcode.toString(), operandX.toString());
+        }
+        return ret;
     }
 }

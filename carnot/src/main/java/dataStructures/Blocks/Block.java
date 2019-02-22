@@ -38,6 +38,11 @@ public class Block implements IBlock
         instructions.add(instruction);
     }
 
+    public void addInstruction(ArrayList<Instruction> instruction)
+    {
+        instructions.addAll(instruction);
+    }
+
     public Instruction getInstruction(int programCounter)
     {
         return (Instruction)instructions.stream().filter(instruction -> instruction.id == programCounter).toArray()[0];
