@@ -2,30 +2,48 @@ package intermediateCodeRepresentation;
 
 import java.util.*;
 import dataStructures.*;
+import dataStructures.Blocks.IBlock;
 import dataStructures.Instructions.*;
 import dataStructures.Results.*;
 
 public class PhiManager
 {
-    private HashMap<Integer, Instruction> phis;
+    public HashMap<Integer, Instruction> phis;
+    private IBlock block;
+    private IntermediateCodeGenerator iCodeGenerator;
 
-    public PhiManager()
+    public PhiManager(IBlock block)
     {
         phis = new HashMap<Integer, Instruction>();
+        this.block = block;
+        iCodeGenerator = IntermediateCodeGenerator.getInstance();
     }
 
-    public void addPhi(Variable x, IResult x1, IResult x2) 
+    public PhiInstruction addPhi(Variable x, IResult x1, IResult x2) 
     {
-
+        return null;
     }
 
-    public void updatePhi(Variable x, IResult x1, IResult x2)
+    public PhiInstruction updatePhi(Variable x, IResult x1, IResult x2)
     {
-        
+        if(isExists(x))
+        {
+            if(x1 != null)
+            {
+
+            }
+
+            if(x2 != null)
+            {
+                
+            }
+        }
+
+        return null;
     }
 
-    public ArrayList<Instruction> getPhis()
+    public boolean isExists(Variable x)
     {
-        return (ArrayList<Instruction>)phis.values();
+        return false;
     }
 }

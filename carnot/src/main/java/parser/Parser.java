@@ -1,11 +1,10 @@
 package parser;
 
-import java.util.ArrayList;
-
-import javax.lang.model.util.ElementScanner6;
+import java.util.*;
 
 import dataStructures.*;
 import dataStructures.Blocks.*;
+import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
 import exceptions.*;
@@ -59,12 +58,13 @@ public class Parser
         return cfg;
     }
 
-    private IResult designator(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IResult designator(IBlock cBlock, Function function)
     {
         VariableResult vResult = null;
         if(inputSym.isSameType(TokenType.ident))
         {
-            if(vManager.isVariable(scanner.identifier2Address.get(inputSym.value)))
+            if((function == null && vManager.isVariable(scanner.identifier2Address.get(inputSym.value)))
+                || (function != null && function.vManager.isVariable(scanner.identifier2Address.get(inputSym.value))))
             {
                 Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
                 vResult = new VariableResult();
@@ -91,19 +91,29 @@ public class Parser
         return vResult;
     }
 
-    private IResult factor(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IResult factor(IBlock cBlock, Function function)
     {
         IResult result = null;
         switch(inputSym.type)
         {
             case ident:
-                result = designator(cBlock, jBlocks, function);
+                result = designator(cBlock, function);
                 if(result != null)
                 {
                     Variable variable = ((VariableResult)result).variable;
-                    Integer designatorVersion = vManager.getSsaVersion(variable.address);
-                    variable.version = designatorVersion;
-                    vManager.updateDefUseChain(variable.address, designatorVersion, iCodeGenerator.getPC());
+                    if(function == null)
+                    {
+                        Integer designatorVersion = vManager.getSsaVersion(variable.address);
+                        variable.version = designatorVersion;
+                        vManager.updateDefUseChain(variable.address, designatorVersion, iCodeGenerator.getPC());
+                    }
+                    else 
+                    {
+                        Integer designatorVersion = function.vManager.getSsaVersion(variable.address);
+                        variable.version = designatorVersion;
+                        function.vManager.updateDefUseChain(variable.address, designatorVersion, iCodeGenerator.getPC());
+                    }
+                    
                 }
                 break;
             
@@ -118,7 +128,7 @@ public class Parser
             
             case openparenToken:
                 next();
-                result = expression(cBlock, jBlocks, function);
+                result = expression(cBlock, function);
                 if(result != null)
                 {
                     if(inputSym.isSameType(TokenType.closeparenToken))
@@ -133,16 +143,16 @@ public class Parser
                 break;
 
             case callToken:
-                result = funcCall(cBlock, jBlocks, function);
+                result = funcCall(cBlock, function);
                 break;
         }
 
         return result;
     }
 
-    private IResult term(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IResult term(IBlock cBlock, Function function)
     {
-        IResult xResult = factor(cBlock, jBlocks, function);
+        IResult xResult = factor(cBlock, function);
         if(xResult != null)
         {
             while(inputSym.isTermOp())
@@ -150,7 +160,7 @@ public class Parser
                 Token opToken = inputSym;
                 next();
     
-                IResult yResult = factor(cBlock, jBlocks, function);
+                IResult yResult = factor(cBlock, function);
                 if(yResult != null)
                 {
                     xResult.setIid(iCodeGenerator.getPC());
@@ -162,9 +172,9 @@ public class Parser
         return xResult;
     }
 
-    private IResult expression(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IResult expression(IBlock cBlock, Function function)
     {
-        IResult xResult = term(cBlock, jBlocks, function);
+        IResult xResult = term(cBlock, function);
         if(xResult != null)
         {
             while(inputSym.isExpressionOp()) 
@@ -172,7 +182,7 @@ public class Parser
                 Token opToken = inputSym;
                 next();
     
-                IResult yResult = term(cBlock, jBlocks, function);
+                IResult yResult = term(cBlock, function);
                 if(yResult != null)
                 {
                     xResult.setIid(iCodeGenerator.getPC());
@@ -184,9 +194,10 @@ public class Parser
         return xResult;
     }
 
-    private IResult relation(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private BranchResult relation(IBlock cBlock, Function function)
     {
-        IResult xResult = expression(cBlock, jBlocks, function);
+        BranchResult bResult = new BranchResult();
+        IResult xResult = expression(cBlock, function);
         if(xResult != null)
         {
             while(inputSym.isRelationOp())
@@ -194,22 +205,26 @@ public class Parser
                 Token opToken = inputSym;
                 next();
     
-                IResult yResult = expression(cBlock, jBlocks, function);
+                IResult yResult = expression(cBlock, function);
                 if(yResult != null)
                 {
                     cBlock.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
+                    bResult.condition = opToken;
+                    bResult.fixuplocation = iCodeGenerator.getPC();
+                    bResult.iid = iCodeGenerator.getPC() - 1;
+                    bResult.targetBlock = cBlock;
                 }
             }
         }
 
-        return xResult;
+        return bResult;
     }
 
-    private void assignment(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private void assignment(IBlock cBlock, Function function)
     {
         if(inputSym.isSameType(TokenType.letToken))
         {
-            IResult lhsResult = designator(cBlock, jBlocks, function);
+            IResult lhsResult = designator(cBlock, function);
             if(lhsResult != null)
             {
                 if(inputSym.isSameType(TokenType.becomesToken))
@@ -217,7 +232,7 @@ public class Parser
                     Token opToken = inputSym;
                     next();
 
-                    IResult rhsResult = expression(cBlock, jBlocks, function);
+                    IResult rhsResult = expression(cBlock, function);
                     if(rhsResult != null)
                     {
                         if(rhsResult.getIid() > 0) 
@@ -227,8 +242,16 @@ public class Parser
                         Variable variable = ((VariableResult)lhsResult).variable;
                         variable.version = iCodeGenerator.getPC();
 
-                        vManager.updateSsaMap(variable.address, variable.version);
-                        vManager.updateDefUseChain(variable.address, variable.version, variable.version);
+                        if(function == null)
+                        {
+                            vManager.updateSsaMap(variable.address, variable.version);
+                            vManager.updateDefUseChain(variable.address, variable.version, variable.version);
+                        }
+                        else 
+                        {
+                            function.vManager.updateSsaMap(variable.address, variable.version);
+                            function.vManager.updateDefUseChain(variable.address, variable.version, variable.version);
+                        }
                         cBlock.addInstruction(iCodeGenerator.Compute(opToken, lhsResult, rhsResult));
                     }
                 }
@@ -236,32 +259,240 @@ public class Parser
         }
     }
 
-    private IResult funcCall(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IResult funcCall(IBlock cBlock, Function function)
     {
-        IResult fResult = null;
         if(inputSym.isSameType(TokenType.callToken))
         {
+            Token opToken = inputSym;
             next();
+            Function callFunction = new Function(inputSym.value, scanner.identifier2Address.get(inputSym.value));
+            if(cfg.isExists(callFunction))
+            {
+                callFunction = cfg.getFunction(callFunction);
+                next();
+                if(inputSym.isSameType(TokenType.openparenToken))
+                {
+                    Integer idx = 0;
+                    do
+                    {
+                        next();
+                        IResult pResult = expression(cBlock, function);
+                        if(pResult != null)
+                        {
+                            cBlock.addInstruction(iCodeGenerator.Compute(OperatorCode.move, pResult, callFunction.getParameter(idx++)));
+                        }
+                    }while(inputSym.isSameType(TokenType.commaToken));
+                    
+                    if(inputSym.isSameType(TokenType.closeparenToken))
+                    {
+                        next();
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Closing parenthesis not found while parsing funcCall statement."));
+                    }
+                }
 
+                BranchResult bResult = new BranchResult();
+                bResult.set(iCodeGenerator.getPC());
+                bResult.set(callFunction.head);
+                bResult.condition = opToken;
+                
+                cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, bResult));
+                if(function == null)
+                {
+                    cBlock.setSsaMap(vManager.getSsaMap());
+                }
+                else 
+                {
+                    cBlock.setSsaMap(function.vManager.getSsaMap());
+                }
+                return callFunction.returnInstruction;
+            }
+
+            if(Operator.standardIoOperator.containsKey(inputSym.value))
+            {
+                opToken = inputSym;
+                if(inputSym.value == "InputNum")
+                {
+                    next();
+                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
+                    InstructionResult iResult = new InstructionResult();
+                    iResult.setIid(iCodeGenerator.getPC() - 1);
+                    return iResult;
+                }
+                else if(inputSym.value == "OutputNum")
+                {
+                    next();
+                    if(inputSym.isSameType(TokenType.openparenToken))
+                    {
+                        next();
+                        IResult pResult = expression(cBlock, function);
+                        if(pResult != null)
+                        {
+                            cBlock.addInstruction(iCodeGenerator.Compute(opToken, pResult, null));
+                        }
+                        if(inputSym.isSameType(TokenType.closeparenToken))
+                        {
+                            next();
+                            return null;
+                        }
+                        else
+                        {
+                            error(new IncorrectSyntaxException("Closing parenthesis not found while parsing funcCall statement."));
+                        }
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Open parenthesis not found while parsing funcCall statement."));
+                    }
+                }
+                else
+                {
+                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
+                    return null;
+                }
+            }
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("Call token not found while parsing funcCall statement."));
         }
 
-        return fResult;
+        return null;
     }
 
-    private IBlock ifStatement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IBlock ifStatement(IBlock cBlock, Function function)
     {
-        IBlock ifBlock = null;
+        JoinBlock jBlock = null;
         if(inputSym.isSameType(TokenType.ifToken))
         {
             next();
+            IfBlock iBlock = cfg.initializeIfBlock();
+            iBlock.setParent(cBlock);
+            cBlock.setChild(iBlock);
 
+            jBlock = cfg.initializeJoinBlock();
+            iBlock.setChild(jBlock);
+            jBlock.setParent(iBlock);
 
+            BranchResult bResult = relation(iBlock, function);
+            iBlock.addInstruction(iCodeGenerator.Compute(bResult.condition, bResult, null));
+            
+            if(function == null)
+            {
+                cBlock.setSsaMap(vManager.getSsaMap());
+                iBlock.setSsaMap(vManager.getSsaMap());
+            }
+            else 
+            {
+                cBlock.setSsaMap(function.vManager.getSsaMap());
+                iBlock.setSsaMap(function.vManager.getSsaMap());
+            }
+
+            if(inputSym.isSameType(TokenType.thenToken))
+            {
+                BranchResult bResult2 = new BranchResult();
+                bResult2.condition = inputSym;
+
+                next();
+                Block tBlock = cfg.initializeBlock();
+                iBlock.setThenBlock(tBlock);
+                tBlock.setParent(iBlock);
+
+                HashMap<Integer, Integer> restoreSsa = new HashMap<Integer, Integer>();
+                if(function == null)
+                {
+                    vManager.copySsaTo(restoreSsa);
+                }
+                else
+                {
+                    function.vManager.copySsaTo(restoreSsa);
+                }
+
+                tBlock = (Block)statSequence(tBlock, function);
+                bResult2.set(jBlock);
+                tBlock.addInstruction(iCodeGenerator.Compute(bResult2.condition, null, bResult2));
+                tBlock.setChild(jBlock);
+                jBlock.setThenBlock(tBlock);
+                
+                if(function == null)
+                {
+                    tBlock.setSsaMap(vManager.getSsaMap());
+                }
+                else 
+                {
+                    tBlock.setSsaMap(function.vManager.getSsaMap());
+                }
+
+                if(inputSym.isSameType(TokenType.elseToken))
+                {
+                    next();
+                    Block eBlock = cfg.initializeBlock();
+                    iBlock.setElseBlock(eBlock);
+                    eBlock.setParent(iBlock);
+
+                    if(function == null)
+                    {
+                        vManager.setSsaMap(restoreSsa);
+                    }
+                    else
+                    {
+                        function.vManager.setSsaMap(restoreSsa);
+                    } 
+                    
+                    eBlock = (Block)statSequence(eBlock, function);
+                    iBlock.fixupBranch(bResult.fixuplocation, eBlock);
+                    eBlock.setChild(jBlock);
+                    jBlock.setElseBlock(eBlock);
+                    
+                    if(function == null)
+                    {
+                        eBlock.setSsaMap(vManager.getSsaMap());
+                    }
+                    else 
+                    {
+                        eBlock.setSsaMap(function.vManager.getSsaMap());
+                    }
+                }
+                else
+                {
+                    iBlock.fixupBranch(bResult.fixuplocation, jBlock);
+                }
+
+                if(inputSym.isSameType(TokenType.fiToken))
+                {
+                    next();
+                    jBlock.createPhis(scanner.address2Identifier);
+
+                    if(function == null)
+                    {
+                        vManager.setSsaMap(jBlock.getSsaMap());
+                    }
+                    else
+                    {
+                        function.vManager.setSsaMap(jBlock.getSsaMap());
+                    }
+                }
+                else
+                {
+                    error(new IncorrectSyntaxException("Fi token not found while parsing if statement."));
+                }
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("Then token not found while parsing if statement."));
+            }
+        }
+        else 
+        {
+            error(new IncorrectSyntaxException("If token not found while parsing if statement."));
         }
 
-        return ifBlock;
+        return jBlock;
     }
 
-    private IBlock whileStatement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IBlock whileStatement(IBlock cBlock, Function function)
     {
         IBlock whileBlock = null;
         if(inputSym.isSameType(TokenType.whileToken))
@@ -274,13 +505,21 @@ public class Parser
         return whileBlock;
     }
 
-    private IResult returnStatement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IResult returnStatement(IBlock cBlock, Function function)
     {
         IResult rResult = null;
         if(inputSym.isSameType(TokenType.returnToken))
         {
+            Token opToken = inputSym;
             next();
-            rResult = expression(cBlock, jBlocks, function);
+            rResult = expression(cBlock, function);
+            if(rResult != null)
+            {
+                InstructionResult iResult = new InstructionResult();
+                iResult.set(iCodeGenerator.getPC());
+                function.returnInstruction = iResult;
+                cBlock.addInstruction(iCodeGenerator.Compute(opToken, rResult, iResult));
+            }
         }
         else
         {
@@ -290,38 +529,30 @@ public class Parser
         return rResult;
     }
 
-    private IBlock statement(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IBlock statement(IBlock cBlock, Function function)
     {
         IBlock block = null;
         if(inputSym.isSameType(TokenType.letToken))
         {
-            assignment(cBlock, jBlocks, function);
+            assignment(cBlock, function);
             block = cBlock;
         }
         else if(inputSym.isSameType(TokenType.callToken))
         {
-            funcCall(cBlock, jBlocks, function);
+            funcCall(cBlock, function);
             block = cBlock;
         }
         else if(inputSym.isSameType(TokenType.ifToken))
         {
-            block = ifStatement(cBlock, jBlocks, function);
+            block = ifStatement(cBlock, function);
         }
         else if(inputSym.isSameType(TokenType.whileToken))
         {
-            block = whileStatement(cBlock, jBlocks, function);
+            block = whileStatement(cBlock, function);
         }
         else if(inputSym.isSameType(TokenType.returnToken))
         {
-            IResult result = returnStatement(cBlock, jBlocks, function);
-            if(result != null)
-            {
-                Token opToken = inputSym;
-                InstructionResult iResult = new InstructionResult();
-                iResult.set(iCodeGenerator.getPC());
-                function.returnInstruction = iResult;
-                cBlock.addInstruction(iCodeGenerator.Compute(opToken, result, iResult));
-            }
+            returnStatement(cBlock, function);
             block = cBlock;
         }
         else
@@ -332,12 +563,12 @@ public class Parser
         return block;
     }
 
-    private IBlock statSequence(IBlock cBlock, ArrayList<IBlock> jBlocks, Function function)
+    private IBlock statSequence(IBlock cBlock, Function function)
     {
         IBlock block = null;
         do
         {
-            block = statement(cBlock, jBlocks, function);
+            block = statement(cBlock, function);
             if(inputSym.isSameType(TokenType.semiToken))
             {
                 next();
@@ -437,14 +668,16 @@ public class Parser
                 Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
                 VariableResult vResult = new VariableResult();
                 vResult.set(v);
+                vResult.setIid(iCodeGenerator.getPC());
                 try
                 {
                     iCodeGenerator.declareVariable(function.head, function.vManager, vResult);
                 }
-                catch(IllegalVariableException e)
+                catch(Exception e)
                 {
                     error(e);
                 }
+                
                 function.addParameter(vResult);
                 next();
 
@@ -521,7 +754,7 @@ public class Parser
 
         if(inputSym.isSameType(TokenType.beginToken))
         {
-            statSequence(function.head, null, function);
+            statSequence(function.head, function);
             if(inputSym.isSameType(TokenType.endToken))
             {
                 next();
@@ -547,7 +780,7 @@ public class Parser
 
             if(inputSym.isSameType(TokenType.beginToken))
             {
-                IBlock lBlock = statSequence(cfg.head, null, null);
+                IBlock lBlock = statSequence(cfg.head, null);
                 if(inputSym.isSameType(TokenType.endToken))
                 {
                     next();

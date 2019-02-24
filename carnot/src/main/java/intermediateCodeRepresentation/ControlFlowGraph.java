@@ -36,7 +36,7 @@ public class ControlFlowGraph
         return cfg;
     }
 
-    public IBlock initializeBlock()
+    public Block initializeBlock()
     {
         Block block = new Block(bc++);
         blocks.add(block);
@@ -44,7 +44,7 @@ public class ControlFlowGraph
         return block;
     }
 
-    public IBlock initializeIfBlock()
+    public IfBlock initializeIfBlock()
     {
         IfBlock block = new IfBlock(bc++);
         blocks.add(block);
@@ -52,7 +52,7 @@ public class ControlFlowGraph
         return block;
     }
 
-    public IBlock initializeJoinBlock()
+    public JoinBlock initializeJoinBlock()
     {
         JoinBlock block = new JoinBlock(bc++);
         blocks.add(block);
@@ -60,7 +60,7 @@ public class ControlFlowGraph
         return block;
     }
 
-    public IBlock initializeWhileBlock()
+    public WhileBlock initializeWhileBlock()
     {
         WhileBlock block = new WhileBlock(bc++);
         blocks.add(block);
@@ -76,5 +76,15 @@ public class ControlFlowGraph
     public void addFunction(Function function)
     {
         functions.add(function);
+    }
+
+    public Function getFunction(Function function)
+    {
+        if(isExists(function))
+        {
+            return (Function)functions.stream().filter(f -> f.address == function.address).toArray()[0];
+        }
+
+        return null;
     }
 }

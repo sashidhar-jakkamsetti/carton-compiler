@@ -3,7 +3,6 @@ package dataStructures;
 import java.util.*;
 
 import dataStructures.Blocks.*;
-import dataStructures.Instructions.Instruction;
 import dataStructures.Results.*;
 import intermediateCodeRepresentation.VariableManager;
 

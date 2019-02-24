@@ -21,6 +21,7 @@ public class WhileBlock extends Block implements IBlock
         super(id);
         doBlock = null;
         loopBlock = null;
+        phiManager = new PhiManager(this);
     }
 
     public void setDoBlock(IBlock block)
@@ -41,5 +42,29 @@ public class WhileBlock extends Block implements IBlock
     public IBlock getLoopBlock(IBlock block)
     {
         return loopBlock;
+    }
+
+    public void createPhis(HashMap<Integer, String> address2identifier)
+    {
+        setSsaMap(parent.getSsaMap());
+        for (Integer key : parent.ssaMap.keySet()) 
+        {
+            Variable x = new Variable(address2identifier.get(key), key);
+            if(parent.ssaMap.get(key) != loopBlock.ssaMap.get(key))
+            {
+                VariableResult x1 = new VariableResult();
+                x1.set(new Variable(address2identifier.get(key), key, parent.ssaMap.get(key)));
+                VariableResult x2 = new VariableResult();
+                x2.set(new Variable(address2identifier.get(key), key, loopBlock.ssaMap.get(key)));
+
+                phiManager.addPhi(x, x1, x2);
+                ssaMap.put(key, x.version);
+            }
+        }
+    }
+
+    public void updatePhiVarOccurances()
+    {
+        
     }
 }

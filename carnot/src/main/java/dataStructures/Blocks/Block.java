@@ -1,10 +1,6 @@
 package dataStructures.Blocks;
 
-import dataStructures.*;
-import dataStructures.Blocks.*;
-import dataStructures.Results.*;
 import dataStructures.Instructions.*;
-import intermediateCodeRepresentation.*;
 
 import java.util.*;
 
@@ -14,6 +10,7 @@ public class Block implements IBlock
     protected List<Instruction> instructions;
     protected Block parent;
     protected Block child;
+    protected HashMap<Integer, Integer> ssaMap;
 
     public Block(Integer id)
     {
@@ -66,5 +63,15 @@ public class Block implements IBlock
     public String toString()
     {
         return "";
+    }
+
+    public void setSsaMap(HashMap<Integer, Integer> ssaMap)
+    {
+        this.ssaMap.putAll(ssaMap);
+    }
+    
+    public HashMap<Integer, Integer> getSsaMap()
+    {
+        return ssaMap;
     }
 }

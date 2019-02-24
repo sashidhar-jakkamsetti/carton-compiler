@@ -48,9 +48,13 @@ public class Operator
             put(TokenType.leqToken, OperatorCode.ble);
             put(TokenType.gtrToken, OperatorCode.bgt);
             put(TokenType.geqToken, OperatorCode.bge);
+
+            put(TokenType.thenToken, OperatorCode.bra);
+            put(TokenType.doToken, OperatorCode.bra);
+            put(TokenType.callToken, OperatorCode.bra);
         }
     };
-    
+
     public static final HashMap<TokenType, OperatorCode> assignmentOperator = new HashMap<TokenType, OperatorCode>()
     {
         {

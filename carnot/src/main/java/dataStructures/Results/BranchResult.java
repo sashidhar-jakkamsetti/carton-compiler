@@ -1,24 +1,27 @@
 package dataStructures.Results;
 
+import dataStructures.Token;
 import dataStructures.Blocks.IBlock;
+import dataStructures.Token.TokenType;
 
 public class BranchResult implements IResult
 {
-    public Integer condition;
+    public Token condition;
     public Integer fixuplocation;
     public IBlock targetBlock;
     public Integer iid;
 
     public BranchResult() 
     {
-        condition = 0;
+        condition = null;
         fixuplocation = -1;
         targetBlock = null;
         iid = -1;
     }
 
-    public BranchResult(Integer condition, Integer fixuplocation, IBlock targetBlock)
+    public BranchResult(Token condition, Integer fixuplocation, IBlock targetBlock)
     {
+        super();
         this.condition = condition;
         this.fixuplocation = fixuplocation;
         this.targetBlock = targetBlock;
@@ -27,18 +30,15 @@ public class BranchResult implements IResult
     @Override
     public void set(Object value) 
     {
-        this.fixuplocation = (Integer)value;
-    }
-
-    public void set(IBlock block)
-    {
-        this.targetBlock = block;
-    }
-
-    public void set(Integer fixuploc, IBlock block)
-    {
-        this.fixuplocation = fixuploc;
-        this.targetBlock = block;
+        if(value instanceof Integer)
+        {
+            this.fixuplocation = (Integer)value;
+        }
+        else if(value instanceof IBlock)
+        {
+            this.targetBlock = (IBlock)value;
+        }
+        
     }
 
     @Override

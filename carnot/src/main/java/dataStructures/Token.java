@@ -122,7 +122,7 @@ public class Token
         }
     };
 
-    private Token(String value, TokenType type, int id)
+    public Token(String value, TokenType type, int id)
     {
         this.value = value;
         this.type = type;

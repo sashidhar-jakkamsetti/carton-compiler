@@ -5,19 +5,20 @@ import java.util.*;
 import dataStructures.Array;
 import exceptions.*;
 
+@SuppressWarnings("serial")
 public class VariableManager
 {
     private static HashSet<Integer> variables;
     private static HashSet<Integer> globalVariables;
     private static HashMap<Integer, Array> arrays;
-    private static HashMap<Integer, ArrayList<Integer>> ssaMap;
+    private static HashMap<Integer, Integer> ssaMap;
     private static HashMap<Integer, HashMap<Integer, ArrayList<Integer>>> defUseChain;
 
     public VariableManager()
     {
         variables = new HashSet<Integer>();
         globalVariables = new HashSet<Integer>();
-        ssaMap = new HashMap<Integer, ArrayList<Integer>>();
+        ssaMap = new HashMap<Integer, Integer>();
         defUseChain = new HashMap<Integer, HashMap<Integer, ArrayList<Integer>>>();
     }
 
@@ -62,36 +63,37 @@ public class VariableManager
     {
         return arrays.containsKey(array);
     }
-
-    @SuppressWarnings("serial")
+    
     public void updateSsaMap(Integer variable, Integer version)
     {
-        if(ssaMap.containsKey(variable))
-        {
-            ssaMap.get(variable).add(version);
-        }
-        else
-        {
-            ssaMap.put(variable, new ArrayList<Integer>() 
-                {{
-                    add(version);
-                }}
-            );
-        }
+        ssaMap.put(variable, version);
+    }
+
+    public void setSsaMap(HashMap<Integer, Integer> restoreSsa)
+    {
+        ssaMap = restoreSsa;
     }
 
     public Integer getSsaVersion(Integer variable)
     {
         if(ssaMap.containsKey(variable))
         {
-            Integer lastIndex = ssaMap.get(variable).size() - 1;
-            return ssaMap.get(variable).get(lastIndex);
+            return ssaMap.get(variable);
         }
 
         return -1;
     }
 
-    @SuppressWarnings("serial")
+    public HashMap<Integer, Integer> getSsaMap()
+    {
+        return ssaMap;
+    }
+
+    public void copySsaTo(HashMap<Integer, Integer> copy)
+    {
+        copy.putAll(ssaMap);
+    }
+
     public void updateDefUseChain(Integer variable, Integer defInstruction, Integer useInstruction)
     {
         if(defUseChain.containsKey(variable))

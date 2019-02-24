@@ -43,6 +43,16 @@ public class IntermediateCodeGenerator
         return instruction;
     }
 
+    public Instruction Compute(OperatorCode opCode, IResult x, IResult y)
+    {
+        OperatorCode opcode = OperatorCode.read;
+        //TODO: get appropriate opcode
+
+        Instruction instruction = new Instruction(pc++, opcode, x, y);
+
+        return instruction;
+    }
+
     public void declareVariable(IBlock block, VariableManager vManager, VariableResult vResult) throws IllegalVariableException
     {
 

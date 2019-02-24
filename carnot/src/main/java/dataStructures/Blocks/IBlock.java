@@ -1,10 +1,6 @@
 package dataStructures.Blocks;
 
-import dataStructures.*;
-import dataStructures.Blocks.*;
-import dataStructures.Results.*;
 import dataStructures.Instructions.*;
-import intermediateCodeRepresentation.*;
 
 import java.util.*;
 
@@ -19,4 +15,6 @@ public interface IBlock
     public void setChild(IBlock block);
     public IBlock getChild(IBlock block);
     public String toString();
+    public void setSsaMap(HashMap<Integer, Integer> ssaMap);
+    public HashMap<Integer, Integer> getSsaMap();
 }

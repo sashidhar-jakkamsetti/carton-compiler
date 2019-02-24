@@ -40,4 +40,9 @@ public class IfBlock extends Block implements IBlock
     {
         return elseBlock;
     }
+    
+    public void fixupBranch(Integer iid, IBlock targetBlock)
+    {
+        getInstruction(iid).operandY.set(targetBlock);
+    }
 }
