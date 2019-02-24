@@ -1,7 +1,7 @@
 package dataStructures;
 
 import java.util.*;
-import dataStructures.Token.TokenType;;
+import dataStructures.Token.TokenType;
 
 @SuppressWarnings("serial")
 public class Operator 
@@ -14,7 +14,7 @@ public class Operator
     
         end, bra, bne, beq, ble, blt, bge, bgt,
     
-        read, write, wrtieNL
+        read, write, writeNL
     }
 
     public static final HashMap<TokenType, OperatorCode> arithmeticOperator = new HashMap<TokenType, OperatorCode>()
@@ -69,7 +69,43 @@ public class Operator
         {
             put("InputNum", OperatorCode.read);
             put("OutputNum", OperatorCode.write);
-            put("OutputNewLine", OperatorCode.wrtieNL);
+            put("OutputNewLine", OperatorCode.writeNL);
         }
+    };
+
+    public static ArrayList<OperatorCode> getOpCode(Token opToken)
+    {
+        ArrayList<OperatorCode> opCodes = new ArrayList<OperatorCode>();
+        if(arithmeticOperator.containsKey(opToken.type))
+        {
+            opCodes.add(arithmeticOperator.get(opToken.type));
+        }
+        else if(relationOperator.containsKey(opToken.type))
+        {
+            opCodes.add(relationOperator.get(opToken.type));
+            opCodes.add(branchingOperator.get(opToken.type));
+        }
+        else if(assignmentOperator.containsKey(opToken.type))
+        {
+            opCodes.add(assignmentOperator.get(opToken.type));
+        }
+        else
+        {
+            throw new IllegalArgumentException("Operator Token not found.");
+        }
+        return opCodes;
+    };
+
+    public static ArrayList<OperatorCode> getOpCode(String operator)
+    {
+        ArrayList<OperatorCode> opCodes = new ArrayList<OperatorCode>();
+        if(standardIoOperator.containsKey(operator)){
+            opCodes.add(standardIoOperator.get(operator));
+        }
+        else
+        {
+            throw new IllegalArgumentException("Operator Token not found.");
+        }
+        return opCodes;
     };
 }

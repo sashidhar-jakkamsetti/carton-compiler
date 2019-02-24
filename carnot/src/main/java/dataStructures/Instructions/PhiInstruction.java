@@ -16,6 +16,11 @@ public class PhiInstruction extends Instruction
     @Override
     public String toString()
     {
-        return "";
+        return String.format("{0} : PHI {1} := {2} {3}",
+                             this.id,
+                             this.variable.toString(),
+                             this.operandX.toString(),
+                             this.operandY.toString()
+        );
     }
 }

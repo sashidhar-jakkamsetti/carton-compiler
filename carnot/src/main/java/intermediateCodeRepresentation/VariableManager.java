@@ -2,7 +2,6 @@ package intermediateCodeRepresentation;
 
 import java.util.*;
 
-import dataStructures.Array;
 import exceptions.*;
 
 @SuppressWarnings("serial")
@@ -10,9 +9,12 @@ public class VariableManager
 {
     private static HashSet<Integer> variables;
     private static HashSet<Integer> globalVariables;
-    private static HashMap<Integer, Array> arrays;
+    //private static HashMap<Integer, ArrayVar> arrays;
     private static HashMap<Integer, Integer> ssaMap;
     private static HashMap<Integer, HashMap<Integer, ArrayList<Integer>>> defUseChain;
+    // private static HashMap<Integer, ArrayList<Integer>> dimentionMap;
+    private static Integer addresses;
+    private static HashMap<Integer, Integer> addressMap; // Stores base address for all array
 
     public VariableManager()
     {
@@ -20,6 +22,9 @@ public class VariableManager
         globalVariables = new HashSet<Integer>();
         ssaMap = new HashMap<Integer, Integer>();
         defUseChain = new HashMap<Integer, HashMap<Integer, ArrayList<Integer>>>();
+        // dimentionMap = new HashMap<Integer, ArrayList<Integer>>();
+        addressMap  = new HashMap<Integer, Integer>();
+        addresses = 0;
     }
 
     public void addVariable(Integer variable) throws IllegalVariableException
@@ -59,11 +64,42 @@ public class VariableManager
         return variables.contains(variable);
     }
 
-    public boolean isArray(Integer array)
+    // public void addArrayDimention(Integer variable, ArrayList<Integer> dimentionList) throws IllegalVariableException
+    // {
+    //     if(dimentionMap.containsKey(variable))
+    //     {
+    //         throw new IllegalVariableException("Array: " + variable + " already declared!");
+    //     }
+    //     else
+    //     {
+    //         dimentionMap.put(variable, dimentionList);
+    //     }
+    // }
+
+    // public ArrayList<Integer> getArrayDimention(Integer variable)
+    // {
+    //     return dimentionMap.get(variable);
+    // }
+
+    public void addArrayBaseAddress(Integer variable, Integer arraySize) throws IllegalVariableException
     {
-        return arrays.containsKey(array);
+        if(addressMap.containsKey(variable))
+        {
+            throw new IllegalVariableException("Array: " + variable + " already declared!");
+        }
+        else
+        {
+            addressMap.put(variable, addresses);
+            addresses += arraySize;
+        }
     }
-    
+
+    public Integer getArrayBaseAddress(Integer variable)
+    {
+        return addressMap.get(variable);
+    }
+
+    @SuppressWarnings("serial")
     public void updateSsaMap(Integer variable, Integer version)
     {
         ssaMap.put(variable, version);

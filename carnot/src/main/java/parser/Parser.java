@@ -4,6 +4,7 @@ import java.util.*;
 
 import dataStructures.*;
 import dataStructures.Blocks.*;
+import dataStructures.Instructions.Instruction;
 import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
@@ -494,15 +495,9 @@ public class Parser
 
     private IBlock whileStatement(IBlock cBlock, Function function)
     {
-        IBlock whileBlock = null;
-        if(inputSym.isSameType(TokenType.whileToken))
-        {
-            next();
+        WhileBlock whileBlock = null;
 
-            
-        }
-
-        return whileBlock;
+        return (IBlock)whileBlock;
     }
 
     private IResult returnStatement(IBlock cBlock, Function function)
@@ -582,80 +577,124 @@ public class Parser
         return block;
     }
 
-    // TODO: array handling.
-    private Array typeDecl()
+    private ArrayList<Integer> typeDecl()
     {
-        Array arrayDec = new Array();
+        ArrayList<Integer> dimensionList = new ArrayList<Integer>();
         if(inputSym.isSameType(TokenType.varToken))
         {
             next();
-            arrayDec = null;
         }
         else if(inputSym.isSameType(TokenType.arrToken))
         {
             next();
-            // Get Dimensions
+            // Dimension declaration
+            if(inputSym.isSameType(TokenType.openbracketToken))
+            {
+                next();
+                // Get first dimention
+                if(inputSym.isSameType(TokenType.number))
+                {
+                    // Extract number from inputSym
+                    dimensionList.add(Integer.parseInt(inputSym.value));
+                    next();
+                    if(inputSym.isSameType(TokenType.closebracketToken))
+                    {
+                        next();
+                        // Get the remaining dimentions until we hit the end
+                        while(inputSym.isSameType(TokenType.openbracketToken))
+                        {
+                            next(); // Number
+                            if(inputSym.isSameType(TokenType.number))
+                            {
+                                dimensionList.add(Integer.parseInt(inputSym.value));
+                            }
+                            else
+                            {
+                                error(new IncorrectSyntaxException("Number not found in array declaration."));
+                            }
+                            next(); // Close bracket
+                            if(!inputSym.isSameType(TokenType.closebracketToken))
+                            {
+                                error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                            }
+                            next(); // Open bracket
+                        }
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                    }
+                }
+                else
+                {
+                    error(new IncorrectSyntaxException("Number not found in array declaration."));
+                }
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
+            }
         }
-
-        return arrayDec;
+        else 
+        {
+            error(new IncorrectSyntaxException("Variable/Array declaration not found while parsing type declaration."));
+        }
+        return dimensionList;
     }
 
-    // TODO: array handling. need to add support in VariableManager too.
     private void varDecl(Function function)
     {
-        // while(inputSym.isSameType(TokenType.varToken) || inputSym.isSameType(TokenType.arrToken))
-        // {
-        //     Array arrayDec = typeDecl();
-        //     if(inputSym.isSameType(TokenType.ident))
-        //     {
-        //         do
-        //         {
-        //             Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
-        //             VariableResult vResult = new VariableResult();
-        //             vResult.set(v);
-        //             vResult.setIid(iCodeGenerator.getPC());
-        
-        //             try
-        //             {
-        //                 if(cfg.cfunction == null)
-        //                 {
-        //                     iCodeGenerator.declareVariable(cfg.current, vManager, vResult);
-        //                 }
-        //                 else
-        //                 {
-        //                     iCodeGenerator.declareVariable(cfg.current, cfg.cfunction.vManager, vResult);
-        //                 }
-        //                 next();
-        //             }
-        //             catch(IllegalVariableException e)
-        //             {
-        //                 error(e);
-        //             }
-                    
-        //             if(inputSym.isSameType(TokenType.commaToken))
-        //             {
-        //                 next();
-        //             }
-        //             else
-        //             {
-        //                 break;
-        //             }
-        //         }while(inputSym.isSameType(TokenType.ident));
-        //     }
-        //     else 
-        //     {
-        //         error(new IncorrectSyntaxException("Identifier in variable/array declaration not found while parsing variable declaration."));
-        //     }
+        ArrayList<Integer> dimentionList = new ArrayList<Integer>();
+        dimentionList = typeDecl();
+        do
+        {
+            next();
+            if(inputSym.isSameType(TokenType.ident))
+            {
+                next();
+                VariableResult vResult = new VariableResult();
+                if(dimentionList.isEmpty()) // var
+                {
+                    Variable var = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
+                    vResult.set(var);
+                }
+                else // array
+                {
+                    ArrayVar var = new ArrayVar(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC(), dimentionList);
+                    vResult.set(var);
+                }
+                                
+                try 
+                {
+                    if(function == null)
+                    {
+                        iCodeGenerator.declareVariable(cfg.head, vManager, vResult);
+                    }
+                    else
+                    {
+                        iCodeGenerator.declareVariable(function.head, function.vManager, vResult);
+                    }
+                }
+                catch(Exception e)
+                {
+                    error(e);
+                }
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("No Identifier found in Variable Declaration."));
+            }
+            
+        }while(inputSym.isSameType(TokenType.commaToken));
 
-        //     if(inputSym.isSameType(TokenType.semiToken))
-        //     {
-        //         next();
-        //     }
-        //     else
-        //     {
-        //         error(new IncorrectSyntaxException("Semi comma not found while parsing variable declaration."));
-        //     }
-        // }
+        if(inputSym.isSameType(TokenType.semiToken))
+        {
+            next();
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("Semi comma not found in Variable Declaration."));
+        }
     }
 
     private void formalParam(Function function)

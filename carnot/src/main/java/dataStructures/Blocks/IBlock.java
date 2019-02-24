@@ -9,6 +9,7 @@ public interface IBlock
     public Integer getId();
     public List<Instruction> getInstructions();
     public void addInstruction(Instruction instruction);
+    public void addInstruction(ArrayList<Instruction> instruction);
     public Instruction getInstruction(int programCounter);
     public void setParent(IBlock block);
     public IBlock getParent();
