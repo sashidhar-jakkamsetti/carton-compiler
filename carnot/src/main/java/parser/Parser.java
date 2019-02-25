@@ -791,6 +791,7 @@ public class Parser
             next();
             if(inputSym.isSameType(TokenType.ident))
             {
+                next();
                 Function function = new Function(inputSym.value, scanner.identifier2Address.get(inputSym.value));
                 if(cfg.isExists(function))
                 {
@@ -824,10 +825,14 @@ public class Parser
 
     private void funcBody(Function function)
     {
-        varDecl(function);
+        while(inputSym.isSameType(TokenType.varToken) || inputSym.isSameType(TokenType.arrToken))
+        {
+            varDecl(function);
+        }
 
         if(inputSym.isSameType(TokenType.beginToken))
         {
+            next();
             statSequence(function.head, function);
             if(inputSym.isSameType(TokenType.endToken))
             {
@@ -849,8 +854,15 @@ public class Parser
         if(inputSym.isSameType(TokenType.mainToken))
         {
             next();
-            varDecl(null);
-            funcDecl();
+
+            while(inputSym.isSameType(TokenType.varToken) || inputSym.isSameType(TokenType.arrToken))
+            {
+                varDecl(null);
+            }
+            while(inputSym.isSameType(TokenType.funcToken) || inputSym.isSameType(TokenType.procToken))
+            {
+                funcDecl();
+            }
 
             if(inputSym.isSameType(TokenType.beginToken))
             {

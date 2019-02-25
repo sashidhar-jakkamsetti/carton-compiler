@@ -18,9 +18,10 @@ public class ArrayVar extends Variable
         this.address = address;
         this.version = -1;
         this.dimentionList = dimentionList;
+        arraySize = 4;
         for(Integer dim : dimentionList)
         {
-            arraySize *= dim * 4;
+            arraySize *= dim;
         }
     }
 

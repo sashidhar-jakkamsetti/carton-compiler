@@ -55,13 +55,15 @@ public class FileReader {
         {
             return line.charAt(charPosition++);
         }
-
-        nextLine(); 
-        if (line != null) 
+        else 
         {
-            return line.charAt(charPosition++);
+            nextLine();
+            if (line != null) 
+            {
+                return '\n';
+            }
         }
-
+        
         return (char)currentChar;
     }
 

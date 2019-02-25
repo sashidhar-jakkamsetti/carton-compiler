@@ -1,9 +1,22 @@
+import java.io.File;
+
 import intermediateCodeRepresentation.ControlFlowGraph;
 import parser.Parser;
 import utility.GraphViz;
 
 public class Engine 
 {
+    public static void run(String program)
+    {
+        Parser parser = Parser.getInstance(program);
+        if(parser != null)
+        {
+            ControlFlowGraph cfg = parser.parse();
+            GraphViz graphPrinter = new GraphViz(cfg);
+            graphPrinter.print();
+        }
+    }
+
     public static void main( String[] args )
     {
         String program;
@@ -16,12 +29,22 @@ public class Engine
             program = "testprograms/test003.txt";
         }
 
-        Parser parser = Parser.getInstance(program);
-        if(parser != null)
+        if(program.endsWith("/"))
         {
-            ControlFlowGraph cfg = parser.parse();
-            GraphViz graphPrinter = new GraphViz(cfg);
-            graphPrinter.print();
+            File folder = new File(program);
+            File[] listOfFiles = folder.listFiles();
+            
+            for (File file : listOfFiles) 
+            {
+                if(file.getAbsolutePath().endsWith(".txt"))
+                {
+                    run(file.getAbsolutePath());
+                }
+            }
+        }
+        else
+        {
+            run(program);
         }
     }
 }

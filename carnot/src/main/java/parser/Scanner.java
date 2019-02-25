@@ -12,6 +12,7 @@ public class Scanner {
     private static Scanner scanner;
 
     private Token prevToken;
+    private static boolean errorFlag = false;
     private String stringUnderConstruction;
     private Integer identifierAddressCounter;
 
@@ -77,7 +78,7 @@ public class Scanner {
 
         runStateMachine();
         Token token = Token.getToken(stringUnderConstruction);
-        if(token.isSameType(TokenType.errorToken))
+        if(errorFlag || token.isSameType(TokenType.errorToken))
         {
             error(new InvalidTokenException(String.format("Unknown token: %s", stringUnderConstruction))); 
         }
@@ -113,6 +114,15 @@ public class Scanner {
                     else if(inputSym == ' ' || inputSym == '\t' 
                                 || inputSym == '\n' || inputSym == '\r')
                     {
+                        if(stringUnderConstruction.length() > 0 && Token.containsKnownKey(stringUnderConstruction))
+                        {
+                            state = ScannerState.stop;
+                        }
+                        else if(state == ScannerState.digit || state == ScannerState.letter || state == ScannerState.relOp)
+                        {
+                            state = ScannerState.stop;
+                            errorFlag = true;
+                        }
                         next();
                     }
                     else if(inputSym == '=' || inputSym == '!')
