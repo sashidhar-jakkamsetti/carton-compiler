@@ -35,11 +35,15 @@ public class Instruction
         String ret = "";
         if(operandX != null && operandY != null)
         {
-            ret = String.format("{0} : {1} {2} {3}", id, opcode.toString(), operandX.toString(), operandY.toString());
+            ret = String.format("%s : %s %s %s", id, opcode.toString(), operandX.toString(), operandY.toString());
         }
         else if(operandY == null)
         {
-            ret = String.format("{0} : {1} {2}", id, opcode.toString(), operandX.toString());
+            ret = String.format("%s : %s %s", id, opcode.toString(), operandX.toString());
+        }
+        else 
+        {
+            ret = String.format("%s : %s", id, opcode.toString());
         }
         return ret;
     }

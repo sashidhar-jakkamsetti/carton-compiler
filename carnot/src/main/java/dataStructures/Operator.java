@@ -89,18 +89,13 @@ public class Operator
         {
             opCodes.add(assignmentOperator.get(opToken.type));
         }
-        else
+        else if(standardIoOperator.containsKey(opToken.value))
         {
-            throw new IllegalArgumentException("Operator Token not found.");
+            opCodes.add(standardIoOperator.get(opToken.value));
         }
-        return opCodes;
-    };
-
-    public static ArrayList<OperatorCode> getOpCode(String operator)
-    {
-        ArrayList<OperatorCode> opCodes = new ArrayList<OperatorCode>();
-        if(standardIoOperator.containsKey(operator)){
-            opCodes.add(standardIoOperator.get(operator));
+        else if(opToken.isSameType(TokenType.periodToken))
+        {
+            opCodes.add(OperatorCode.end);
         }
         else
         {

@@ -21,7 +21,7 @@ public class WhileBlock extends Block implements IBlock
         super(id);
         doBlock = null;
         loopBlock = null;
-        phiManager = new PhiManager(this);
+        phiManager = new PhiManager();
     }
 
     public void setDoBlock(IBlock block)
@@ -42,6 +42,11 @@ public class WhileBlock extends Block implements IBlock
     public IBlock getLoopBlock(IBlock block)
     {
         return loopBlock;
+    }
+
+    public void fixupBranch(Integer iid, IBlock targetBlock)
+    {
+        getInstruction(iid).operandY.set(targetBlock);
     }
 
     public void createPhis(HashMap<Integer, String> address2identifier)
@@ -65,6 +70,6 @@ public class WhileBlock extends Block implements IBlock
 
     public void updatePhiVarOccurances()
     {
-        
+
     }
 }

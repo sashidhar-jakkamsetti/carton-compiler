@@ -9,22 +9,20 @@ import dataStructures.Results.*;
 public class PhiManager
 {
     public HashMap<Integer, Instruction> phis;
-    private IBlock block;
     private IntermediateCodeGenerator iCodeGenerator;
 
-    public PhiManager(IBlock block)
+    public PhiManager()
     {
         phis = new HashMap<Integer, Instruction>();
-        this.block = block;
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
     }
 
-    public PhiInstruction addPhi(Variable x, IResult x1, IResult x2) 
+    public void addPhi(Variable x, IResult x1, IResult x2) 
     {
-        return null;
+
     }
 
-    public PhiInstruction updatePhi(Variable x, IResult x1, IResult x2)
+    public void updatePhi(Variable x, IResult x1, IResult x2)
     {
         if(isExists(x))
         {
@@ -38,12 +36,10 @@ public class PhiManager
                 
             }
         }
-
-        return null;
     }
 
     public boolean isExists(Variable x)
     {
-        return false;
+        return phis.containsKey(x.address);
     }
 }

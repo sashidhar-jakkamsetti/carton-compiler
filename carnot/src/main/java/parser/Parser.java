@@ -4,7 +4,6 @@ import java.util.*;
 
 import dataStructures.*;
 import dataStructures.Blocks.*;
-import dataStructures.Instructions.Instruction;
 import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
@@ -18,7 +17,7 @@ public class Parser
     private Token inputSym;
 
     private static ControlFlowGraph cfg;
-    private static VariableManager vManager;
+    private VariableManager vManager;
     private static IntermediateCodeGenerator iCodeGenerator;
 
     public static Parser getInstance(String fileName)
@@ -59,13 +58,15 @@ public class Parser
         return cfg;
     }
 
+    // TODO: Array handling
     private IResult designator(IBlock cBlock, Function function)
     {
         VariableResult vResult = null;
         if(inputSym.isSameType(TokenType.ident))
         {
-            if((function == null && vManager.isVariable(scanner.identifier2Address.get(inputSym.value)))
-                || (function != null && function.vManager.isVariable(scanner.identifier2Address.get(inputSym.value))))
+            Integer variable = scanner.identifier2Address.get(inputSym.value);
+            if((function == null && vManager.isVariable(variable))
+                || (function != null && function.vManager.isVariable(variable)))
             {
                 Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
                 vResult = new VariableResult();
@@ -221,10 +222,12 @@ public class Parser
         return bResult;
     }
 
+    // TODO: Array handling
     private void assignment(IBlock cBlock, Function function)
     {
         if(inputSym.isSameType(TokenType.letToken))
         {
+            next();
             IResult lhsResult = designator(cBlock, function);
             if(lhsResult != null)
             {
@@ -314,7 +317,7 @@ public class Parser
             if(Operator.standardIoOperator.containsKey(inputSym.value))
             {
                 opToken = inputSym;
-                if(inputSym.value == "InputNum")
+                if(inputSym.value.equals("InputNum"))
                 {
                     next();
                     cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
@@ -322,7 +325,7 @@ public class Parser
                     iResult.setIid(iCodeGenerator.getPC() - 1);
                     return iResult;
                 }
-                else if(inputSym.value == "OutputNum")
+                else if(inputSym.value.equals("OutputNum"))
                 {
                     next();
                     if(inputSym.isSameType(TokenType.openparenToken))
@@ -648,10 +651,8 @@ public class Parser
         dimentionList = typeDecl();
         do
         {
-            next();
             if(inputSym.isSameType(TokenType.ident))
             {
-                next();
                 VariableResult vResult = new VariableResult();
                 if(dimentionList.isEmpty()) // var
                 {
@@ -660,7 +661,8 @@ public class Parser
                 }
                 else // array
                 {
-                    ArrayVar var = new ArrayVar(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC(), dimentionList);
+                    ArrayVar var = new ArrayVar(inputSym.value, scanner.identifier2Address.get(inputSym.value), 
+                                                        iCodeGenerator.getPC(), dimentionList);
                     vResult.set(var);
                 }
                                 
@@ -684,8 +686,14 @@ public class Parser
             {
                 error(new IncorrectSyntaxException("No Identifier found in Variable Declaration."));
             }
+
+            next();
+            if(inputSym.isSameType(TokenType.commaToken))
+            {
+                next();
+            }
             
-        }while(inputSym.isSameType(TokenType.commaToken));
+        }while(inputSym.isSameType(TokenType.ident));
 
         if(inputSym.isSameType(TokenType.semiToken))
         {
@@ -819,6 +827,7 @@ public class Parser
 
             if(inputSym.isSameType(TokenType.beginToken))
             {
+                next();
                 IBlock lBlock = statSequence(cfg.head, null);
                 if(inputSym.isSameType(TokenType.endToken))
                 {

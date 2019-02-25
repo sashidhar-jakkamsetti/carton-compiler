@@ -160,7 +160,7 @@ public class Token
     @Override
     public String toString()
     {
-        return String.format("{0}_{1}", value);
+        return String.format("%s_%s", value);
     }
 
     public boolean isSameType(Token token) 

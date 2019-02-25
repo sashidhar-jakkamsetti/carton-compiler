@@ -18,7 +18,7 @@ public class JoinBlock extends Block implements IBlock
         super(id);
         thenBlock = null;
         elseBlock = null;
-        phiManager = new PhiManager(this);
+        phiManager = new PhiManager();
     }
 
     public void setThenBlock(IBlock block)
@@ -66,7 +66,7 @@ public class JoinBlock extends Block implements IBlock
                     x1.set(new Variable(address2identifier.get(key), key, parent.ssaMap.get(key)));
                     VariableResult x2 = new VariableResult();
                     x2.set(new Variable(address2identifier.get(key), key, elseBlock.ssaMap.get(key)));
-                    
+
                     if(phiManager.isExists(x))
                     {
                         phiManager.updatePhi(x, null, x2);

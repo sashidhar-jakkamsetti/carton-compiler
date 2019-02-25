@@ -14,7 +14,14 @@ public class ConstantResult implements IResult
     @Override
     public void set(Object value) 
     {
-        constant = (Integer)value;
+        if(value instanceof String)
+        {
+            constant = Integer.parseInt((String)value);
+        }
+        else if(value instanceof Integer)
+        {
+            constant = (Integer)value;
+        }
     }
 
     @Override

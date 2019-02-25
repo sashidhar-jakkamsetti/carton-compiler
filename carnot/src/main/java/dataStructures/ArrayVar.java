@@ -20,25 +20,19 @@ public class ArrayVar extends Variable
         this.dimentionList = dimentionList;
         for(Integer dim : dimentionList)
         {
-            arraySize += dim;
+            arraySize *= dim * 4;
         }
     }
 
     public ArrayVar(String name, Integer address, Integer version, ArrayList<Integer> dimentionList)
     {
-        this.name = name;
-        this.address = address;
+        this(name, address, dimentionList);
         this.version = version;
-        this.dimentionList = dimentionList;
-        for(Integer dim : dimentionList)
-        {
-            arraySize += dim;
-        }
     }
 
     @Override
     public String toString()
     {
-        return String.format("{0}_{1}", name, version);
+        return String.format("%s_%s", name, version);
     }
 }

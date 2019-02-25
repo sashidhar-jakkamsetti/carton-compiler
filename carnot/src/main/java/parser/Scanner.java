@@ -79,7 +79,7 @@ public class Scanner {
         Token token = Token.getToken(stringUnderConstruction);
         if(token.isSameType(TokenType.errorToken))
         {
-            error(new InvalidTokenException(String.format("Unknown token: {0}", stringUnderConstruction))); 
+            error(new InvalidTokenException(String.format("Unknown token: %s", stringUnderConstruction))); 
         }
 
         if(token.isSameType(TokenType.ident))
@@ -115,6 +115,12 @@ public class Scanner {
                     {
                         next();
                     }
+                    else if(inputSym == '=' || inputSym == '!')
+                    {
+                        eat();
+                        state = ScannerState.relOp;
+                        next();
+                    }
                     else if(Token.containsKnownKey(Character.toString(inputSym)))
                     {
                         eat();
@@ -123,22 +129,42 @@ public class Scanner {
                         {
                             state = ScannerState.stop;
                         }
-                        else if(inputSym == '>' || inputSym == '<'
-                                    || inputSym == '=' || inputSym == '!')
+                        else if(inputSym == '>' || inputSym == '<')
                         {
                             state = ScannerState.relOp;
                             next();
                         }
-                        else if(Character.isDigit(inputSym))
+                        else if(inputSym == '/')
                         {
-                            state = ScannerState.digit;
+                            next();
+                            if(inputSym == '/') 
+                            {
+                                stringUnderConstruction = "";
+                                nextLine();
+                                next();
+                            }
+                            else
+                            {
+                                state = ScannerState.stop;
+                            }
+                        }
+                        else
+                        {
+                            state = ScannerState.stop;
                             next();
                         }
-                        else if(Character.isLetter(inputSym))
-                        {
-                            state = ScannerState.letter;
-                            next();
-                        }
+                    }
+                    else if(Character.isDigit(inputSym))
+                    {
+                        eat();
+                        state = ScannerState.digit;
+                        next();
+                    }
+                    else if(Character.isLetter(inputSym))
+                    {
+                        eat();
+                        state = ScannerState.letter;
+                        next();
                     }
                     break;
                 

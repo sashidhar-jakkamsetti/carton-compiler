@@ -14,6 +14,11 @@ public class GraphViz
     // TODO: write printer.
     public void print()
     {
+        
+    }
+
+    public void printEdge()
+    {
 
     }
 }

@@ -18,6 +18,7 @@ public class Block implements IBlock
         instructions = new ArrayList<Instruction>();
         parent = null;
         child = null;
+        ssaMap = new HashMap<Integer, Integer>();
     }
 
     public Integer getId()

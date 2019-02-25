@@ -1,5 +1,3 @@
-import java.io.File;
-
 import intermediateCodeRepresentation.ControlFlowGraph;
 import parser.Parser;
 import utility.GraphViz;

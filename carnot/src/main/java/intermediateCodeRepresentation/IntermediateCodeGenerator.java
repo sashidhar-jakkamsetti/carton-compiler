@@ -51,10 +51,6 @@ public class IntermediateCodeGenerator
             {
                 instruction = new Instruction(pc++, opCode, y, x);
             }
-            else if(opCode == OperatorCode.read || opCode == OperatorCode.writeNL)
-            {
-                instruction = new Instruction(pc++, opCode, null, null);
-            }
             else if(opCode == OperatorCode.phi)
             {
                 VariableResult varResult = (VariableResult)x;
@@ -86,16 +82,16 @@ public class IntermediateCodeGenerator
     {
         vManager.updateSsaMap(vResult.variable.address, vResult.variable.version);
         vManager.updateDefUseChain(vResult.variable.address, vResult.variable.version, vResult.variable.version);
-        vManager.addVariable(vResult.variable.address);
 
         if(vResult.variable instanceof ArrayVar)
         {
-            ArrayVar var = (ArrayVar)vResult.variable;
-            vManager.addArrayBaseAddress(var.address, var.arraySize);
+            ArrayVar arrayVar = (ArrayVar)vResult.variable;
+            vManager.addArray(arrayVar.address, arrayVar);
         }
         else 
         {
-            block.addInstruction(Compute(OperatorCode.move, new ConstantResult(), vResult));
+            vManager.addVariable(vResult.variable.address);
+            block.addInstruction(Compute(OperatorCode.move, new ConstantResult(), vResult)); // fishy
         }
     }
 }

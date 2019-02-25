@@ -25,6 +25,6 @@ public class Variable
     @Override
     public String toString()
     {
-        return String.format("{0}_{1}", name, version);
+        return String.format("%s_%s", name, version);
     }
 }
