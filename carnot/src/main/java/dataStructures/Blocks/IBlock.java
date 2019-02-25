@@ -14,7 +14,7 @@ public interface IBlock
     public void setParent(IBlock block);
     public IBlock getParent();
     public void setChild(IBlock block);
-    public IBlock getChild(IBlock block);
+    public IBlock getChild();
     public String toString();
     public void setSsaMap(HashMap<Integer, Integer> ssaMap);
     public HashMap<Integer, Integer> getSsaMap();

@@ -55,6 +55,6 @@ public class VariableResult implements IResult
     @Override 
     public String toString()
     {
-        return "";
+        return variable.toString();
     }
 }

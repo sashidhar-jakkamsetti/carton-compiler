@@ -61,7 +61,7 @@ public class Block implements IBlock
         child = (Block)block;
     }
 
-    public IBlock getChild(IBlock block)
+    public IBlock getChild()
     {
         return child;
     }

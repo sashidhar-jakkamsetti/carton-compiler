@@ -20,8 +20,16 @@ public class Engine
         if(parser != null)
         {
             ControlFlowGraph cfg = parser.parse();
-            GraphViz graphPrinter = new GraphViz(cfg);
+            GraphViz graphPrinter = new GraphViz(cfg, "test001");
             graphPrinter.print();
+            try
+            {
+                Process p = Runtime.getRuntime().exec("dot -Tpng graphs/test001Graph.gv -o graphs/test001Graph.png");
+            }
+            catch(Exception e)
+            {
+                System.out.println(e);
+            }
         }
     }
 }

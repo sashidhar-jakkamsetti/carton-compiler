@@ -52,6 +52,7 @@ public class InstructionResult implements IResult
     @Override 
     public String toString()
     {
-        return "";
+        String res = "(" + iid.toString() + ")";
+        return res;
     }
 }

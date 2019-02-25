@@ -39,9 +39,14 @@ public class WhileBlock extends Block implements IBlock
         loopBlock = (Block)block;
     }
 
-    public IBlock getLoopBlock(IBlock block)
+    public IBlock getLoopBlock()
     {
         return loopBlock;
+    }
+
+    public IBlock getFollowBlock()
+    {
+        return followBlock;
     }
 
     public void fixupBranch(Integer iid, IBlock targetBlock)
