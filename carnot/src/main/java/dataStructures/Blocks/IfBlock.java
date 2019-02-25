@@ -36,7 +36,7 @@ public class IfBlock extends Block implements IBlock
         elseBlock = (Block)block;
     }
 
-    public IBlock getElseBlock(IBlock block)
+    public IBlock getElseBlock()
     {
         return elseBlock;
     }

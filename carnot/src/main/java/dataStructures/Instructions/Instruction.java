@@ -31,7 +31,7 @@ public class Instruction
         {
             ret = String.format("%s : %s %s %s", id, opcode.toString(), operandX.toString(), operandY.toString());
         }
-        else if(operandY == null)
+        else if(operandX != null && operandY == null)
         {
             ret = String.format("%s : %s %s", id, opcode.toString(), operandX.toString());
         }

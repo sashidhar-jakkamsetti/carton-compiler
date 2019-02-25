@@ -63,6 +63,6 @@ public class ConstantResult implements IResult
     @Override 
     public String toString()
     {
-        return "";
+        return constant.toString();
     }
 }
