@@ -1,15 +1,18 @@
 package dataStructures.Results;
 
+import dataStructures.ArrayVar;
 import dataStructures.Variable;
 
 public class VariableResult implements IResult
 {
     public Variable variable;
+    public boolean isArray;
     public Integer iid;
 
     public VariableResult() 
     {
         variable = null;
+        isArray = false;
         iid = -1;
     }
 
@@ -17,6 +20,10 @@ public class VariableResult implements IResult
     public void set(Object value) 
     {
         variable = (Variable)value;
+        if(value instanceof ArrayVar)
+        {
+            isArray = true;
+        }
     }
 
     @Override
@@ -46,10 +53,7 @@ public class VariableResult implements IResult
     @Override
     public IResult toInstruction()
     {
-        InstructionResult result = new InstructionResult();
-        result.set(iid);
-
-        return result;
+        return new InstructionResult(iid);
     }
 
     @Override 

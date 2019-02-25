@@ -91,7 +91,6 @@ public class VariableManager
         return arrays.get(variable);
     }
 
-    // TODO: SSA for arrays
     public void updateSsaMap(Integer variable, Integer version)
     {
         ssaMap.put(variable, version);

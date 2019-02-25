@@ -9,6 +9,11 @@ public class InstructionResult implements IResult
     {
         iid = -1;
     }
+
+    public InstructionResult(Integer iid)
+    {
+        this.iid = iid;
+    }
     
     @Override
     public void set(Object value) 
@@ -43,10 +48,7 @@ public class InstructionResult implements IResult
     @Override
     public IResult toInstruction()
     {
-        InstructionResult result = new InstructionResult();
-        result.set(iid);
-
-        return result;
+        return new InstructionResult(iid);
     }
 
     @Override 

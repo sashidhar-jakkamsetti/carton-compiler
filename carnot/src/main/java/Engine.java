@@ -13,7 +13,7 @@ public class Engine
         }
         else
         {
-            program = "testprograms/test001.txt";
+            program = "testprograms/test003.txt";
         }
 
         Parser parser = Parser.getInstance(program);

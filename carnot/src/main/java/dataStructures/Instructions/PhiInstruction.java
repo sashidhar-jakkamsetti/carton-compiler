@@ -7,6 +7,12 @@ public class PhiInstruction extends Instruction
 {
     public Variable variable;
     
+    public PhiInstruction(Integer programCounter)
+    {
+        super(programCounter);
+        opcode = Operator.OperatorCode.phi;
+    }
+    
     public PhiInstruction(Integer programCounter, Variable variable, IResult x, IResult y)
     {
         super(programCounter, Operator.OperatorCode.phi, x, y);

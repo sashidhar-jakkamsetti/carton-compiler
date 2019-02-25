@@ -58,31 +58,58 @@ public class Parser
         return cfg;
     }
 
-    // TODO: Array handling
-    private IResult designator(IBlock cBlock, Function function)
+    private VariableResult designator(IBlock cBlock, Function function)
     {
-        VariableResult vResult = null;
+        VariableResult vResult = new VariableResult();
         if(inputSym.isSameType(TokenType.ident))
         {
             Integer variable = scanner.identifier2Address.get(inputSym.value);
+            Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
+
             if((function == null && vManager.isVariable(variable))
                 || (function != null && function.vManager.isVariable(variable)))
             {
-                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
-                vResult = new VariableResult();
                 vResult.set(v);
             }
             else 
             {
                 error(new IllegalVariableException("Undeclared variable found while parsing designator."));
-                return vResult;
             }
 
             next();
-            // TODO: Array check
-            while(inputSym.isSameType(TokenType.openbracketToken))
+            if(((function == null && vManager.isArray(variable))
+                || (function != null && function.vManager.isArray(variable))) 
+                    && inputSym.isSameType(TokenType.openbracketToken))
             {
-                // Get dimension info
+                ArrayList<IResult> indexList = new ArrayList<IResult>();
+                do
+                {
+                    if(inputSym.isSameType(TokenType.openbracketToken))
+                    {
+                        next();
+                        indexList.add(expression(cBlock, function));
+                        if(inputSym.isSameType(TokenType.closebracketToken))
+                        {
+                            next();
+                        }
+                        else
+                        {
+                            error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                        }
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
+                    }
+                }while(inputSym.isSameType(TokenType.openbracketToken));
+
+                ArrayVar arrayV = new ArrayVar(v.name, v.address, v.version);
+                arrayV.indexList = indexList;
+                vResult.set(arrayV);
+            }
+            else 
+            {
+                error(new IllegalVariableException("Undeclared array found while parsing designator."));
             }
         }
         else
@@ -115,17 +142,25 @@ public class Parser
                         variable.version = designatorVersion;
                         function.vManager.updateDefUseChain(variable.address, designatorVersion, iCodeGenerator.getPC());
                     }
-                    
+
+                    if(((VariableResult)result).isArray)
+                    {
+                        if(function == null)
+                        {
+                            cBlock.addInstruction(iCodeGenerator.loadArrayElement(vManager, result));
+                        }
+                        else
+                        {
+                            cBlock.addInstruction(iCodeGenerator.loadArrayElement(function.vManager, result));
+                        }
+                    }
                 }
                 break;
             
             case number:
                 result = new ConstantResult();
-                if(result != null)
-                {
-                    result.set(inputSym.value);
-                    next();
-                }
+                result.set(inputSym.value);
+                next();
                 break;
             
             case openparenToken:
@@ -222,7 +257,6 @@ public class Parser
         return bResult;
     }
 
-    // TODO: Array handling
     private void assignment(IBlock cBlock, Function function)
     {
         if(inputSym.isSameType(TokenType.letToken))
@@ -256,7 +290,22 @@ public class Parser
                             function.vManager.updateSsaMap(variable.address, variable.version);
                             function.vManager.updateDefUseChain(variable.address, variable.version, variable.version);
                         }
-                        cBlock.addInstruction(iCodeGenerator.Compute(opToken, lhsResult, rhsResult));
+
+                        if(((VariableResult)lhsResult).isArray)
+                        {
+                            if(function == null)
+                            {
+                                cBlock.addInstruction(iCodeGenerator.storeArrayElement(vManager, lhsResult, rhsResult));
+                            }
+                            else
+                            {
+                                cBlock.addInstruction(iCodeGenerator.storeArrayElement(function.vManager, lhsResult, rhsResult));
+                            }
+                        }
+                        else
+                        {
+                            cBlock.addInstruction(iCodeGenerator.Compute(opToken, lhsResult, rhsResult));
+                        }
                     }
                 }
             }
@@ -321,9 +370,7 @@ public class Parser
                 {
                     next();
                     cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
-                    InstructionResult iResult = new InstructionResult();
-                    iResult.setIid(iCodeGenerator.getPC() - 1);
-                    return iResult;
+                    return new InstructionResult(iCodeGenerator.getPC() - 1);
                 }
                 else if(inputSym.value.equals("OutputNum"))
                 {
@@ -513,8 +560,7 @@ public class Parser
             rResult = expression(cBlock, function);
             if(rResult != null)
             {
-                InstructionResult iResult = new InstructionResult();
-                iResult.set(iCodeGenerator.getPC());
+                InstructionResult iResult = new InstructionResult(iCodeGenerator.getPC());
                 function.returnInstruction = iResult;
                 cBlock.addInstruction(iCodeGenerator.Compute(opToken, rResult, iResult));
             }
@@ -590,53 +636,34 @@ public class Parser
         else if(inputSym.isSameType(TokenType.arrToken))
         {
             next();
-            // Dimension declaration
-            if(inputSym.isSameType(TokenType.openbracketToken))
+            do
             {
-                next();
-                // Get first dimention
-                if(inputSym.isSameType(TokenType.number))
+                if(inputSym.isSameType(TokenType.openbracketToken))
                 {
-                    // Extract number from inputSym
-                    dimensionList.add(Integer.parseInt(inputSym.value));
                     next();
-                    if(inputSym.isSameType(TokenType.closebracketToken))
+                    if(inputSym.isSameType(TokenType.number))
                     {
+                        dimensionList.add(Integer.parseInt(inputSym.value));
                         next();
-                        // Get the remaining dimentions until we hit the end
-                        while(inputSym.isSameType(TokenType.openbracketToken))
+                        if(inputSym.isSameType(TokenType.closebracketToken))
                         {
-                            next(); // Number
-                            if(inputSym.isSameType(TokenType.number))
-                            {
-                                dimensionList.add(Integer.parseInt(inputSym.value));
-                            }
-                            else
-                            {
-                                error(new IncorrectSyntaxException("Number not found in array declaration."));
-                            }
-                            next(); // Close bracket
-                            if(!inputSym.isSameType(TokenType.closebracketToken))
-                            {
-                                error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
-                            }
-                            next(); // Open bracket
+                            next();
+                        }
+                        else
+                        {
+                            error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
                         }
                     }
                     else
                     {
-                        error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                        error(new IncorrectSyntaxException("Number not found in array declaration."));
                     }
                 }
                 else
                 {
-                    error(new IncorrectSyntaxException("Number not found in array declaration."));
+                    error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
                 }
-            }
-            else
-            {
-                error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
-            }
+            }while(inputSym.isSameType(TokenType.openbracketToken));
         }
         else 
         {
@@ -654,12 +681,12 @@ public class Parser
             if(inputSym.isSameType(TokenType.ident))
             {
                 VariableResult vResult = new VariableResult();
-                if(dimentionList.isEmpty()) // var
+                if(dimentionList.isEmpty())
                 {
                     Variable var = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
                     vResult.set(var);
                 }
-                else // array
+                else
                 {
                     ArrayVar var = new ArrayVar(inputSym.value, scanner.identifier2Address.get(inputSym.value), 
                                                         iCodeGenerator.getPC(), dimentionList);

@@ -11,6 +11,12 @@ public class ConstantResult implements IResult
         iid = -1;
     }
 
+    public ConstantResult(Integer constant) 
+    {
+        this.constant = constant;
+        iid = -1;
+    }
+
     @Override
     public void set(Object value) 
     {
@@ -51,10 +57,7 @@ public class ConstantResult implements IResult
     @Override
     public IResult toInstruction()
     {
-        InstructionResult result = new InstructionResult();
-        result.set(iid);
-
-        return result;
+        return new InstructionResult(iid);
     }
 
     @Override 

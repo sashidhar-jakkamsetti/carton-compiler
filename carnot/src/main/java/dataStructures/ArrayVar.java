@@ -2,12 +2,12 @@ package dataStructures;
 
 import java.util.ArrayList;
 
+import dataStructures.Results.IResult;
+
 public class ArrayVar extends Variable
 {
-    // public String name;
-    // public Integer version;
-    // public Integer address;
     public ArrayList<Integer> dimentionList;
+    public ArrayList<IResult> indexList;
     public Integer arraySize;
 
     public ArrayVar() {}
@@ -28,6 +28,31 @@ public class ArrayVar extends Variable
     {
         this(name, address, dimentionList);
         this.version = version;
+    }
+
+    public ArrayVar(String name, Integer address, Integer version)
+    {
+        this.name = name;
+        this.address = address;
+        this.version = version;
+    }
+
+    public Variable getBaseAddress()
+    {
+        return new Variable(name, address, version);
+    }
+
+    public Variable getElementAddress(ArrayList<Integer> indexList)
+    {
+        Integer eAddress = address;
+        StringBuilder sb = new StringBuilder();
+        for (Integer index : indexList) 
+        {
+            eAddress += index * 4;
+            sb.append("[" + index.toString() +"]");
+        }
+
+        return new Variable(String.format("%s_%s", name, sb.toString()), eAddress, version);
     }
 
     @Override

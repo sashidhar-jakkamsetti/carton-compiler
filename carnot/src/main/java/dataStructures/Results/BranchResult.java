@@ -68,10 +68,7 @@ public class BranchResult implements IResult
     @Override
     public IResult toInstruction()
     {
-        InstructionResult result = new InstructionResult();
-        result.set(iid);
-
-        return result;
+        return new InstructionResult(iid);
     }
 
     @Override 
