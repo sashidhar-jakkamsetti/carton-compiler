@@ -6,23 +6,20 @@ import utility.GraphViz;
 
 public class Engine 
 {
-    public static void run(String program)
+    public static void run(String program) throws Exception
     {
         Parser parser = Parser.getInstance(program);
         if(parser != null)
         {
-            ControlFlowGraph cfg = parser.parse();
-            GraphViz graphPrinter = new GraphViz(cfg, program);
-            graphPrinter.print();
-            try
+            boolean success = false;
+            ControlFlowGraph cfg = parser.parse(success);
+            if(success)
             {
+                GraphViz graphPrinter = new GraphViz(cfg, program);
+                graphPrinter.print();
                 Process p = Runtime.getRuntime().exec(
                         String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                 );
-            }
-            catch(Exception e)
-            {
-                System.out.println(String.format("%s : %s\n%s", e.toString(), e.getMessage(), e.getStackTrace()));
             }
         }
     }
@@ -36,7 +33,7 @@ public class Engine
         }
         else
         {
-            program = "testprograms/";
+            program = "testprograms/test003.txt";
         }
 
         if(program.endsWith("/"))
@@ -52,16 +49,25 @@ public class Engine
                     {
                         run(file.getAbsolutePath());
                     }
-                    catch(Exception e)
+                    catch(Exception exception)
                     {
-
+                        System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
+                            exception.getStackTrace()));
                     }
                 }
             }
         }
         else
         {
-            run(program);
+            try
+            {
+                run(program);
+            }
+            catch(Exception exception)
+            {
+                System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
+                    exception.getStackTrace()));
+            }
         }
     }
 }

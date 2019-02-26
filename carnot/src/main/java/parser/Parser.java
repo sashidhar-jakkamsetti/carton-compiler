@@ -48,13 +48,13 @@ public class Parser
         }
     }
 
-    public ControlFlowGraph parse()
+    public ControlFlowGraph parse(boolean flag)
     {
         cfg = ControlFlowGraph.getInstance();
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
         vManager = new VariableManager();
         next();
-        computation();
+        flag = computation();
         return cfg;
     }
 
@@ -589,7 +589,6 @@ public class Parser
                     if(function == null)
                     {
                         wBlock.updateIncomingVManager(vManager, null);
-
                     }
                     else
                     {
@@ -921,7 +920,7 @@ public class Parser
         }
     }
 
-    private void computation()
+    private boolean computation()
     {
         if(inputSym.isSameType(TokenType.mainToken))
         {
@@ -948,6 +947,7 @@ public class Parser
                         Token opToken = inputSym;
                         next();
                         lBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
+                        return true;
                     }
                     else
                     {
@@ -968,6 +968,8 @@ public class Parser
         {
             error(new IncorrectSyntaxException("Main token not found while parsing the program."));
         }
+
+        return false;
     }
 
     public void error(Exception exception)

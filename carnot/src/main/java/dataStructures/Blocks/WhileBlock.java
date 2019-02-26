@@ -1,7 +1,6 @@
 package dataStructures.Blocks;
 
 import dataStructures.*;
-import dataStructures.Blocks.*;
 import dataStructures.Results.*;
 import dataStructures.Instructions.*;
 import dataStructures.Operator.OperatorCode;
@@ -92,7 +91,11 @@ public class WhileBlock extends Block implements IBlock
     public void updateIncomingVManager(VariableManager globalVManager, VariableManager localVManager)
     {
         globalVManager.setSsaMap(globalSsa);
-        localVManager.setSsaMap(localSsa);
+
+        if(localVManager != null && localSsa.size() > 0)
+        {
+            localVManager.setSsaMap(localSsa);
+        }
         
         for (Integer key : phiManager.phis.keySet()) 
         {
@@ -100,7 +103,7 @@ public class WhileBlock extends Block implements IBlock
             {
                 globalVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
             }  
-            else if(localVManager.isVariable(key))
+            else if(localVManager != null && localVManager.isVariable(key))
             {
                 localVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
             }  
