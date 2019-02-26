@@ -10,7 +10,8 @@ public class Block implements IBlock
     protected List<Instruction> instructions;
     protected Block parent;
     protected Block child;
-    protected HashMap<Integer, Integer> ssaMap;
+    protected HashMap<Integer, Integer> globalSsa;
+    protected HashMap<Integer, Integer> localSsa;
 
     public Block(Integer id)
     {
@@ -18,7 +19,8 @@ public class Block implements IBlock
         instructions = new ArrayList<Instruction>();
         parent = null;
         child = null;
-        ssaMap = new HashMap<Integer, Integer>();
+        globalSsa = new HashMap<Integer, Integer>();
+        localSsa = new HashMap<Integer, Integer>();
     }
 
     public Integer getId()
@@ -68,16 +70,32 @@ public class Block implements IBlock
 
     public String toString()
     {
-        return "";
+        StringBuilder sb = new StringBuilder();
+        for(Instruction instruction : instructions)
+        {
+            sb.append(instruction.toString() + "\\l");
+        }
+
+        return sb.toString();
     }
 
-    public void setSsaMap(HashMap<Integer, Integer> ssaMap)
+    public void freezeSsa(HashMap<Integer, Integer> globalSsa, HashMap<Integer, Integer> localSsa)
     {
-        this.ssaMap.putAll(ssaMap);
+        this.globalSsa.putAll(globalSsa);
+
+        if(localSsa != null)
+        {
+            this.localSsa.putAll(localSsa);
+        }
     }
     
-    public HashMap<Integer, Integer> getSsaMap()
+    public HashMap<Integer, Integer> getGlobalSsa()
     {
-        return ssaMap;
+        return globalSsa;
+    }
+
+    public HashMap<Integer, Integer> getLocalSsa()
+    {
+        return localSsa;
     }
 }

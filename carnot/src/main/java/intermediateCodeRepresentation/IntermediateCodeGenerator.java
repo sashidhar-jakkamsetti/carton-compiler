@@ -34,53 +34,44 @@ public class IntermediateCodeGenerator
         return pc;
     }
 
-    public ArrayList<Instruction> Compute(Token opToken, IResult x, IResult y)
+    public Instruction compute(Token opToken, BranchResult y)
     {
-        ArrayList<Instruction> instructions = new  ArrayList<Instruction>();
-        ArrayList<OperatorCode> opCodes = new  ArrayList<OperatorCode>();
-        opCodes = Operator.getOpCode(opToken);
-
-        for(OperatorCode opCode : opCodes)
+        OperatorCode opCode  = Operator.branchingOperator.get(opToken.type);
+        if(opCode == OperatorCode.bra)
         {
-            Instruction instruction = null;
-            if(opCode == OperatorCode.load || opCode == OperatorCode.bra)
-            {
-                instruction = new Instruction(pc++, opCode, y, null);
-            }
-            else if(opCode == OperatorCode.store || opCode == OperatorCode.move)
-            {
-                instruction = new Instruction(pc++, opCode, y, x);
-            }
-            else
-            {
-                instruction = new Instruction(pc++, opCode, x, y);
-            }
-            instructions.add(instruction);
+            return new Instruction(pc++, opCode, null, y);
         }
-
-        return instructions;
+        else
+        {
+            return new Instruction(pc++, opCode, y.toInstruction(), y);
+        }
     }
 
-    public Instruction Compute(OperatorCode opCode, IResult x, IResult y)
+    public Instruction compute(Token opToken, IResult x, IResult y)
+    {
+        OperatorCode opCode = Operator.getOpCode(opToken);
+        
+        return compute(opCode, x, y);
+    }
+
+    public Instruction compute(OperatorCode opCode, IResult x, IResult y)
     {
         if(opCode == OperatorCode.move || opCode == OperatorCode.store)
         {
             return new Instruction(pc++, opCode, y, x);
         }
-        else if(opCode == OperatorCode.phi)
-        {
-            return new PhiInstruction(pc++);
-        }
-        else if(opCode == OperatorCode.mul || opCode == OperatorCode.add || opCode == OperatorCode.adda)
-        {
-            return new Instruction(pc++, opCode, x, y);
-        }
         else if(opCode == OperatorCode.load)
         {
             return new Instruction(pc++, opCode, null, y);
         }
-
-        return null;
+        else if(opCode == OperatorCode.phi)
+        {
+            return new PhiInstruction(pc++);
+        }
+        else
+        {
+            return new Instruction(pc++, opCode, x, y);
+        }
     }
 
     public ArrayList<Instruction> loadArrayElement(VariableManager vManager, IResult vResult) 
@@ -95,25 +86,22 @@ public class IntermediateCodeGenerator
             {
                 res = res.toInstruction();
             }
-            instructions.add(Compute(OperatorCode.mul, res, new ConstantResult(4)));
+            instructions.add(compute(OperatorCode.mul, res, new ConstantResult(4)));
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
-                IResult res1 = array.indexList.get(0);
+                IResult res1 = array.indexList.get(index);
                 if(res1.getIid() > 0)
                 {
                     res1 = res1.toInstruction();
                 }
-                instructions.add(Compute(OperatorCode.mul, res1, new ConstantResult(4)));
-                instructions.add(Compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
+                instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
+                instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             }
-            instructions.add(Compute(OperatorCode.add, new ConstantResult(), new ConstantResult(array.getBaseAddress().address)));
+            instructions.add(compute(OperatorCode.add, new ConstantResult(), new ConstantResult(array.getBaseAddress().address)));
 
-            instructions.add(Compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
-            instructions.add(Compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
-
-            vResult = vResult.toInstruction();
-            vResult.set(pc - 1);
+            instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
+            instructions.add(compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
         }
         
         return instructions;
@@ -131,25 +119,22 @@ public class IntermediateCodeGenerator
             {
                 res = res.toInstruction();
             }
-            instructions.add(Compute(OperatorCode.mul, res, new ConstantResult(4)));
+            instructions.add(compute(OperatorCode.mul, res, new ConstantResult(4)));
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
-                IResult res1 = array.indexList.get(0);
+                IResult res1 = array.indexList.get(index);
                 if(res1.getIid() > 0)
                 {
                     res1 = res1.toInstruction();
                 }
-                instructions.add(Compute(OperatorCode.mul, res1, new ConstantResult(4)));
-                instructions.add(Compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
+                instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
+                instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             }
-            instructions.add(Compute(OperatorCode.add, new RegisterResult(0) , new ConstantResult(array.getBaseAddress().address)));
+            instructions.add(compute(OperatorCode.add, new RegisterResult(0) , new ConstantResult(array.getBaseAddress().address)));
 
-            instructions.add(Compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
-            instructions.add(Compute(OperatorCode.store, rhsResult, new InstructionResult(pc - 1)));
-
-            lhsResult = lhsResult.toInstruction();
-            lhsResult.set(pc - 1);
+            instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
+            instructions.add(compute(OperatorCode.store, new InstructionResult(pc - 1), rhsResult));
         }
 
         return instructions;
@@ -168,7 +153,7 @@ public class IntermediateCodeGenerator
         else 
         {
             vManager.addVariable(vResult.variable.address);
-            block.addInstruction(Compute(OperatorCode.move, new ConstantResult(), vResult)); // fishy: what about formal parameters?
+            block.addInstruction(compute(OperatorCode.move, new ConstantResult(), vResult)); // fishy: what about formal parameters?
         }
     }
 }

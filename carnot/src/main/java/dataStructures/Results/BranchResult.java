@@ -74,7 +74,7 @@ public class BranchResult implements IResult
     @Override 
     public String toString()
     {
-        String res = "[" + targetBlock.getId() + "]";
+        String res = "[" + targetBlock.getId().toString() + "]";
         return res;
     }
 

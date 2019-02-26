@@ -16,6 +16,7 @@ public interface IBlock
     public void setChild(IBlock block);
     public IBlock getChild();
     public String toString();
-    public void setSsaMap(HashMap<Integer, Integer> ssaMap);
-    public HashMap<Integer, Integer> getSsaMap();
+    public void freezeSsa(HashMap<Integer, Integer> globalSsa, HashMap<Integer, Integer> localSsa);
+    public HashMap<Integer, Integer> getGlobalSsa();
+    public HashMap<Integer, Integer> getLocalSsa();
 }

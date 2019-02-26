@@ -66,50 +66,52 @@ public class Parser
             Integer variable = scanner.identifier2Address.get(inputSym.value);
             Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
 
-            if((function == null && vManager.isVariable(variable))
-                || (function != null && function.vManager.isVariable(variable)))
+            if(vManager.isVariable(variable) || (function != null && function.vManager.isVariable(variable)))
             {
-                vResult.set(v);
+                next();
+                if(vManager.isArray(variable) || (function != null && function.vManager.isArray(variable)))
+                {
+                    if(inputSym.isSameType(TokenType.openbracketToken))
+                    {
+                        ArrayList<IResult> indexList = new ArrayList<IResult>();
+                        do
+                        {
+                            if(inputSym.isSameType(TokenType.openbracketToken))
+                            {
+                                next();
+                                indexList.add(expression(cBlock, function));
+                                if(inputSym.isSameType(TokenType.closebracketToken))
+                                {
+                                    next();
+                                }
+                                else
+                                {
+                                    error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                                }
+                            }
+                            else
+                            {
+                                error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
+                            }
+                        }while(inputSym.isSameType(TokenType.openbracketToken));
+        
+                        ArrayVar arrayV = new ArrayVar(v.name, v.address, v.version);
+                        arrayV.indexList = indexList;
+                        vResult.set(arrayV);
+                    }
+                    else 
+                    {
+                        error(new IllegalVariableException("Undeclared array found while parsing designator."));
+                    }
+                }
+                else
+                {
+                    vResult.set(v);
+                }
             }
             else 
             {
                 error(new IllegalVariableException("Undeclared variable found while parsing designator."));
-            }
-
-            next();
-            if(((function == null && vManager.isArray(variable))
-                || (function != null && function.vManager.isArray(variable))) 
-                    && inputSym.isSameType(TokenType.openbracketToken))
-            {
-                ArrayList<IResult> indexList = new ArrayList<IResult>();
-                do
-                {
-                    if(inputSym.isSameType(TokenType.openbracketToken))
-                    {
-                        next();
-                        indexList.add(expression(cBlock, function));
-                        if(inputSym.isSameType(TokenType.closebracketToken))
-                        {
-                            next();
-                        }
-                        else
-                        {
-                            error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
-                        }
-                    }
-                    else
-                    {
-                        error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
-                    }
-                }while(inputSym.isSameType(TokenType.openbracketToken));
-
-                ArrayVar arrayV = new ArrayVar(v.name, v.address, v.version);
-                arrayV.indexList = indexList;
-                vResult.set(arrayV);
-            }
-            else 
-            {
-                error(new IllegalVariableException("Undeclared array found while parsing designator."));
             }
         }
         else
@@ -129,29 +131,31 @@ public class Parser
                 result = designator(cBlock, function);
                 if(result != null)
                 {
-                    Variable variable = ((VariableResult)result).variable;
-                    if(function == null)
+                    Variable v = ((VariableResult)result).variable;
+                    if(vManager.isVariable(v.address))
                     {
-                        Integer designatorVersion = vManager.getSsaVersion(variable.address);
-                        variable.version = designatorVersion;
-                        vManager.updateDefUseChain(variable.address, designatorVersion, iCodeGenerator.getPC());
-                    }
-                    else 
-                    {
-                        Integer designatorVersion = function.vManager.getSsaVersion(variable.address);
-                        variable.version = designatorVersion;
-                        function.vManager.updateDefUseChain(variable.address, designatorVersion, iCodeGenerator.getPC());
-                    }
+                        Integer designatorVersion = vManager.getSsaVersion(v.address);
+                        v.version = designatorVersion;
+                        vManager.updateDefUseChain(v.address, designatorVersion, iCodeGenerator.getPC());
 
-                    if(((VariableResult)result).isArray)
-                    {
-                        if(function == null)
+                        if(((VariableResult)result).isArray)
                         {
                             cBlock.addInstruction(iCodeGenerator.loadArrayElement(vManager, result));
+                            result = result.toInstruction();
+                            result.set(iCodeGenerator.getPC() - 1);
                         }
-                        else
+                    }
+                    else if(function != null && function.vManager.isVariable(v.address))
+                    {
+                        Integer designatorVersion = function.vManager.getSsaVersion(v.address);
+                        v.version = designatorVersion;
+                        function.vManager.updateDefUseChain(v.address, designatorVersion, iCodeGenerator.getPC());
+
+                        if(((VariableResult)result).isArray)
                         {
                             cBlock.addInstruction(iCodeGenerator.loadArrayElement(function.vManager, result));
+                            result = result.toInstruction();
+                            result.set(iCodeGenerator.getPC() - 1);
                         }
                     }
                 }
@@ -201,7 +205,7 @@ public class Parser
                 if(yResult != null)
                 {
                     xResult.setIid(iCodeGenerator.getPC());
-                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
+                    cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
                 }
             }
         }
@@ -223,7 +227,7 @@ public class Parser
                 if(yResult != null)
                 {
                     xResult.setIid(iCodeGenerator.getPC());
-                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
+                    cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
                 }
             }    
         }
@@ -245,7 +249,7 @@ public class Parser
                 IResult yResult = expression(cBlock, function);
                 if(yResult != null)
                 {
-                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, xResult, yResult));
+                    cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
                     bResult.condition = opToken;
                     bResult.fixuplocation = iCodeGenerator.getPC();
                     bResult.iid = iCodeGenerator.getPC() - 1;
@@ -277,34 +281,40 @@ public class Parser
                         {
                             rhsResult = rhsResult.toInstruction();
                         }
-                        Variable variable = ((VariableResult)lhsResult).variable;
-                        variable.version = iCodeGenerator.getPC();
+                        Variable v = ((VariableResult)lhsResult).variable;
+                        v.version = iCodeGenerator.getPC();
 
-                        if(function == null)
+                        if(vManager.isVariable(v.address))
                         {
-                            vManager.updateSsaMap(variable.address, variable.version);
-                            vManager.updateDefUseChain(variable.address, variable.version, variable.version);
-                        }
-                        else 
-                        {
-                            function.vManager.updateSsaMap(variable.address, variable.version);
-                            function.vManager.updateDefUseChain(variable.address, variable.version, variable.version);
-                        }
+                            vManager.updateSsaMap(v.address, v.version);
+                            vManager.updateDefUseChain(v.address, v.version, v.version);
 
-                        if(((VariableResult)lhsResult).isArray)
-                        {
-                            if(function == null)
+                            if(((VariableResult)lhsResult).isArray)
                             {
                                 cBlock.addInstruction(iCodeGenerator.storeArrayElement(vManager, lhsResult, rhsResult));
+                                lhsResult = lhsResult.toInstruction();
+                                lhsResult.set(iCodeGenerator.getPC() - 1);
                             }
                             else
                             {
-                                cBlock.addInstruction(iCodeGenerator.storeArrayElement(function.vManager, lhsResult, rhsResult));
+                                cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
                             }
                         }
-                        else
+                        else if(function != null && function.vManager.isVariable(v.address))
                         {
-                            cBlock.addInstruction(iCodeGenerator.Compute(opToken, lhsResult, rhsResult));
+                            function.vManager.updateSsaMap(v.address, v.version);
+                            function.vManager.updateDefUseChain(v.address, v.version, v.version);
+
+                            if(((VariableResult)lhsResult).isArray)
+                            {
+                                cBlock.addInstruction(iCodeGenerator.storeArrayElement(function.vManager, lhsResult, rhsResult));
+                                lhsResult = lhsResult.toInstruction();
+                                lhsResult.set(iCodeGenerator.getPC() - 1);
+                            }
+                            else
+                            {
+                                cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
+                            }
                         }
                     }
                 }
@@ -332,7 +342,7 @@ public class Parser
                         IResult pResult = expression(cBlock, function);
                         if(pResult != null)
                         {
-                            cBlock.addInstruction(iCodeGenerator.Compute(OperatorCode.move, pResult, callFunction.getParameter(idx++)));
+                            cBlock.addInstruction(iCodeGenerator.compute(OperatorCode.move, pResult, callFunction.getParameter(idx++)));
                         }
                     }while(inputSym.isSameType(TokenType.commaToken));
                     
@@ -351,14 +361,14 @@ public class Parser
                 bResult.set(callFunction.head);
                 bResult.condition = opToken;
                 
-                cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, bResult));
+                cBlock.addInstruction(iCodeGenerator.compute(opToken, bResult));
                 if(function == null)
                 {
-                    cBlock.setSsaMap(vManager.getSsaMap());
+                    cBlock.freezeSsa(vManager.getSsaMap(), null);
                 }
                 else 
                 {
-                    cBlock.setSsaMap(function.vManager.getSsaMap());
+                    cBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
                 }
                 return callFunction.returnInstruction;
             }
@@ -369,7 +379,7 @@ public class Parser
                 if(inputSym.value.equals("InputNum"))
                 {
                     next();
-                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
+                    cBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
                     return new InstructionResult(iCodeGenerator.getPC() - 1);
                 }
                 else if(inputSym.value.equals("OutputNum"))
@@ -381,7 +391,7 @@ public class Parser
                         IResult pResult = expression(cBlock, function);
                         if(pResult != null)
                         {
-                            cBlock.addInstruction(iCodeGenerator.Compute(opToken, pResult, null));
+                            cBlock.addInstruction(iCodeGenerator.compute(opToken, pResult, null));
                         }
                         if(inputSym.isSameType(TokenType.closeparenToken))
                         {
@@ -400,7 +410,7 @@ public class Parser
                 }
                 else
                 {
-                    cBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
+                    cBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
                     return null;
                 }
             }
@@ -428,17 +438,17 @@ public class Parser
             jBlock.setParent(iBlock);
 
             BranchResult bResult = relation(iBlock, function);
-            iBlock.addInstruction(iCodeGenerator.Compute(bResult.condition, bResult, null));
-            
+            iBlock.addInstruction(iCodeGenerator.compute(bResult.condition, bResult));
+
             if(function == null)
             {
-                cBlock.setSsaMap(vManager.getSsaMap());
-                iBlock.setSsaMap(vManager.getSsaMap());
+                cBlock.freezeSsa(vManager.getSsaMap(), null);
+                iBlock.freezeSsa(vManager.getSsaMap(), null);
             }
             else 
             {
-                cBlock.setSsaMap(function.vManager.getSsaMap());
-                iBlock.setSsaMap(function.vManager.getSsaMap());
+                cBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
+                iBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
             }
 
             if(inputSym.isSameType(TokenType.thenToken))
@@ -451,29 +461,19 @@ public class Parser
                 iBlock.setThenBlock(tBlock);
                 tBlock.setParent(iBlock);
 
-                HashMap<Integer, Integer> restoreSsa = new HashMap<Integer, Integer>();
-                if(function == null)
-                {
-                    vManager.copySsaTo(restoreSsa);
-                }
-                else
-                {
-                    function.vManager.copySsaTo(restoreSsa);
-                }
-
                 tBlock = (Block)statSequence(tBlock, function);
                 bResult2.set(jBlock);
-                tBlock.addInstruction(iCodeGenerator.Compute(bResult2.condition, null, bResult2));
+                tBlock.addInstruction(iCodeGenerator.compute(bResult2.condition, bResult2));
                 tBlock.setChild(jBlock);
                 jBlock.setThenBlock(tBlock);
                 
                 if(function == null)
                 {
-                    tBlock.setSsaMap(vManager.getSsaMap());
+                    tBlock.freezeSsa(vManager.getSsaMap(), null);
                 }
                 else 
                 {
-                    tBlock.setSsaMap(function.vManager.getSsaMap());
+                    tBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
                 }
 
                 if(inputSym.isSameType(TokenType.elseToken))
@@ -483,14 +483,11 @@ public class Parser
                     iBlock.setElseBlock(eBlock);
                     eBlock.setParent(iBlock);
 
-                    if(function == null)
+                    vManager.setSsaMap(cBlock.getGlobalSsa());
+                    if(function != null)
                     {
-                        vManager.setSsaMap(restoreSsa);
+                        function.vManager.setSsaMap(cBlock.getLocalSsa());
                     }
-                    else
-                    {
-                        function.vManager.setSsaMap(restoreSsa);
-                    } 
                     
                     eBlock = (Block)statSequence(eBlock, function);
                     iBlock.fixupBranch(bResult.fixuplocation, eBlock);
@@ -499,11 +496,11 @@ public class Parser
                     
                     if(function == null)
                     {
-                        eBlock.setSsaMap(vManager.getSsaMap());
+                        eBlock.freezeSsa(vManager.getSsaMap(), null);
                     }
                     else 
                     {
-                        eBlock.setSsaMap(function.vManager.getSsaMap());
+                        eBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
                     }
                 }
                 else
@@ -518,11 +515,12 @@ public class Parser
 
                     if(function == null)
                     {
-                        vManager.setSsaMap(jBlock.getSsaMap());
+                        jBlock.updateIncomingVManager(vManager, null);
+
                     }
                     else
                     {
-                        function.vManager.setSsaMap(jBlock.getSsaMap());
+                        jBlock.updateIncomingVManager(vManager, function.vManager);
                     }
                 }
                 else
@@ -562,7 +560,7 @@ public class Parser
             {
                 InstructionResult iResult = new InstructionResult(iCodeGenerator.getPC());
                 function.returnInstruction = iResult;
-                cBlock.addInstruction(iCodeGenerator.Compute(opToken, rResult, iResult));
+                cBlock.addInstruction(iCodeGenerator.compute(opToken, rResult, iResult));
             }
         }
         else
@@ -609,10 +607,10 @@ public class Parser
 
     private IBlock statSequence(IBlock cBlock, Function function)
     {
-        IBlock block = null;
+        IBlock block = cBlock;
         do
         {
-            block = statement(cBlock, function);
+            block = statement(block, function);
             if(inputSym.isSameType(TokenType.semiToken))
             {
                 next();
@@ -791,14 +789,16 @@ public class Parser
             next();
             if(inputSym.isSameType(TokenType.ident))
             {
-                next();
                 Function function = new Function(inputSym.value, scanner.identifier2Address.get(inputSym.value));
                 if(cfg.isExists(function))
                 {
                     error(new IncorrectSyntaxException("Function already exists."));
+                    return;
                 }
                 function.head = (Block)cfg.initializeBlock();
-                function.setGlobalVariables(vManager.getVariables());
+                cfg.addFunction(function);
+
+                next();
                 formalParam(function);
 
                 if(inputSym.isSameType(TokenType.semiToken))
@@ -875,7 +875,7 @@ public class Parser
                     {
                         Token opToken = inputSym;
                         next();
-                        lBlock.addInstruction(iCodeGenerator.Compute(opToken, null, null));
+                        lBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
                     }
                     else
                     {

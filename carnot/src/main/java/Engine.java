@@ -16,7 +16,9 @@ public class Engine
             graphPrinter.print();
             try
             {
-                Process p = Runtime.getRuntime().exec("dot -Tpng graphs/test001Graph.gv -o graphs/test001Graph.png");
+                Process p = Runtime.getRuntime().exec(
+                        String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                );
             }
             catch(Exception e)
             {

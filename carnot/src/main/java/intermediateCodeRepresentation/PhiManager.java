@@ -21,7 +21,8 @@ public class PhiManager
     {
         if(!isExists(x))
         {
-            PhiInstruction phiInstruction = (PhiInstruction)iCodeGenerator.Compute(OperatorCode.phi, x1, x2);
+            PhiInstruction phiInstruction = (PhiInstruction)iCodeGenerator.compute(OperatorCode.phi, x1, x2);
+            x.version = phiInstruction.id;
             phiInstruction.variable = x;
             phiInstruction.operandX = x1;
             phiInstruction.operandY = x2;

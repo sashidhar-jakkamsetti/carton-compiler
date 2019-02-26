@@ -1,8 +1,8 @@
 package utility;
 
 import intermediateCodeRepresentation.ControlFlowGraph;
+import dataStructures.Function;
 import dataStructures.Blocks.*;
-import dataStructures.Instructions.*;
 import java.util.*;
 import java.io.*;
 
@@ -10,97 +10,124 @@ public class GraphViz
 {
     private ControlFlowGraph cfg;
     private Stack<IBlock> blockStack;
-    private ArrayList<String> edges;
+    private boolean[] alreadyPrintedBlocks;
+    
+    private FileWriter out;
     private String program;
+    private String graphFileName;
 
     public GraphViz(ControlFlowGraph cfg, String program)
     {
         this.cfg = cfg;
         blockStack = new Stack<IBlock>();
-        blockStack.push(ControlFlowGraph.head);
-        edges = new ArrayList<String>();
+        alreadyPrintedBlocks = new boolean[cfg.blocks.size()];
+        this.program = program;
+    }
 
-        Integer len = program.split("/").length;
-        this.program = program.split("/")[len - 1].replace(".txt", "");
+    public String getGraphFileName()
+    {
+        return graphFileName;
     }
 
     public void print()
     {
-        try
+        try 
         {
-            String graphFileName = "graphs/" + program + "Graph.gv";
+            Integer len = program.split("/").length;
+            String filesuffix = program.split("/")[len - 1].replace(".txt", "");
+    
+            graphFileName = "graphs/" + filesuffix + ".cgf.gv";
             File file = new File(graphFileName);
             FileWriter out = new FileWriter(file);
+
             out.write("digraph g {\n");
             out.write("node [shape=box, height=.1, nojustify=true];\n");
 
-            try {
-                while(!blockStack.isEmpty())
-                {
-                    Block cBlock = (Block)blockStack.pop();
-                    // System.out.println("node" + cBlock.getId() + " [");
-                    out.write("node" + cBlock.getId() + " [label=\"");
-                    if(cBlock instanceof IfBlock)
-                    {
-                        IfBlock ifBlock = (IfBlock)cBlock;
-                        blockStack.push(ifBlock.getThenBlock());
-                        edges.add(addEdge(ifBlock, ifBlock.getThenBlock()));
-                        blockStack.push(ifBlock.getElseBlock());
-                        edges.add(addEdge(ifBlock, ifBlock.getElseBlock()));
-                    }
-                    else if(cBlock instanceof WhileBlock)
-                    {
-                        WhileBlock whileBlock = (WhileBlock)cBlock;
-                        blockStack.push(whileBlock.getLoopBlock());
-                        edges.add(addEdge(whileBlock, whileBlock.getLoopBlock()));
-                        blockStack.push(whileBlock.getFollowBlock());
-                        edges.add(addEdge(whileBlock, whileBlock.getFollowBlock()));
-                    }
-                    else
-                    {
-                        if(cBlock.getChild() != null)
-                        {
-                            blockStack.push(cBlock.getChild());
-                            edges.add(addEdge(cBlock, cBlock.getChild()));
-                        }
-                    }
-                    for(Instruction instruction : cBlock.getInstructions())
-                    {
-                        // System.out.println(instruction.toString());
-                        out.write(instruction.toString() + "\\l");
-                    }
-                    // System.out.println("]");
-                    out.write("\"];\n");
-                }
-                for(String edge : edges)
-                {
-                    // System.out.println(edge);
-                    out.write(edge + ";\n");
-                }
-                out.write("}");
-            }
-            finally
+            addFunction(cfg.head, "main", out);
+            for (Function function : cfg.functions) 
             {
-                if (out != null)
-                {
-                    try
-                    {
-                        out.close();
-                    }
-                    catch(Exception e)
-                    {
-                        System.out.println(e);
-                    }
-                }
+                addFunction(function.head, function.name, out);
             }
+
+            out.write("}");
+            out.close();
         }
-        catch(Exception e)
+        catch(Exception exception)
         {
-            System.out.println(e);
+            System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
+                                exception.getStackTrace()));
         }
     }
 
-    public String addEdge(IBlock x, IBlock y)
+    private void addFunction(IBlock head, String funcName, FileWriter out) throws IOException
+    {
+        blockStack.push(head);
+        alreadyPrintedBlocks[head.getId()] = true;
+        ArrayList<String> edges = new ArrayList<String>();
+        out.write("subgraph cluster" + head.getId().toString() + "{ \n label=" + funcName + ";\n");
+        while(!blockStack.isEmpty())
+        {
+            Block cBlock = (Block)blockStack.pop();
+            Integer id = cBlock.getId();
+            out.write("node" + id.toString() + " [xlabel=" + id.toString() + ", label=\"");
+
+            if(cBlock instanceof IfBlock)
+            {
+                IfBlock ifBlock = (IfBlock)cBlock;
+                if(!alreadyPrintedBlocks[ifBlock.getThenBlock().getId()])
+                {
+                    blockStack.push(ifBlock.getThenBlock());
+                    alreadyPrintedBlocks[ifBlock.getThenBlock().getId()] = true;
+                }
+                edges.add(addEdge(ifBlock, ifBlock.getThenBlock()) + "[label=\"Then\"]");
+
+                if(!alreadyPrintedBlocks[ifBlock.getElseBlock().getId()])
+                {
+                    blockStack.push(ifBlock.getElseBlock());
+                    alreadyPrintedBlocks[ifBlock.getElseBlock().getId()] = true;
+                }
+                edges.add(addEdge(ifBlock, ifBlock.getElseBlock()) + "[label=\"Else\"]");
+            }
+            else if(cBlock instanceof WhileBlock)
+            {
+                WhileBlock whileBlock = (WhileBlock)cBlock;
+                if(!alreadyPrintedBlocks[whileBlock.getLoopBlock().getId()])
+                {
+                    blockStack.push(whileBlock.getLoopBlock());
+                    alreadyPrintedBlocks[whileBlock.getLoopBlock().getId()] = true;
+                }
+                edges.add(addEdge(whileBlock, whileBlock.getLoopBlock()) + "[label=\"Loop\"]");
+
+                if(!alreadyPrintedBlocks[whileBlock.getFollowBlock().getId()])
+                {
+                    blockStack.push(whileBlock.getFollowBlock());
+                    alreadyPrintedBlocks[whileBlock.getFollowBlock().getId()] = true;
+                }
+                edges.add(addEdge(whileBlock, whileBlock.getFollowBlock()) + "[label=\"Follow\"]");
+            }
+            else
+            {
+                if(cBlock.getChild() != null)
+                {
+                    if(!alreadyPrintedBlocks[cBlock.getChild().getId()])
+                    {
+                        blockStack.push(cBlock.getChild());
+                        alreadyPrintedBlocks[cBlock.getChild().getId()] = true;
+                    }
+                    edges.add(addEdge(cBlock, cBlock.getChild()));
+                }
+            }
+            out.write(cBlock.toString());
+            out.write("\"];\n");
+        }
+        for(String edge : edges)
+        {
+            out.write(edge + ";\n");
+        }
+        out.write("}\n");
+    }
+
+    private String addEdge(IBlock x, IBlock y)
     {
         String edge = "node" + x.getId() + " -> node" + y.getId();
         return edge;

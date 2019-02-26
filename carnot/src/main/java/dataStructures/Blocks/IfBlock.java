@@ -43,6 +43,10 @@ public class IfBlock extends Block implements IBlock
     
     public void fixupBranch(Integer iid, IBlock targetBlock)
     {
-        getInstruction(iid).operandY.set(targetBlock);
+        Instruction instruction = getInstruction(iid);
+        if(instruction.operandY instanceof BranchResult)
+        {
+            instruction.operandY.set(targetBlock);
+        }
     }
 }

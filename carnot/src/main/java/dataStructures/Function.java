@@ -25,11 +25,6 @@ public class Function
         parameters = new ArrayList<IResult>();
     }
 
-    public void setGlobalVariables(HashSet<Integer> gVariables)
-    {
-        vManager.setGlobalVariables(gVariables);
-    }
-
     public void addParameter(IResult result)
     {
         parameters.add(result);

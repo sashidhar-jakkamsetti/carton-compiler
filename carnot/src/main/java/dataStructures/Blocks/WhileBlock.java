@@ -49,23 +49,66 @@ public class WhileBlock extends Block implements IBlock
         return followBlock;
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        if(phiManager != null && phiManager.phis != null && phiManager.phis.keySet().size() > 0)
+        {
+            for(PhiInstruction instruction : phiManager.phis.values())
+            {
+                sb.append(instruction.toString() + "\\l");
+            }
+        }
+        for(Instruction instruction : instructions)
+        {
+            sb.append(instruction.toString() + "\\l");
+        }
+
+        return sb.toString();
+    }
+
     public void fixupBranch(Integer iid, IBlock targetBlock)
     {
         getInstruction(iid).operandY.set(targetBlock);
     }
 
+    public void updateIncomingVManager(VariableManager globalVManager, VariableManager localVManager)
+    {
+        globalVManager.setSsaMap(globalSsa);
+        localVManager.setSsaMap(localSsa);
+        
+        for (Integer key : phiManager.phis.keySet()) 
+        {
+            if(globalVManager.isVariable(key))
+            {
+                globalVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
+            }  
+            else if(localVManager.isVariable(key))
+            {
+                localVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
+            }  
+        }
+    }
+
     public void createPhis(HashMap<Integer, String> address2identifier)
     {
-        setSsaMap(parent.getSsaMap());
-        for (Integer key : parent.ssaMap.keySet()) 
+        createPhis(address2identifier, parent.globalSsa, loopBlock.globalSsa, globalSsa);
+        createPhis(address2identifier, parent.localSsa, loopBlock.localSsa, localSsa);
+    }
+
+    private void createPhis(HashMap<Integer, String> address2identifier, HashMap<Integer, Integer> pSsaMap, 
+                HashMap<Integer, Integer> lSsaMap, HashMap<Integer, Integer> ssaMap)
+    {
+        for (Integer key : pSsaMap.keySet()) 
         {
             Variable x = new Variable(address2identifier.get(key), key);
-            if(parent.ssaMap.get(key) != loopBlock.ssaMap.get(key))
+            if(pSsaMap.get(key) != lSsaMap.get(key))
             {
                 VariableResult x1 = new VariableResult();
-                x1.set(new Variable(address2identifier.get(key), key, parent.ssaMap.get(key)));
+                x1.set(new Variable(address2identifier.get(key), key, pSsaMap.get(key)));
                 VariableResult x2 = new VariableResult();
-                x2.set(new Variable(address2identifier.get(key), key, loopBlock.ssaMap.get(key)));
+                x2.set(new Variable(address2identifier.get(key), key, lSsaMap.get(key)));
 
                 phiManager.addPhi(x, x1, x2);
                 ssaMap.put(key, x.version);
@@ -73,6 +116,7 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
+    // TODO: update defUseChain also. Along with nested while loops.
     public void updatePhiVarOccurances()
     {
 

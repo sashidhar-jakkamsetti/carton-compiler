@@ -9,7 +9,6 @@ import exceptions.*;
 public class VariableManager
 {
     private HashSet<Integer> variables;
-    private HashSet<Integer> globalVariables;
     private HashMap<Integer, ArrayVar> arrays;
     private HashMap<Integer, Integer> ssaMap;
     private HashMap<Integer, HashMap<Integer, ArrayList<Integer>>> defUseChain;
@@ -18,7 +17,6 @@ public class VariableManager
     public VariableManager()
     {
         variables = new HashSet<Integer>();
-        globalVariables = new HashSet<Integer>();
         ssaMap = new HashMap<Integer, Integer>();
         defUseChain = new HashMap<Integer, HashMap<Integer, ArrayList<Integer>>>();
         arrays = new HashMap<Integer, ArrayVar>();
@@ -37,25 +35,10 @@ public class VariableManager
         }
     }
 
-    public void setGlobalVariables(HashSet<Integer> gVariables)
-    {
-        globalVariables = gVariables;
-    }
-
-    public HashSet<Integer> getGlobalVariables()
-    {
-        return globalVariables;
-    }
-
     public HashSet<Integer> getVariables()
     {
         return variables;
     } 
-
-    public boolean isGlobalVariable(Integer variable)
-    {
-        return globalVariables.contains(variable);
-    }
 
     public boolean isVariable(Integer variable)
     {
@@ -98,7 +81,8 @@ public class VariableManager
 
     public void setSsaMap(HashMap<Integer, Integer> restoreSsa)
     {
-        ssaMap = restoreSsa;
+        ssaMap.clear();
+        ssaMap.putAll(restoreSsa);
     }
 
     public Integer getSsaVersion(Integer variable)

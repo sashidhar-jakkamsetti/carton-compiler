@@ -35,6 +35,10 @@ public class Instruction
         {
             ret = String.format("%s : %s %s", id, opcode.toString(), operandX.toString());
         }
+        else if(operandX == null && operandY != null)
+        {
+            ret = String.format("%s : %s %s", id, opcode.toString(), operandY.toString());
+        }
         else 
         {
             ret = String.format("%s : %s", id, opcode.toString());

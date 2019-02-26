@@ -44,10 +44,10 @@ public class Operator
         {
             put(TokenType.eqlToken, OperatorCode.bne);
             put(TokenType.neqToken, OperatorCode.beq);
-            put(TokenType.lssToken, OperatorCode.blt);
-            put(TokenType.leqToken, OperatorCode.ble);
-            put(TokenType.gtrToken, OperatorCode.bgt);
-            put(TokenType.geqToken, OperatorCode.bge);
+            put(TokenType.lssToken, OperatorCode.bge);
+            put(TokenType.leqToken, OperatorCode.bgt);
+            put(TokenType.gtrToken, OperatorCode.ble);
+            put(TokenType.geqToken, OperatorCode.blt);
 
             put(TokenType.thenToken, OperatorCode.bra);
             put(TokenType.doToken, OperatorCode.bra);
@@ -73,34 +73,29 @@ public class Operator
         }
     };
 
-    public static ArrayList<OperatorCode> getOpCode(Token opToken)
+    public static OperatorCode getOpCode(Token opToken)
     {
-        ArrayList<OperatorCode> opCodes = new ArrayList<OperatorCode>();
         if(arithmeticOperator.containsKey(opToken.type))
         {
-            opCodes.add(arithmeticOperator.get(opToken.type));
+            return arithmeticOperator.get(opToken.type);
         }
         else if(relationOperator.containsKey(opToken.type))
         {
-            opCodes.add(relationOperator.get(opToken.type));
-            opCodes.add(branchingOperator.get(opToken.type));
+            return relationOperator.get(opToken.type);
         }
         else if(assignmentOperator.containsKey(opToken.type))
         {
-            opCodes.add(assignmentOperator.get(opToken.type));
+            return assignmentOperator.get(opToken.type);
         }
         else if(standardIoOperator.containsKey(opToken.value))
         {
-            opCodes.add(standardIoOperator.get(opToken.value));
+            return standardIoOperator.get(opToken.value);
         }
         else if(opToken.isSameType(TokenType.periodToken))
         {
-            opCodes.add(OperatorCode.end);
+            return OperatorCode.end;
         }
-        else
-        {
-            throw new IllegalArgumentException("Operator Token not found.");
-        }
-        return opCodes;
+
+        return null;
     };
 }
