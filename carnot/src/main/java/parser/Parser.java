@@ -362,14 +362,6 @@ public class Parser
                 bResult.condition = opToken;
                 
                 cBlock.addInstruction(iCodeGenerator.compute(opToken, bResult));
-                if(function == null)
-                {
-                    cBlock.freezeSsa(vManager.getSsaMap(), null);
-                }
-                else 
-                {
-                    cBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
-                }
                 return callFunction.returnInstruction;
             }
 
@@ -543,9 +535,88 @@ public class Parser
 
     private IBlock whileStatement(IBlock cBlock, Function function)
     {
-        WhileBlock whileBlock = null;
+        IBlock fBlock = null;
+        if(inputSym.isSameType(TokenType.whileToken))
+        {
+            next();
+            WhileBlock wBlock = cfg.initializeWhileBlock();
+            wBlock.setParent(cBlock);
+            cBlock.setChild(wBlock);
 
-        return (IBlock)whileBlock;
+            IBlock lBlock = cfg.initializeBlock();
+            wBlock.setLoopBlock(lBlock);
+            lBlock.setParent(wBlock);
+
+            BranchResult bResult = relation(wBlock, function);
+            wBlock.addInstruction(iCodeGenerator.compute(bResult.condition, bResult));
+            
+            if(function == null)
+            {
+                cBlock.freezeSsa(vManager.getSsaMap(), null);
+                wBlock.freezeSsa(vManager.getSsaMap(), null);
+            }
+            else 
+            {
+                cBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
+                wBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
+            }
+
+            if(inputSym.isSameType(TokenType.doToken))
+            {
+                BranchResult bResult2 = new BranchResult();
+                bResult2.condition = inputSym;
+                bResult2.set(wBlock);
+                next();
+
+                lBlock = statSequence(lBlock, function);
+                if(inputSym.isSameType(TokenType.odToken) && lBlock != null)
+                {
+                    bResult2.set(wBlock);
+                    lBlock.addInstruction(iCodeGenerator.compute(bResult2.condition, bResult2));
+                    lBlock.setChild(wBlock);
+            
+                    if(function == null)
+                    {
+                        lBlock.freezeSsa(vManager.getSsaMap(), null);
+                    }
+                    else 
+                    {
+                        lBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
+                    }
+
+                    wBlock.createPhis(scanner.address2Identifier);
+                    if(function == null)
+                    {
+                        wBlock.updateIncomingVManager(vManager, null);
+
+                    }
+                    else
+                    {
+                        wBlock.updateIncomingVManager(vManager, function.vManager);
+                    }
+                    wBlock.updatePhiVarOccurances();
+
+                    fBlock = cfg.initializeBlock();
+                    fBlock.setParent(wBlock);
+                    wBlock.setChild(fBlock);
+                    wBlock.fixupBranch(bResult.fixuplocation, fBlock);
+                }
+                else
+                {
+                    error(new IncorrectSyntaxException("Od token not found while parsing while statement."));
+                }
+            }
+            else
+            {
+                error(new IncorrectSyntaxException("Do token not found while parsing while statement."));
+            }
+        }
+        else
+        {
+            error(new IncorrectSyntaxException("While token not found while parsing while statement."));
+        }
+
+        return fBlock;
     }
 
     private IResult returnStatement(IBlock cBlock, Function function)

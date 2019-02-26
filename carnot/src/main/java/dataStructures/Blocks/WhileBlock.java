@@ -4,6 +4,7 @@ import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Results.*;
 import dataStructures.Instructions.*;
+import dataStructures.Operator.OperatorCode;
 import intermediateCodeRepresentation.*;
 
 import java.util.*;
@@ -47,6 +48,11 @@ public class WhileBlock extends Block implements IBlock
     public IBlock getFollowBlock()
     {
         return followBlock;
+    }
+
+    public ArrayList<PhiInstruction> getPhis()
+    {
+        return (ArrayList<PhiInstruction>)phiManager.phis.values();
     }
 
     @Override
@@ -116,9 +122,127 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
-    // TODO: update defUseChain also. Along with nested while loops.
+    // TODO: update defUseChain also.
     public void updatePhiVarOccurances()
     {
+        HashMap<Integer, Boolean> stopTable = new HashMap<Integer, Boolean>();
+        for (Integer key : phiManager.phis.keySet()) 
+        {
+            stopTable.put(key, false);
+        }
 
+        updatePhiVarOccurances(instructions, stopTable);
+
+        Stack<IBlock> nBlocks = new Stack<IBlock>();
+        nBlocks.add(loopBlock);
+        Boolean alreadyVisitedBlocks[] = new Boolean[1000];
+        alreadyVisitedBlocks[id] = true;
+        while(!nBlocks.isEmpty() && stopTable.values().stream().anyMatch(t -> t == false))
+        {
+            IBlock cBlock = nBlocks.pop();
+            alreadyVisitedBlocks[cBlock.getId()] = true;
+            updatePhiVarOccurances(cBlock, stopTable);
+
+            if(cBlock instanceof WhileBlock)
+            {
+                if(!alreadyVisitedBlocks[((WhileBlock)cBlock).getLoopBlock().getId()])
+                {
+                    nBlocks.push(((WhileBlock)cBlock).getLoopBlock());
+                }
+            }
+            else if(cBlock instanceof IfBlock)
+            {
+                if(!alreadyVisitedBlocks[((IfBlock)cBlock).getThenBlock().getId()])
+                {
+                    nBlocks.push(((IfBlock)cBlock).getThenBlock());
+                }
+                if(!alreadyVisitedBlocks[((IfBlock)cBlock).getElseBlock().getId()])
+                {
+                    nBlocks.push(((IfBlock)cBlock).getElseBlock());
+                }
+            }
+            else 
+            {
+                if(!alreadyVisitedBlocks[cBlock.getChild().getId()])
+                {
+                    nBlocks.push(cBlock.getChild());
+                }
+            }
+        }
+    }
+
+    public void updatePhiVarOccurances(List<Instruction> instructions, HashMap<Integer, Boolean> stopTable)
+    {
+        for (Instruction instruction : instructions) 
+        {
+            if(instruction.operandX instanceof VariableResult)
+            {
+                Variable varToUpdate = ((VariableResult)instruction.operandX).variable;
+
+                if(stopTable.containsKey(varToUpdate.address) && !stopTable.get(varToUpdate.address))
+                {
+                    PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
+                    varToUpdate.version = phiInstr.variable.version;
+                }
+            }
+
+            if(instruction.opcode != OperatorCode.move)
+            {
+                if(instruction.operandY instanceof VariableResult)
+                {
+                    Variable varToUpdate = ((VariableResult)instruction.operandY).variable;
+
+                    if(stopTable.containsKey(varToUpdate.address) && !stopTable.get(varToUpdate.address))
+                    {
+                        PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
+                        varToUpdate.version = phiInstr.variable.version;
+                    }
+                }
+            }
+            else
+            {
+                if(instruction.operandY instanceof VariableResult)
+                {
+                    Variable varToUpdate = ((VariableResult)instruction.operandY).variable;
+
+                    if(stopTable.containsKey(varToUpdate.address) && !stopTable.get(varToUpdate.address))
+                    {
+                        stopTable.put(varToUpdate.address, true);
+                    }
+                }
+            }
+        }
+    }
+
+    public void updatePhiVarOccurances(IBlock b, HashMap<Integer, Boolean> stopTable)
+    {
+        if(b instanceof WhileBlock || b instanceof JoinBlock)
+        {
+            ArrayList<PhiInstruction> bPhis = (b instanceof WhileBlock) ? ((WhileBlock)b).getPhis() : ((JoinBlock)b).getPhis();
+            for (PhiInstruction i : bPhis)
+            {
+                if(phiManager.phis.containsKey(i.variable.address) 
+                        && stopTable.containsKey(i.variable.address) 
+                                && !stopTable.get(i.variable.address))
+                {
+                    PhiInstruction phiI = phiManager.phis.get(i.variable.address);
+                    if(i.operandX instanceof VariableResult && phiI.operandX instanceof VariableResult)
+                    {
+                        if(((VariableResult)i.operandX).variable.version == ((VariableResult)phiI.operandX).variable.version)
+                        {
+                            ((VariableResult)i.operandX).variable.version = phiI.variable.version;
+                            stopTable.put(phiI.variable.address, true);
+                        }
+                        else if(((VariableResult)i.operandY).variable.version == ((VariableResult)phiI.operandX).variable.version)
+                        {
+                            ((VariableResult)i.operandY).variable.version = phiI.variable.version;
+                            stopTable.put(phiI.variable.address, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        updatePhiVarOccurances(b.getInstructions(), stopTable);
     }
 }

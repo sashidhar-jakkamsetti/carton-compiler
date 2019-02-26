@@ -43,6 +43,11 @@ public class JoinBlock extends Block implements IBlock
         return elseBlock;
     }
 
+    public ArrayList<PhiInstruction> getPhis()
+    {
+        return (ArrayList<PhiInstruction>)phiManager.phis.values();
+    }
+
     @Override
     public String toString()
     {
