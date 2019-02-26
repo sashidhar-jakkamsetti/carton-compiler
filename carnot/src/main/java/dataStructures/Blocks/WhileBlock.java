@@ -13,7 +13,7 @@ public class WhileBlock extends Block implements IBlock
 {
     private Block doBlock;
     private Block loopBlock;
-    private Block followBlock = (Block)child;
+    private Block followBlock;
 
     private PhiManager phiManager;
 
@@ -22,6 +22,7 @@ public class WhileBlock extends Block implements IBlock
         super(id);
         doBlock = null;
         loopBlock = null;
+        followBlock = null;
         phiManager = new PhiManager();
     }
 
@@ -45,14 +46,23 @@ public class WhileBlock extends Block implements IBlock
         return loopBlock;
     }
 
+    public void setFollowBlock(IBlock fBlock)
+    {
+        followBlock = (Block)fBlock;
+    }
+
     public IBlock getFollowBlock()
     {
         return followBlock;
     }
 
-    public ArrayList<PhiInstruction> getPhis()
+    public List<PhiInstruction> getPhis()
     {
-        return (ArrayList<PhiInstruction>)phiManager.phis.values();
+        if(phiManager != null && phiManager.phis != null && phiManager.phis.values().size() > 0)
+        {
+            return new ArrayList<PhiInstruction>(phiManager.phis.values());
+        }
+        return new ArrayList<PhiInstruction>();
     }
 
     @Override
@@ -97,10 +107,10 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
-    public void createPhis(HashMap<Integer, String> address2identifier)
+    public void createPhis(IBlock lBlock, HashMap<Integer, String> address2identifier)
     {
-        createPhis(address2identifier, parent.globalSsa, loopBlock.globalSsa, globalSsa);
-        createPhis(address2identifier, parent.localSsa, loopBlock.localSsa, localSsa);
+        createPhis(address2identifier, parent.globalSsa, lBlock.getGlobalSsa(), globalSsa);
+        createPhis(address2identifier, parent.localSsa, lBlock.getLocalSsa(), localSsa);
     }
 
     private void createPhis(HashMap<Integer, String> address2identifier, HashMap<Integer, Integer> pSsaMap, 
@@ -136,6 +146,7 @@ public class WhileBlock extends Block implements IBlock
         Stack<IBlock> nBlocks = new Stack<IBlock>();
         nBlocks.add(loopBlock);
         Boolean alreadyVisitedBlocks[] = new Boolean[1000];
+        Arrays.fill(alreadyVisitedBlocks, false);
         alreadyVisitedBlocks[id] = true;
         while(!nBlocks.isEmpty() && stopTable.values().stream().anyMatch(t -> t == false))
         {
@@ -218,7 +229,16 @@ public class WhileBlock extends Block implements IBlock
     {
         if(b instanceof WhileBlock || b instanceof JoinBlock)
         {
-            ArrayList<PhiInstruction> bPhis = (b instanceof WhileBlock) ? ((WhileBlock)b).getPhis() : ((JoinBlock)b).getPhis();
+            List<PhiInstruction> bPhis;
+            if(b instanceof WhileBlock)
+            {
+                bPhis = ((WhileBlock)b).getPhis();
+            }
+            else
+            {
+                bPhis = ((JoinBlock)b).getPhis();
+            }
+
             for (PhiInstruction i : bPhis)
             {
                 if(phiManager.phis.containsKey(i.variable.address) 

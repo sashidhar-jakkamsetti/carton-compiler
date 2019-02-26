@@ -153,7 +153,7 @@ public class IntermediateCodeGenerator
         else 
         {
             vManager.addVariable(vResult.variable.address);
-            block.addInstruction(compute(OperatorCode.move, new ConstantResult(), vResult)); // fishy: what about formal parameters?
+            block.addInstruction(compute(OperatorCode.move, vResult, new ConstantResult())); // fishy: what about formal parameters?
         }
     }
 }

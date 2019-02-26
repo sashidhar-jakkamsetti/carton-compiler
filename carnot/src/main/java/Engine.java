@@ -36,7 +36,7 @@ public class Engine
         }
         else
         {
-            program = "testprograms/test003.txt";
+            program = "testprograms/";
         }
 
         if(program.endsWith("/"))
@@ -48,7 +48,14 @@ public class Engine
             {
                 if(file.getAbsolutePath().endsWith(".txt"))
                 {
-                    run(file.getAbsolutePath());
+                    try
+                    {
+                        run(file.getAbsolutePath());
+                    }
+                    catch(Exception e)
+                    {
+
+                    }
                 }
             }
         }

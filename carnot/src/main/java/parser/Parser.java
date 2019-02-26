@@ -571,6 +571,7 @@ public class Parser
                 lBlock = statSequence(lBlock, function);
                 if(inputSym.isSameType(TokenType.odToken) && lBlock != null)
                 {
+                    next();
                     bResult2.set(wBlock);
                     lBlock.addInstruction(iCodeGenerator.compute(bResult2.condition, bResult2));
                     lBlock.setChild(wBlock);
@@ -584,7 +585,7 @@ public class Parser
                         lBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
                     }
 
-                    wBlock.createPhis(scanner.address2Identifier);
+                    wBlock.createPhis(lBlock, scanner.address2Identifier);
                     if(function == null)
                     {
                         wBlock.updateIncomingVManager(vManager, null);
@@ -598,7 +599,7 @@ public class Parser
 
                     fBlock = cfg.initializeBlock();
                     fBlock.setParent(wBlock);
-                    wBlock.setChild(fBlock);
+                    wBlock.setFollowBlock(fBlock);
                     wBlock.fixupBranch(bResult.fixuplocation, fBlock);
                 }
                 else

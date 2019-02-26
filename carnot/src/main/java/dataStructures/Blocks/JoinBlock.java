@@ -43,9 +43,13 @@ public class JoinBlock extends Block implements IBlock
         return elseBlock;
     }
 
-    public ArrayList<PhiInstruction> getPhis()
+    public List<PhiInstruction> getPhis()
     {
-        return (ArrayList<PhiInstruction>)phiManager.phis.values();
+        if(phiManager != null && phiManager.phis != null && phiManager.phis.values().size() > 0)
+        {
+            return new ArrayList<PhiInstruction>(phiManager.phis.values());
+        }
+        return new ArrayList<PhiInstruction>();
     }
 
     @Override
