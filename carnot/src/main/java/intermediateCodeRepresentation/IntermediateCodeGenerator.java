@@ -11,22 +11,12 @@ import exceptions.IllegalVariableException;
 
 public class IntermediateCodeGenerator
 {
-    private static Integer pc;
-    private static IntermediateCodeGenerator iCodeGenerator;
+    private Integer pc;
+    private IntermediateCodeGenerator iCodeGenerator;
 
-    private IntermediateCodeGenerator()
+    public IntermediateCodeGenerator()
     {
         pc = 0;
-    }
-
-    public static IntermediateCodeGenerator getInstance()
-    {
-        if(iCodeGenerator == null)
-        {
-            iCodeGenerator = new IntermediateCodeGenerator();
-        }
-
-        return iCodeGenerator;
     }
 
     public Integer getPC()

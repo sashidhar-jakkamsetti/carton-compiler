@@ -74,36 +74,66 @@ public class GraphViz
             if(cBlock instanceof IfBlock)
             {
                 IfBlock ifBlock = (IfBlock)cBlock;
-                if(!alreadyPrintedBlocks[ifBlock.getThenBlock().getId()])
+                if(ifBlock.getThenBlock() != null)
                 {
-                    blockStack.push(ifBlock.getThenBlock());
-                    alreadyPrintedBlocks[ifBlock.getThenBlock().getId()] = true;
+                    if(!alreadyPrintedBlocks[ifBlock.getThenBlock().getId()])
+                    {
+                        blockStack.push(ifBlock.getThenBlock());
+                        alreadyPrintedBlocks[ifBlock.getThenBlock().getId()] = true;
+                    }
+                    edges.add(addEdge(ifBlock, ifBlock.getThenBlock()) + "[label=\"then\"]");
                 }
-                edges.add(addEdge(ifBlock, ifBlock.getThenBlock()) + "[label=\"Then\"]");
+                else if(ifBlock.getJoinBlock() != null)
+                {
+                    if(!alreadyPrintedBlocks[ifBlock.getJoinBlock().getId()])
+                    {
+                        blockStack.push(ifBlock.getJoinBlock());
+                        alreadyPrintedBlocks[ifBlock.getJoinBlock().getId()] = true;
+                    }
+                    edges.add(addEdge(ifBlock, ifBlock.getJoinBlock()) + "[label=\"then\"]");
+                }
 
-                if(!alreadyPrintedBlocks[ifBlock.getElseBlock().getId()])
+                if(ifBlock.getElseBlock() != null)
                 {
-                    blockStack.push(ifBlock.getElseBlock());
-                    alreadyPrintedBlocks[ifBlock.getElseBlock().getId()] = true;
+                    if(!alreadyPrintedBlocks[ifBlock.getElseBlock().getId()])
+                    {
+                        blockStack.push(ifBlock.getElseBlock());
+                        alreadyPrintedBlocks[ifBlock.getElseBlock().getId()] = true;
+                    }
+                    edges.add(addEdge(ifBlock, ifBlock.getElseBlock()) + "[label=\"else\"]");
                 }
-                edges.add(addEdge(ifBlock, ifBlock.getElseBlock()) + "[label=\"Else\"]");
+                else if(ifBlock.getJoinBlock() != null)
+                {
+                    if(!alreadyPrintedBlocks[ifBlock.getJoinBlock().getId()])
+                    {
+                        blockStack.push(ifBlock.getJoinBlock());
+                        alreadyPrintedBlocks[ifBlock.getJoinBlock().getId()] = true;
+                    }
+                    edges.add(addEdge(ifBlock, ifBlock.getJoinBlock()) + "[label=\"else\"]");
+                }
             }
             else if(cBlock instanceof WhileBlock)
             {
                 WhileBlock whileBlock = (WhileBlock)cBlock;
-                if(!alreadyPrintedBlocks[whileBlock.getLoopBlock().getId()])
+                if(whileBlock.getLoopBlock() != null)
                 {
-                    blockStack.push(whileBlock.getLoopBlock());
-                    alreadyPrintedBlocks[whileBlock.getLoopBlock().getId()] = true;
+                    if(!alreadyPrintedBlocks[whileBlock.getLoopBlock().getId()])
+                    {
+                        blockStack.push(whileBlock.getLoopBlock());
+                        alreadyPrintedBlocks[whileBlock.getLoopBlock().getId()] = true;
+                    }
+                    edges.add(addEdge(whileBlock, whileBlock.getLoopBlock()) + "[label=\"loop\"]");
                 }
-                edges.add(addEdge(whileBlock, whileBlock.getLoopBlock()) + "[label=\"Loop\"]");
 
-                if(!alreadyPrintedBlocks[whileBlock.getFollowBlock().getId()])
+                if(whileBlock.getFollowBlock() != null)
                 {
-                    blockStack.push(whileBlock.getFollowBlock());
-                    alreadyPrintedBlocks[whileBlock.getFollowBlock().getId()] = true;
+                    if(!alreadyPrintedBlocks[whileBlock.getFollowBlock().getId()])
+                    {
+                        blockStack.push(whileBlock.getFollowBlock());
+                        alreadyPrintedBlocks[whileBlock.getFollowBlock().getId()] = true;
+                    }
+                    edges.add(addEdge(whileBlock, whileBlock.getFollowBlock()) + "[label=\"follow\"]");
                 }
-                edges.add(addEdge(whileBlock, whileBlock.getFollowBlock()) + "[label=\"Follow\"]");
             }
             else
             {

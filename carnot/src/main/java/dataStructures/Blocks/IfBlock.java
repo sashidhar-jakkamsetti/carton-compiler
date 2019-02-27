@@ -12,13 +12,14 @@ public class IfBlock extends Block implements IBlock
 {
     private Block thenBlock;
     private Block elseBlock;
-    private Block joinBlock = (Block)child;
+    private JoinBlock joinBlock;
 
     public IfBlock(Integer id)
     {
         super(id);
         thenBlock = null;
         elseBlock = null;
+        joinBlock = null;
     }
 
     public void setThenBlock(IBlock block)
@@ -39,6 +40,16 @@ public class IfBlock extends Block implements IBlock
     public IBlock getElseBlock()
     {
         return elseBlock;
+    }
+
+    public void setJoinBlock(IBlock block)
+    {
+        joinBlock = (JoinBlock)block;
+    }
+
+    public IBlock getJoinBlock()
+    {
+        return joinBlock;
     }
     
     public void fixupBranch(Integer iid, IBlock targetBlock)

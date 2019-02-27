@@ -110,14 +110,17 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
-    public void createPhis(IBlock lBlock, HashMap<Integer, String> address2identifier)
+    public void createPhis(IBlock lBlock, HashMap<Integer, String> address2identifier, IntermediateCodeGenerator iCodeGenerator)
     {
-        createPhis(address2identifier, parent.globalSsa, lBlock.getGlobalSsa(), globalSsa);
-        createPhis(address2identifier, parent.localSsa, lBlock.getLocalSsa(), localSsa);
+        createPhis(address2identifier, iCodeGenerator, parent.globalSsa, lBlock.getGlobalSsa(), globalSsa);
+        createPhis(address2identifier, iCodeGenerator, parent.localSsa, lBlock.getLocalSsa(), localSsa);
     }
 
-    private void createPhis(HashMap<Integer, String> address2identifier, HashMap<Integer, Integer> pSsaMap, 
-                HashMap<Integer, Integer> lSsaMap, HashMap<Integer, Integer> ssaMap)
+    private void createPhis(
+                HashMap<Integer, String> address2identifier, IntermediateCodeGenerator iCodeGenerator,
+                HashMap<Integer, Integer> pSsaMap, 
+                HashMap<Integer, Integer> lSsaMap, HashMap<Integer, Integer> ssaMap
+                )
     {
         for (Integer key : pSsaMap.keySet()) 
         {
@@ -129,13 +132,13 @@ public class WhileBlock extends Block implements IBlock
                 VariableResult x2 = new VariableResult();
                 x2.set(new Variable(address2identifier.get(key), key, lSsaMap.get(key)));
 
-                phiManager.addPhi(x, x1, x2);
+                phiManager.addPhi(x, x1, x2, iCodeGenerator);
                 ssaMap.put(key, x.version);
             }
         }
     }
 
-    // TODO: update defUseChain also.
+    // TODO: update defUseChain.
     public void updatePhiVarOccurances()
     {
         HashMap<Integer, Boolean> stopTable = new HashMap<Integer, Boolean>();
@@ -147,39 +150,78 @@ public class WhileBlock extends Block implements IBlock
         updatePhiVarOccurances(instructions, stopTable);
 
         Stack<IBlock> nBlocks = new Stack<IBlock>();
+        Stack<IBlock> nfBlocks = new Stack<IBlock>();
         nBlocks.add(loopBlock);
         Boolean alreadyVisitedBlocks[] = new Boolean[1000];
         Arrays.fill(alreadyVisitedBlocks, false);
         alreadyVisitedBlocks[id] = true;
-        while(!nBlocks.isEmpty() && stopTable.values().stream().anyMatch(t -> t == false))
+        while((!nBlocks.isEmpty() || !nfBlocks.isEmpty()))
         {
-            IBlock cBlock = nBlocks.pop();
+            IBlock cBlock;
+            if(!nBlocks.isEmpty())
+            {
+                cBlock = nBlocks.pop();
+            }
+            else 
+            {
+                cBlock = nfBlocks.pop();
+            }
+
             alreadyVisitedBlocks[cBlock.getId()] = true;
             updatePhiVarOccurances(cBlock, stopTable);
 
             if(cBlock instanceof WhileBlock)
             {
-                if(!alreadyVisitedBlocks[((WhileBlock)cBlock).getLoopBlock().getId()])
+                if(((WhileBlock)cBlock).getLoopBlock() != null)
                 {
-                    nBlocks.push(((WhileBlock)cBlock).getLoopBlock());
+                    if(!alreadyVisitedBlocks[((WhileBlock)cBlock).getLoopBlock().getId()])
+                    {
+                        nBlocks.push(((WhileBlock)cBlock).getLoopBlock());
+                    }
+                }
+
+                if(((WhileBlock)cBlock).getFollowBlock() != null)
+                {
+                    if(!alreadyVisitedBlocks[((WhileBlock)cBlock).getFollowBlock().getId()])
+                    {
+                        nfBlocks.push(((WhileBlock)cBlock).getFollowBlock());
+                    }
                 }
             }
             else if(cBlock instanceof IfBlock)
             {
-                if(!alreadyVisitedBlocks[((IfBlock)cBlock).getThenBlock().getId()])
+                if(((IfBlock)cBlock).getThenBlock() != null)
                 {
-                    nBlocks.push(((IfBlock)cBlock).getThenBlock());
+                    if(!alreadyVisitedBlocks[((IfBlock)cBlock).getThenBlock().getId()])
+                    {
+                        nBlocks.push(((IfBlock)cBlock).getThenBlock());
+                    }
                 }
-                if(!alreadyVisitedBlocks[((IfBlock)cBlock).getElseBlock().getId()])
+
+                if(((IfBlock)cBlock).getElseBlock() != null)
                 {
-                    nBlocks.push(((IfBlock)cBlock).getElseBlock());
+                    if(!alreadyVisitedBlocks[((IfBlock)cBlock).getElseBlock().getId()])
+                    {
+                        nBlocks.push(((IfBlock)cBlock).getElseBlock());
+                    }
+                }
+
+                if(((IfBlock)cBlock).getJoinBlock() != null)
+                {
+                    if(!alreadyVisitedBlocks[((IfBlock)cBlock).getJoinBlock().getId()])
+                    {
+                        nfBlocks.push(((IfBlock)cBlock).getJoinBlock());
+                    }
                 }
             }
             else 
             {
-                if(!alreadyVisitedBlocks[cBlock.getChild().getId()])
+                if(cBlock.getChild() != null)
                 {
-                    nBlocks.push(cBlock.getChild());
+                    if(!(cBlock.getChild() instanceof JoinBlock) && !alreadyVisitedBlocks[cBlock.getChild().getId()])
+                    {
+                        nBlocks.push(cBlock.getChild());
+                    }
                 }
             }
         }
@@ -245,8 +287,7 @@ public class WhileBlock extends Block implements IBlock
             for (PhiInstruction i : bPhis)
             {
                 if(phiManager.phis.containsKey(i.variable.address) 
-                        && stopTable.containsKey(i.variable.address) 
-                                && !stopTable.get(i.variable.address))
+                        && stopTable.containsKey(i.variable.address))
                 {
                     PhiInstruction phiI = phiManager.phis.get(i.variable.address);
                     if(i.operandX instanceof VariableResult && phiI.operandX instanceof VariableResult)

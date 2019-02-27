@@ -8,32 +8,23 @@ import dataStructures.Instructions.*;
 
 public class ControlFlowGraph
 {
-    public static Block head;
-    public static List<Instruction> instructions;
-    public static List<Block> blocks;
+    public Block head;
+    public List<Instruction> instructions;
+    public List<Block> blocks;
+    public Boolean done;
 
-    public static List<Function> functions;
+    public List<Function> functions;
 
-    private static Integer bc;
-    private static ControlFlowGraph cfg;
+    private Integer bc;
 
-    private ControlFlowGraph()
+    public ControlFlowGraph()
     {
         bc = 0;
         head = new Block(bc++);
         blocks = new ArrayList<Block>();
         functions = new ArrayList<Function>();
+        done = false;
         blocks.add(head);
-    }
-
-    public static ControlFlowGraph getInstance()
-    {
-        if(cfg == null)
-        {
-            cfg = new ControlFlowGraph();
-        }
-
-        return cfg;
     }
 
     public Block initializeBlock()

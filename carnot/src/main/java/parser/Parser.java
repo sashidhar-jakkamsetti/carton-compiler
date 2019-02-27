@@ -16,13 +16,14 @@ public class Parser
     private Scanner scanner;
     private Token inputSym;
 
-    private static ControlFlowGraph cfg;
+    private ControlFlowGraph cfg;
     private VariableManager vManager;
-    private static IntermediateCodeGenerator iCodeGenerator;
+    private IntermediateCodeGenerator iCodeGenerator;
+    private static String cfileName;
 
     public static Parser getInstance(String fileName)
     {
-        if(parser == null)
+        if(parser == null || cfileName != fileName)
         {
             parser = new Parser(fileName);
 
@@ -48,13 +49,13 @@ public class Parser
         }
     }
 
-    public ControlFlowGraph parse(boolean flag)
+    public ControlFlowGraph parse()
     {
-        cfg = ControlFlowGraph.getInstance();
-        iCodeGenerator = IntermediateCodeGenerator.getInstance();
+        cfg = new ControlFlowGraph();
+        iCodeGenerator = new IntermediateCodeGenerator();
         vManager = new VariableManager();
         next();
-        flag = computation();
+        cfg.done = computation();
         return cfg;
     }
 
@@ -87,11 +88,13 @@ public class Parser
                                 else
                                 {
                                     error(new IncorrectSyntaxException("Close bracket not found in array declaration."));
+                                    return null;
                                 }
                             }
                             else
                             {
                                 error(new IncorrectSyntaxException("Open bracket not found in array declaration."));
+                                return null;
                             }
                         }while(inputSym.isSameType(TokenType.openbracketToken));
         
@@ -102,6 +105,7 @@ public class Parser
                     else 
                     {
                         error(new IllegalVariableException("Undeclared array found while parsing designator."));
+                        return null;
                     }
                 }
                 else
@@ -112,11 +116,13 @@ public class Parser
             else 
             {
                 error(new IllegalVariableException("Undeclared variable found while parsing designator."));
+                return null;
             }
         }
         else
         {
             error(new IncorrectSyntaxException("Identifier not found while parsing designator."));
+            return null;
         }
 
         return vResult;
@@ -226,7 +232,14 @@ public class Parser
                 IResult yResult = term(cBlock, function);
                 if(yResult != null)
                 {
-                    xResult.setIid(iCodeGenerator.getPC());
+                    if(xResult.getIid() > 0) 
+                    {
+                        xResult = xResult.toInstruction();
+                    }
+                    else
+                    {
+                        xResult.setIid(iCodeGenerator.getPC());
+                    }
                     cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
                 }
             }    
@@ -281,14 +294,10 @@ public class Parser
                         {
                             rhsResult = rhsResult.toInstruction();
                         }
-                        Variable v = ((VariableResult)lhsResult).variable;
-                        v.version = iCodeGenerator.getPC();
 
+                        Variable v = ((VariableResult)lhsResult).variable;
                         if(vManager.isVariable(v.address))
                         {
-                            vManager.updateSsaMap(v.address, v.version);
-                            vManager.updateDefUseChain(v.address, v.version, v.version);
-
                             if(((VariableResult)lhsResult).isArray)
                             {
                                 cBlock.addInstruction(iCodeGenerator.storeArrayElement(vManager, lhsResult, rhsResult));
@@ -299,12 +308,13 @@ public class Parser
                             {
                                 cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
                             }
+
+                            v.version = iCodeGenerator.getPC() - 1;
+                            vManager.updateSsaMap(v.address, v.version);
+                            vManager.updateDefUseChain(v.address, v.version, v.version);
                         }
                         else if(function != null && function.vManager.isVariable(v.address))
                         {
-                            function.vManager.updateSsaMap(v.address, v.version);
-                            function.vManager.updateDefUseChain(v.address, v.version, v.version);
-
                             if(((VariableResult)lhsResult).isArray)
                             {
                                 cBlock.addInstruction(iCodeGenerator.storeArrayElement(function.vManager, lhsResult, rhsResult));
@@ -315,6 +325,10 @@ public class Parser
                             {
                                 cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
                             }
+
+                            v.version = iCodeGenerator.getPC() - 1;
+                            function.vManager.updateSsaMap(v.address, v.version);
+                            function.vManager.updateDefUseChain(v.address, v.version, v.version);
                         }
                     }
                 }
@@ -353,6 +367,7 @@ public class Parser
                     else
                     {
                         error(new IncorrectSyntaxException("Closing parenthesis not found while parsing funcCall statement."));
+                        return null;
                     }
                 }
 
@@ -371,6 +386,24 @@ public class Parser
                 if(inputSym.value.equals("InputNum"))
                 {
                     next();
+                    if(inputSym.isSameType(TokenType.openparenToken))
+                    {
+                        next();
+                        if(inputSym.isSameType(TokenType.closeparenToken))
+                        {
+                            next();
+                        }
+                        else
+                        {
+                            error(new IncorrectSyntaxException("Close parenthesis not found while parsing InputNum statement."));
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Open parenthesis not found while parsing InputNum statement."));
+                        return null;
+                    }
                     cBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
                     return new InstructionResult(iCodeGenerator.getPC() - 1);
                 }
@@ -392,16 +425,37 @@ public class Parser
                         }
                         else
                         {
-                            error(new IncorrectSyntaxException("Closing parenthesis not found while parsing funcCall statement."));
+                            error(new IncorrectSyntaxException("Closing parenthesis not found while parsing OutputNum statement."));
+                            return null;
                         }
                     }
                     else
                     {
-                        error(new IncorrectSyntaxException("Open parenthesis not found while parsing funcCall statement."));
+                        error(new IncorrectSyntaxException("Open parenthesis not found while parsing OutputNum statement."));
+                        return null;
                     }
                 }
                 else
                 {
+                    next();
+                    if(inputSym.isSameType(TokenType.openparenToken))
+                    {
+                        next();
+                        if(inputSym.isSameType(TokenType.closeparenToken))
+                        {
+                            next();
+                        }
+                        else
+                        {
+                            error(new IncorrectSyntaxException("Close parenthesis not found while parsing InputNum statement."));
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        error(new IncorrectSyntaxException("Open parenthesis not found while parsing InputNum statement."));
+                        return null;
+                    }
                     cBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
                     return null;
                 }
@@ -410,6 +464,7 @@ public class Parser
         else
         {
             error(new IncorrectSyntaxException("Call token not found while parsing funcCall statement."));
+            return null;
         }
 
         return null;
@@ -426,7 +481,7 @@ public class Parser
             cBlock.setChild(iBlock);
 
             jBlock = cfg.initializeJoinBlock();
-            iBlock.setChild(jBlock);
+            iBlock.setJoinBlock(jBlock);
             jBlock.setParent(iBlock);
 
             BranchResult bResult = relation(iBlock, function);
@@ -454,6 +509,10 @@ public class Parser
                 tBlock.setParent(iBlock);
 
                 tBlock = (Block)statSequence(tBlock, function);
+                if(tBlock == null)
+                {
+                    return null;
+                }
                 bResult2.set(jBlock);
                 tBlock.addInstruction(iCodeGenerator.compute(bResult2.condition, bResult2));
                 tBlock.setChild(jBlock);
@@ -482,6 +541,10 @@ public class Parser
                     }
                     
                     eBlock = (Block)statSequence(eBlock, function);
+                    if(eBlock == null)
+                    {
+                        return null;
+                    }
                     iBlock.fixupBranch(bResult.fixuplocation, eBlock);
                     eBlock.setChild(jBlock);
                     jBlock.setElseBlock(eBlock);
@@ -503,7 +566,7 @@ public class Parser
                 if(inputSym.isSameType(TokenType.fiToken))
                 {
                     next();
-                    jBlock.createPhis(scanner.address2Identifier);
+                    jBlock.createPhis(scanner.address2Identifier, iCodeGenerator);
 
                     if(function == null)
                     {
@@ -518,16 +581,19 @@ public class Parser
                 else
                 {
                     error(new IncorrectSyntaxException("Fi token not found while parsing if statement."));
+                    return null;
                 }
             }
             else
             {
                 error(new IncorrectSyntaxException("Then token not found while parsing if statement."));
+                return null;
             }
         }
         else 
         {
             error(new IncorrectSyntaxException("If token not found while parsing if statement."));
+            return null;
         }
 
         return jBlock;
@@ -569,7 +635,11 @@ public class Parser
                 next();
 
                 lBlock = statSequence(lBlock, function);
-                if(inputSym.isSameType(TokenType.odToken) && lBlock != null)
+                if(lBlock == null)
+                {
+                    return null;
+                }
+                if(inputSym.isSameType(TokenType.odToken))
                 {
                     next();
                     bResult2.set(wBlock);
@@ -585,7 +655,7 @@ public class Parser
                         lBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
                     }
 
-                    wBlock.createPhis(lBlock, scanner.address2Identifier);
+                    wBlock.createPhis(lBlock, scanner.address2Identifier, iCodeGenerator);
                     if(function == null)
                     {
                         wBlock.updateIncomingVManager(vManager, null);
@@ -604,16 +674,19 @@ public class Parser
                 else
                 {
                     error(new IncorrectSyntaxException("Od token not found while parsing while statement."));
+                    return null;
                 }
             }
             else
             {
                 error(new IncorrectSyntaxException("Do token not found while parsing while statement."));
+                return null;
             }
         }
         else
         {
             error(new IncorrectSyntaxException("While token not found while parsing while statement."));
+            return null;
         }
 
         return fBlock;
@@ -630,13 +703,21 @@ public class Parser
             if(rResult != null)
             {
                 InstructionResult iResult = new InstructionResult(iCodeGenerator.getPC());
-                function.returnInstruction = iResult;
-                cBlock.addInstruction(iCodeGenerator.compute(opToken, rResult, iResult));
+                if(function.returnInstruction == null || function.returnInstruction.iid == -1)
+                {
+                    function.returnInstruction = iResult;
+                }
+                else
+                {
+                    iResult.set(function.returnInstruction.iid);
+                }
+                cBlock.addInstruction(iCodeGenerator.compute(opToken, iResult, rResult));
             }
         }
         else
         {
             error(new IncorrectSyntaxException("Return token not found while parsing return statement."));
+            return null;
         }
 
         return rResult;
@@ -682,6 +763,11 @@ public class Parser
         do
         {
             block = statement(block, function);
+            if(block == null)
+            {
+                return null;
+            }
+
             if(inputSym.isSameType(TokenType.semiToken))
             {
                 next();
@@ -781,6 +867,7 @@ public class Parser
             else
             {
                 error(new IncorrectSyntaxException("No Identifier found in Variable Declaration."));
+                return;
             }
 
             next();
@@ -808,10 +895,9 @@ public class Parser
             next();
             while(inputSym.isSameType(TokenType.ident))
             {
-                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value));
+                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
                 VariableResult vResult = new VariableResult();
                 vResult.set(v);
-                vResult.setIid(iCodeGenerator.getPC());
                 try
                 {
                     iCodeGenerator.declareVariable(function.head, function.vManager, vResult);
@@ -830,6 +916,7 @@ public class Parser
                     if(!inputSym.isSameType(TokenType.ident))
                     {
                         error(new IncorrectSyntaxException("Identifier not found while parsing formal paramters declaration."));
+                        return;
                     }
                 }
                 else
@@ -845,6 +932,7 @@ public class Parser
             else
             {
                 error(new IncorrectSyntaxException("Close parenthesis not found while parsing formal parameters declaration."));
+                return;
             }
         }
         else
@@ -870,7 +958,10 @@ public class Parser
                 cfg.addFunction(function);
 
                 next();
-                formalParam(function);
+                if(inputSym.isSameType(TokenType.openparenToken))
+                {
+                    formalParam(function);
+                }
 
                 if(inputSym.isSameType(TokenType.semiToken))
                 {
@@ -884,11 +975,13 @@ public class Parser
                     else 
                     {
                         error(new IncorrectSyntaxException("Semi comma not found while parsing function declaration."));
+                        return;
                     }
                 }
                 else
                 {
                     error(new IncorrectSyntaxException("Semi comma not found while parsing function declaration."));
+                    return;
                 }
             }
         }
@@ -912,11 +1005,13 @@ public class Parser
             else 
             {
                 error(new IncorrectSyntaxException("End token not found while parsing function body."));
+                return;
             }
         }
         else
         {
             error(new IncorrectSyntaxException("Begin token not found while parsing function body."));
+            return;
         }
     }
 
@@ -939,6 +1034,10 @@ public class Parser
             {
                 next();
                 IBlock lBlock = statSequence(cfg.head, null);
+                if(lBlock == null)
+                {
+                    return false;
+                }
                 if(inputSym.isSameType(TokenType.endToken))
                 {
                     next();

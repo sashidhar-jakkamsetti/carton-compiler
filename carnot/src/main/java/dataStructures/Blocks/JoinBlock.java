@@ -93,15 +93,31 @@ public class JoinBlock extends Block implements IBlock
         }
     }
 
-    public void createPhis(HashMap<Integer, String> address2identifier)
+    public void createPhis(HashMap<Integer, String> address2identifier, IntermediateCodeGenerator iCodeGenerator)
     {
         freezeSsa(parent.globalSsa, parent.localSsa);
-        createPhis(address2identifier, parent.globalSsa, thenBlock.globalSsa, elseBlock.globalSsa, globalSsa);
-        createPhis(address2identifier, parent.localSsa, thenBlock.localSsa, elseBlock.localSsa, localSsa);
+        if(thenBlock == null)
+        {
+            createPhis(address2identifier, iCodeGenerator, parent.globalSsa, parent.globalSsa, elseBlock.globalSsa, globalSsa);
+            createPhis(address2identifier, iCodeGenerator, parent.localSsa, parent.localSsa, elseBlock.localSsa, localSsa);
+        }
+        else if(elseBlock == null)
+        {
+            createPhis(address2identifier, iCodeGenerator, parent.globalSsa, thenBlock.globalSsa, parent.globalSsa, globalSsa);
+            createPhis(address2identifier, iCodeGenerator, parent.localSsa, thenBlock.localSsa, parent.localSsa, localSsa);
+        }
+        else 
+        {
+            createPhis(address2identifier, iCodeGenerator, parent.globalSsa, thenBlock.globalSsa, elseBlock.globalSsa, globalSsa);
+            createPhis(address2identifier, iCodeGenerator, parent.localSsa, thenBlock.localSsa, elseBlock.localSsa, localSsa);
+        }
     }
 
-    private void createPhis(HashMap<Integer, String> address2identifier, HashMap<Integer, Integer> iSsaMap, 
-                HashMap<Integer, Integer> tSsaMap, HashMap<Integer, Integer> eSsaMap, HashMap<Integer, Integer> ssaMap)
+    private void createPhis(
+                HashMap<Integer, String> address2identifier, IntermediateCodeGenerator iCodeGenerator,
+                HashMap<Integer, Integer> iSsaMap, HashMap<Integer, Integer> tSsaMap, 
+                HashMap<Integer, Integer> eSsaMap, HashMap<Integer, Integer> ssaMap
+                )
     {
         for (Integer key : iSsaMap.keySet()) 
         {
@@ -113,7 +129,7 @@ public class JoinBlock extends Block implements IBlock
                 VariableResult x2 = new VariableResult();
                 x2.set(new Variable(address2identifier.get(key), key, iSsaMap.get(key)));
 
-                phiManager.addPhi(x, x1, x2);
+                phiManager.addPhi(x, x1, x2, iCodeGenerator);
                 ssaMap.put(key, x.version);
             }
 
@@ -132,7 +148,7 @@ public class JoinBlock extends Block implements IBlock
                     }
                     else
                     {
-                        phiManager.addPhi(x, x1, x2);
+                        phiManager.addPhi(x, x1, x2, iCodeGenerator);
                         ssaMap.put(key, x.version);
                     }
                 }

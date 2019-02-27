@@ -11,12 +11,12 @@ public class FileReader {
     private Integer charPosition;
     private Integer lineNo;
     private String line;
-    private String fileName;
+    private static String cfileName;
     public static final int EOF = 255;
 
     public static FileReader getInstance(String fileName) 
     {
-        if (fileReader == null) 
+        if (fileReader == null || cfileName != fileName) 
         {
             fileReader = new FileReader(fileName);
             if (fileReader.bufferedReader == null) 
@@ -32,7 +32,7 @@ public class FileReader {
 
     private FileReader(String fileName) 
     {
-        this.fileName = fileName;
+        cfileName = fileName;
 
         try 
         {
@@ -90,7 +90,7 @@ public class FileReader {
     public void error(Exception exception) 
     {
         System.out.println("Caught exception while parsing file: " 
-                + fileName + " at line: " + lineNo + " column: " + charPosition);
+                + cfileName + " at line: " + lineNo + " column: " + charPosition);
 
         System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
                 exception.getStackTrace()));

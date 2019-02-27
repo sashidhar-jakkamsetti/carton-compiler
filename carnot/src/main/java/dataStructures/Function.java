@@ -22,6 +22,7 @@ public class Function
         this.address = address;
         head = null;
         vManager = new VariableManager();
+        returnInstruction = null;
         parameters = new ArrayList<IResult>();
     }
 

@@ -12,12 +12,13 @@ public class Scanner {
     private static Scanner scanner;
 
     private Token prevToken;
-    private static boolean errorFlag = false;
+    private boolean errorFlag = false;
     private String stringUnderConstruction;
     private Integer identifierAddressCounter;
 
     public HashMap<String, Integer> identifier2Address;
     public HashMap<Integer, String> address2Identifier;
+    private static String cfileName;
 
     public enum ScannerState
     {
@@ -30,7 +31,7 @@ public class Scanner {
 
     public static Scanner getInstance(String fileName) 
     {
-        if (scanner == null) 
+        if (scanner == null || cfileName != fileName) 
         {
             scanner = new Scanner(fileName);
 

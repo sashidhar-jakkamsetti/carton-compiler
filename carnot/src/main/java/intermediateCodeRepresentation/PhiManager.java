@@ -14,10 +14,9 @@ public class PhiManager
     public PhiManager()
     {
         phis = new HashMap<Integer, PhiInstruction>();
-        iCodeGenerator = IntermediateCodeGenerator.getInstance();
     }
 
-    public void addPhi(Variable x, IResult x1, IResult x2) 
+    public void addPhi(Variable x, IResult x1, IResult x2, IntermediateCodeGenerator iCodeGenerator) 
     {
         if(!isExists(x))
         {
