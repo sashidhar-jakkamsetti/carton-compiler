@@ -2,7 +2,6 @@ package dataStructures.Results;
 
 import dataStructures.Token;
 import dataStructures.Blocks.IBlock;
-import dataStructures.Token.TokenType;
 
 public class BranchResult implements IResult
 {

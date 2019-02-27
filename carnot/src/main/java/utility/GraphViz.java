@@ -11,8 +11,6 @@ public class GraphViz
     private ControlFlowGraph cfg;
     private Stack<IBlock> blockStack;
     private boolean[] alreadyPrintedBlocks;
-    
-    private FileWriter out;
     private String program;
     private String graphFileName;
 

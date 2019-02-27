@@ -12,7 +12,6 @@ import exceptions.IllegalVariableException;
 public class IntermediateCodeGenerator
 {
     private Integer pc;
-    private IntermediateCodeGenerator iCodeGenerator;
 
     public IntermediateCodeGenerator()
     {

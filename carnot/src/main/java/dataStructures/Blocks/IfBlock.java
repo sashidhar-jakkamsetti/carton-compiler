@@ -1,12 +1,7 @@
 package dataStructures.Blocks;
 
-import dataStructures.*;
-import dataStructures.Blocks.*;
 import dataStructures.Results.*;
 import dataStructures.Instructions.*;
-import intermediateCodeRepresentation.*;
-
-import java.util.*;
 
 public class IfBlock extends Block implements IBlock
 {

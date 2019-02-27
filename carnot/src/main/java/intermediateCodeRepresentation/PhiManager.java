@@ -9,7 +9,6 @@ import dataStructures.Results.*;
 public class PhiManager
 {
     public HashMap<Integer, PhiInstruction> phis;
-    private IntermediateCodeGenerator iCodeGenerator;
 
     public PhiManager()
     {
