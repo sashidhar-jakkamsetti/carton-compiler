@@ -42,9 +42,9 @@ public class RegisterResult implements IResult
     }
 
     @Override
-    public Integer compareTo(IResult result) 
+    public Boolean equals(IResult result) 
     {
-        return null;
+        return false;
     }
 
     @Override
@@ -56,6 +56,6 @@ public class RegisterResult implements IResult
     @Override 
     public String toString()
     {
-        return "";
+        return "R" + register.toString();
     }
 }

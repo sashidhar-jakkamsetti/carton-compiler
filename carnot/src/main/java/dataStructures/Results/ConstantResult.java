@@ -49,9 +49,9 @@ public class ConstantResult implements IResult
     }
 
     @Override
-    public Integer compareTo(IResult result) 
+    public Boolean equals(IResult result) 
     {
-        return null;
+        return false;
     }
 
     @Override
@@ -63,6 +63,6 @@ public class ConstantResult implements IResult
     @Override 
     public String toString()
     {
-        return constant.toString();
+        return '#' + constant.toString();
     }
 }

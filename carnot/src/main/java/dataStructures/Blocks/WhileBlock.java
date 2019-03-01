@@ -10,7 +10,6 @@ import java.util.*;
 
 public class WhileBlock extends Block implements IBlock
 {
-    private Block doBlock;
     private Block loopBlock;
     private Block followBlock;
 
@@ -19,20 +18,9 @@ public class WhileBlock extends Block implements IBlock
     public WhileBlock(Integer id)
     {
         super(id);
-        doBlock = null;
         loopBlock = null;
         followBlock = null;
         phiManager = new PhiManager();
-    }
-
-    public void setDoBlock(IBlock block)
-    {
-        doBlock = (Block)block;
-    }
-
-    public IBlock getDoBlock()
-    {
-        return doBlock;
     }
 
     public void setLoopBlock(IBlock block)

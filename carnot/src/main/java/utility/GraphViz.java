@@ -18,7 +18,7 @@ public class GraphViz
     {
         this.cfg = cfg;
         blockStack = new Stack<IBlock>();
-        alreadyPrintedBlocks = new boolean[cfg.blocks.size()];
+        alreadyPrintedBlocks = new boolean[cfg.getAllBlocks().size()];
         this.program = program;
     }
 

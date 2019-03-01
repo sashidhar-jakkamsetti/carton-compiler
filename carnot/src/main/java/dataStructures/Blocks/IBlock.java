@@ -19,4 +19,6 @@ public interface IBlock
     public void freezeSsa(HashMap<Integer, Integer> globalSsa, HashMap<Integer, Integer> localSsa);
     public HashMap<Integer, Integer> getGlobalSsa();
     public HashMap<Integer, Integer> getLocalSsa();
+
+    public Instruction searchCommonSubexpression(Instruction instruction);
 }

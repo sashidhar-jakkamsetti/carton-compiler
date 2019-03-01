@@ -1,4 +1,4 @@
-package intermediateCodeRepresentation;
+package registerAllocation;
 
 import java.util.Arrays;
 

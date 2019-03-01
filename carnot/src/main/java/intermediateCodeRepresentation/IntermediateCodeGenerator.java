@@ -87,7 +87,7 @@ public class IntermediateCodeGenerator
                 instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
                 instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             }
-            instructions.add(compute(OperatorCode.add, new ConstantResult(), new ConstantResult(array.getBaseAddress().address)));
+            instructions.add(compute(OperatorCode.add, new RegisterResult(0), new ConstantResult(array.getBaseAddress().address)));
 
             instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             instructions.add(compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
@@ -120,7 +120,7 @@ public class IntermediateCodeGenerator
                 instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
                 instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             }
-            instructions.add(compute(OperatorCode.add, new RegisterResult(0) , new ConstantResult(array.getBaseAddress().address)));
+            instructions.add(compute(OperatorCode.add, new RegisterResult(0), new ConstantResult(array.getBaseAddress().address)));
 
             instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             instructions.add(compute(OperatorCode.store, new InstructionResult(pc - 1), rhsResult));
@@ -129,20 +129,30 @@ public class IntermediateCodeGenerator
         return instructions;
     }
 
-    public void declareVariable(IBlock block, VariableManager vManager, VariableResult vResult) throws IllegalVariableException
+    public void declareVariable(IBlock block, VariableManager vManager, VariableResult vResult, Boolean put) throws IllegalVariableException
     {
-        vManager.updateSsaMap(vResult.variable.address, vResult.variable.version);
-        vManager.updateDefUseChain(vResult.variable.address, vResult.variable.version, vResult.variable.version);
-
-        if(vResult.variable instanceof ArrayVar)
+        if(vManager.isVariable(vResult.variable.address))
         {
-            ArrayVar arrayVar = (ArrayVar)vResult.variable;
-            vManager.addArray(arrayVar.address, arrayVar);
+            throw new IllegalVariableException("Duplicate variable!");
         }
-        else 
+        else
         {
-            vManager.addVariable(vResult.variable.address);
-            block.addInstruction(compute(OperatorCode.move, vResult, new ConstantResult())); // fishy: what about formal parameters?
+            vManager.updateSsaMap(vResult.variable.address, vResult.variable.version);
+            vManager.updateDefUseChain(vResult.variable.address, vResult.variable.version, vResult.variable.version);
+    
+            if(vResult.variable instanceof ArrayVar)
+            {
+                ArrayVar arrayVar = (ArrayVar)vResult.variable;
+                vManager.addArray(arrayVar.address, arrayVar);
+            }
+            else 
+            {
+                vManager.addVariable(vResult.variable.address);
+                if(put)
+                {
+                    block.addInstruction(compute(OperatorCode.move, vResult, new ConstantResult()));
+                }
+            }
         }
     }
 }

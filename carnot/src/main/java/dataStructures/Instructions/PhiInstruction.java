@@ -1,6 +1,7 @@
 package dataStructures.Instructions;
 
 import dataStructures.*;
+import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
 
 public class PhiInstruction extends Instruction
@@ -28,5 +29,21 @@ public class PhiInstruction extends Instruction
                              this.operandX.toString(),
                              this.operandY.toString()
         );
+    }
+
+    @Override
+    public Boolean equals(Instruction instruction)
+    {
+        
+        if(instruction.opcode == OperatorCode.phi)
+        {
+            PhiInstruction phiI = (PhiInstruction)instruction;
+            if(variable.address == phiI.variable.address && variable.version == phiI.variable.version)
+            {
+                return super.equals(instruction);
+            }
+        }
+
+        return false;
     }
 }

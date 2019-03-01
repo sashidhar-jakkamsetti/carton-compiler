@@ -2,7 +2,7 @@ package machineCodeGeneration;
 
 import dataStructures.Instructions.*;
 import dataStructures.Results.*;
-import intermediateCodeRepresentation.RegisterAllocator;
+import registerAllocation.*;
 
 public class MachineCodeGenerator 
 {

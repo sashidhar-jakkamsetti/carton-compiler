@@ -6,7 +6,7 @@ public interface IResult
     public IResult clone();
     public void setIid(Integer iid);
     public Integer getIid();
-    public Integer compareTo(IResult result);
+    public Boolean equals(IResult result);
     public IResult toInstruction();
     public String toString();
 }

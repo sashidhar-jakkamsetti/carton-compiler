@@ -10,7 +10,8 @@ public class ControlFlowGraph
 {
     public Block head;
     public List<Instruction> instructions;
-    public List<Block> blocks;
+    private List<Block> blocks;
+    public VariableManager mVariableManager;
     public Boolean done;
 
     public List<Function> functions;
@@ -23,6 +24,7 @@ public class ControlFlowGraph
         head = new Block(bc++);
         blocks = new ArrayList<Block>();
         functions = new ArrayList<Function>();
+        mVariableManager = new VariableManager();
         done = false;
         blocks.add(head);
     }
@@ -77,5 +79,10 @@ public class ControlFlowGraph
         }
 
         return null;
+    }
+
+    public List<Block> getAllBlocks()
+    {
+        return blocks;
     }
 }

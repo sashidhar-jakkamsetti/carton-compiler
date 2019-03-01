@@ -40,9 +40,9 @@ public class InstructionResult implements IResult
     }
 
     @Override
-    public Integer compareTo(IResult result) 
+    public Boolean equals(IResult result) 
     {
-        return null;
+        return false;
     }
 
     @Override

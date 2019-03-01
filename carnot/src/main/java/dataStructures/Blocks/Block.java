@@ -1,5 +1,6 @@
 package dataStructures.Blocks;
 
+import dataStructures.DomTreeNode;
 import dataStructures.Instructions.*;
 
 import java.util.*;
@@ -12,6 +13,7 @@ public class Block implements IBlock
     protected Block child;
     protected HashMap<Integer, Integer> globalSsa;
     protected HashMap<Integer, Integer> localSsa;
+    protected DomTreeNode dTreeNode;
 
     public Block(Integer id)
     {
@@ -35,12 +37,17 @@ public class Block implements IBlock
 
     public void addInstruction(Instruction instruction)
     {
+        Instruction cSubexpression = searchCommonSubexpression(instruction);
+        
         instructions.add(instruction);
     }
 
-    public void addInstruction(ArrayList<Instruction> instruction)
+    public void addInstruction(ArrayList<Instruction> instructions)
     {
-        instructions.addAll(instruction);
+        for (Instruction i : instructions) 
+        {
+            addInstruction(i);    
+        }
     }
 
     public Instruction getInstruction(int programCounter)
@@ -97,5 +104,16 @@ public class Block implements IBlock
     public HashMap<Integer, Integer> getLocalSsa()
     {
         return localSsa;
+    }
+
+    public Instruction searchCommonSubexpression(Instruction instruction)
+    {
+        Instruction cSubexpression = dTreeNode.find(instruction);
+        if(cSubexpression == null)
+        {
+            cSubexpression = parent.searchCommonSubexpression(instruction);
+        }
+
+        return cSubexpression;
     }
 }
