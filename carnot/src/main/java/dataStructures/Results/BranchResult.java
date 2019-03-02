@@ -55,7 +55,13 @@ public class BranchResult implements IResult
     @Override
     public IResult clone() 
     {
-        return null;
+        BranchResult bResult = new BranchResult();
+        bResult.iid = iid;
+        // TODO: I should clone targetBlock properly...
+        bResult.targetBlock = targetBlock;
+        bResult.condition = condition;
+        bResult.fixuplocation = fixuplocation;
+        return (IResult)bResult;
     }
 
     @Override

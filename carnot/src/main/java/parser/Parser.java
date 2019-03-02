@@ -125,7 +125,7 @@ public class Parser
             return null;
         }
 
-        return vResult;
+        return (VariableResult)vResult.clone();
     }
 
     private IResult factor(IBlock cBlock, Function function)
@@ -180,6 +180,8 @@ public class Parser
                 {
                     if(inputSym.isSameType(TokenType.closeparenToken))
                     {
+                        result = result.toInstruction();
+                        result.set(iCodeGenerator.getPC() - 1);
                         next();
                     }
                     else 
@@ -194,7 +196,7 @@ public class Parser
                 break;
         }
 
-        return result;
+        return result.clone();
     }
 
     private IResult term(IBlock cBlock, Function function)
@@ -210,13 +212,20 @@ public class Parser
                 IResult yResult = factor(cBlock, function);
                 if(yResult != null)
                 {
-                    xResult.setIid(iCodeGenerator.getPC());
+                    if(xResult.getIid() > 0) 
+                    {
+                        xResult = xResult.toInstruction();
+                    }
+                    else
+                    {
+                        xResult.setIid(iCodeGenerator.getPC());
+                    }
                     cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
                 }
             }
         }
 
-        return xResult;
+        return xResult.clone();
     }
 
     private IResult expression(IBlock cBlock, Function function)
@@ -245,7 +254,7 @@ public class Parser
             }    
         }
 
-        return xResult;
+        return xResult.clone();
     }
 
     private BranchResult relation(IBlock cBlock, Function function)
@@ -271,7 +280,7 @@ public class Parser
             }
         }
 
-        return bResult;
+        return (BranchResult)bResult.clone();
     }
 
     private void assignment(IBlock cBlock, Function function)
@@ -293,6 +302,7 @@ public class Parser
                         if(rhsResult.getIid() > 0) 
                         {
                             rhsResult = rhsResult.toInstruction();
+                            rhsResult.set(iCodeGenerator.getPC() - 1);
                         }
 
                         Variable v = ((VariableResult)lhsResult).variable;
@@ -377,7 +387,7 @@ public class Parser
                 bResult.condition = opToken;
                 
                 cBlock.addInstruction(iCodeGenerator.compute(opToken, bResult));
-                return callFunction.returnInstruction;
+                return callFunction.returnInstruction.clone();
             }
 
             if(Operator.standardIoOperator.containsKey(inputSym.value))
@@ -720,7 +730,7 @@ public class Parser
             return null;
         }
 
-        return rResult;
+        return rResult.clone();
     }
 
     private IBlock statement(IBlock cBlock, Function function)

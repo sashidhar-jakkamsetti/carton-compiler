@@ -45,7 +45,10 @@ public class ConstantResult implements IResult
     @Override
     public IResult clone() 
     {
-        return null;
+        ConstantResult cResult = new ConstantResult();
+        cResult.iid = iid;
+        cResult.constant = constant;
+        return (IResult)cResult;
     }
 
     @Override

@@ -23,6 +23,16 @@ public class Variable
     }
 
     @Override
+    public Variable clone()
+    {
+        Variable v = new Variable();
+        v.name = name;
+        v.version = version;
+        v.address = address;
+        return v;
+    }
+
+    @Override
     public String toString()
     {
         return String.format("%s_%s", name, version);

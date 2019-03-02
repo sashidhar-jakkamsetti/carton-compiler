@@ -38,7 +38,10 @@ public class RegisterResult implements IResult
     @Override
     public IResult clone() 
     {
-        return null;
+        RegisterResult rResult = new RegisterResult();
+        rResult.iid = iid;
+        rResult.register = register;
+        return (IResult)rResult;
     }
 
     @Override
