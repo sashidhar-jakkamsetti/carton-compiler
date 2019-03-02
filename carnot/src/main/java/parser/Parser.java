@@ -181,7 +181,6 @@ public class Parser
                     if(inputSym.isSameType(TokenType.closeparenToken))
                     {
                         result = result.toInstruction();
-                        result.set(iCodeGenerator.getPC() - 1);
                         next();
                     }
                     else 
@@ -196,7 +195,11 @@ public class Parser
                 break;
         }
 
-        return result.clone();
+        if(result != null)
+        {
+            return result.clone();
+        }
+        return result;
     }
 
     private IResult term(IBlock cBlock, Function function)
@@ -216,16 +219,14 @@ public class Parser
                     {
                         xResult = xResult.toInstruction();
                     }
-                    else
-                    {
-                        xResult.setIid(iCodeGenerator.getPC());
-                    }
                     cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
+                    xResult = xResult.clone();
+                    xResult.setIid(iCodeGenerator.getPC() - 1);
                 }
             }
         }
 
-        return xResult.clone();
+        return xResult;
     }
 
     private IResult expression(IBlock cBlock, Function function)
@@ -245,16 +246,14 @@ public class Parser
                     {
                         xResult = xResult.toInstruction();
                     }
-                    else
-                    {
-                        xResult.setIid(iCodeGenerator.getPC());
-                    }
                     cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
+                    xResult = xResult.clone();
+                    xResult.setIid(iCodeGenerator.getPC() - 1);
                 }
             }    
         }
 
-        return xResult.clone();
+        return xResult;
     }
 
     private BranchResult relation(IBlock cBlock, Function function)
@@ -387,7 +386,11 @@ public class Parser
                 bResult.condition = opToken;
                 
                 cBlock.addInstruction(iCodeGenerator.compute(opToken, bResult));
-                return callFunction.returnInstruction.clone();
+                if(callFunction.returnInstruction != null)
+                {
+                    return callFunction.returnInstruction.clone();
+                }
+                return callFunction.returnInstruction;
             }
 
             if(Operator.standardIoOperator.containsKey(inputSym.value))
@@ -730,7 +733,11 @@ public class Parser
             return null;
         }
 
-        return rResult.clone();
+        if(rResult != null)
+        {
+            return rResult.clone();
+        }
+        return rResult;
     }
 
     private IBlock statement(IBlock cBlock, Function function)

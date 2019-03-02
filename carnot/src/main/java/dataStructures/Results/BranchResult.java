@@ -58,7 +58,14 @@ public class BranchResult implements IResult
         BranchResult bResult = new BranchResult();
         bResult.iid = iid;
         // TODO: I should clone targetBlock properly...
-        bResult.targetBlock = targetBlock;
+        if(targetBlock != null)
+        {
+            bResult.targetBlock = targetBlock;
+        }
+        else
+        {
+            bResult.targetBlock = null;
+        }
         bResult.condition = condition;
         bResult.fixuplocation = fixuplocation;
         return (IResult)bResult;
