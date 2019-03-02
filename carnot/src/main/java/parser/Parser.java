@@ -547,6 +547,7 @@ public class Parser
                     Block eBlock = cfg.initializeBlock();
                     iBlock.setElseBlock(eBlock);
                     eBlock.setParent(iBlock);
+                    iBlock.fixupBranch(bResult.fixuplocation, eBlock);
 
                     vManager.setSsaMap(cBlock.getGlobalSsa());
                     if(function != null)
@@ -559,7 +560,6 @@ public class Parser
                     {
                         return null;
                     }
-                    iBlock.fixupBranch(bResult.fixuplocation, eBlock);
                     eBlock.setChild(jBlock);
                     jBlock.setElseBlock(eBlock);
                     
