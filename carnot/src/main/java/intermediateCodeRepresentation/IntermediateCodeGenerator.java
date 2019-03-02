@@ -8,14 +8,17 @@ import dataStructures.Instructions.*;
 import dataStructures.Operator.*;
 import dataStructures.Results.*;
 import exceptions.IllegalVariableException;
+import optimization.Optimizer;
 
 public class IntermediateCodeGenerator
 {
     private Integer pc;
+    private Optimizer optimizer;
 
     public IntermediateCodeGenerator()
     {
         pc = 0;
+        optimizer = Optimizer.getInstance();
     }
 
     public Integer getPC()
@@ -87,7 +90,7 @@ public class IntermediateCodeGenerator
                 instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
                 instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             }
-            instructions.add(compute(OperatorCode.add, new RegisterResult(0), new ConstantResult(array.getBaseAddress().address)));
+            instructions.add(compute(OperatorCode.add, new ConstantResult(0), vResult));
 
             instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             instructions.add(compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
@@ -120,7 +123,7 @@ public class IntermediateCodeGenerator
                 instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
                 instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             }
-            instructions.add(compute(OperatorCode.add, new RegisterResult(0), new ConstantResult(array.getBaseAddress().address)));
+            instructions.add(compute(OperatorCode.add, new ConstantResult(0), lhsResult));
 
             instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
             instructions.add(compute(OperatorCode.store, new InstructionResult(pc - 1), rhsResult));

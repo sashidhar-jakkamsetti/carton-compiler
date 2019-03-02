@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import dataStructures.Instructions.Instruction;
+import dataStructures.Operator.OperatorCode;
 
 public class DomTreeNode
 {
@@ -30,6 +31,15 @@ public class DomTreeNode
 
     public void add(Instruction instruction)
     {
+        if(instruction.opcode == OperatorCode.store)
+        {
+            if(!instructions.containsKey(OperatorCode.load))
+            {
+                instructions.put(OperatorCode.load, new ArrayList<Instruction>());
+            }
+            instructions.get(OperatorCode.load).add(instruction);
+        }
+
         if(!instructions.containsKey(instruction.opcode))
         {
             instructions.put(instruction.opcode, new ArrayList<Instruction>());
@@ -40,10 +50,17 @@ public class DomTreeNode
 
     public Instruction find(Instruction instruction)
     {
-        if(instructions.containsKey(instruction.opcode))
+        if(instruction.opcode != OperatorCode.store && instructions.containsKey(instruction.opcode))
         {
+            
             for(Integer idx = instructions.get(instruction.opcode).size(); idx >= 0; idx--)
             {
+                if(instruction.opcode == OperatorCode.load 
+                        && instructions.get(instruction.opcode).get(idx).opcode == OperatorCode.store)
+                {
+                    return null;
+                }
+                
                 if(instructions.get(instruction.opcode).get(idx).equals(instruction))
                 {
                     return instructions.get(instruction.opcode).get(idx);

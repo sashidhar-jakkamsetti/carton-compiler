@@ -37,17 +37,12 @@ public class Block implements IBlock
 
     public void addInstruction(Instruction instruction)
     {
-        Instruction cSubexpression = searchCommonSubexpression(instruction);
-        
-        instructions.add(instruction);
+        this.instructions.add(instruction);
     }
 
     public void addInstruction(ArrayList<Instruction> instructions)
     {
-        for (Instruction i : instructions) 
-        {
-            addInstruction(i);    
-        }
+        this.instructions.addAll(instructions);
     }
 
     public Instruction getInstruction(int programCounter)
@@ -115,5 +110,10 @@ public class Block implements IBlock
         }
 
         return cSubexpression;
+    }
+
+    public void addSubexpression(Instruction instruction)
+    {
+        dTreeNode.add(instruction);
     }
 }

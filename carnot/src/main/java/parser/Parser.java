@@ -845,7 +845,7 @@ public class Parser
                 else
                 {
                     ArrayVar var = new ArrayVar(inputSym.value, scanner.identifier2Address.get(inputSym.value), 
-                                                        -1, dimentionList);
+                                                        iCodeGenerator.getPC(), dimentionList);
                     vResult.set(var);
                 }
                                 
@@ -853,7 +853,7 @@ public class Parser
                 {
                     if(function == null)
                     {
-                        iCodeGenerator.declareVariable(cfg.head, vManager, vResult, false);
+                        iCodeGenerator.declareVariable(cfg.head, vManager, vResult, true);
                     }
                     else
                     {
@@ -897,12 +897,12 @@ public class Parser
             while(inputSym.isSameType(TokenType.ident))
             {
                 // Formal parameters are given -2 as the version number.
-                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), -2);
+                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
                 VariableResult vResult = new VariableResult();
                 vResult.set(v);
                 try
                 {
-                    iCodeGenerator.declareVariable(function.head, function.vManager, vResult, false);
+                    iCodeGenerator.declareVariable(function.head, function.vManager, vResult, true);
                 }
                 catch(Exception e)
                 {

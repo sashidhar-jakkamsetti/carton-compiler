@@ -18,6 +18,8 @@ public class Instruction
         CP, // Copy propagation
         CSE, // Common subexpression elimination
         DCE, // Dead code elimination
+        NUMBER, // Result of instruction is some number, so replace it with the number directly. 
+                // E.g: 3: move #10 (3) --> use #10 instead of (3)
         _NotDeleted // NOT deleted
     }
 
@@ -32,6 +34,7 @@ public class Instruction
         this.opcode = opcode;
         operandX = x;
         operandY = y;
+        deleteMode = DeleteMode._NotDeleted;
 
         akaInstruction.id = id;
         akaInstruction.opcode = opcode;
@@ -50,13 +53,16 @@ public class Instruction
 
     public void setAkaInstructionOperand(IResult x)
     {
-        if(x instanceof VariableResult)
+        if(x != null)
         {
-            akaInstruction.operandX = new InstructionResult(((VariableResult)x).variable.version);
-        }
-        else 
-        {
-            akaInstruction.operandX = x;
+            if(x instanceof VariableResult && !((VariableResult)x).isArray)
+            {
+                akaInstruction.operandX = new InstructionResult(((VariableResult)x).variable.version);
+            }
+            else 
+            {
+                akaInstruction.operandX = x;
+            }
         }
     }
 
@@ -87,9 +93,21 @@ public class Instruction
     {
         if(opcode == instruction.opcode)
         {
-            if(operandX.equals(instruction.operandX) && operandY.equals(instruction.operandY))
+            if(operandX == null && operandY == null)
             {
-                return true;
+                return instruction.operandX == null && instruction.operandY == null;
+            }
+            else if(operandX == null)
+            {
+                return instruction.operandX == null && operandY.equals(instruction.operandY);
+            }
+            else if(operandY == null)
+            {
+                return instruction.operandY == null && operandX.equals(instruction.operandX);
+            }
+            else
+            {
+                return operandX.equals(instruction.operandX) && operandY.equals(instruction.operandY);
             }
         }
 

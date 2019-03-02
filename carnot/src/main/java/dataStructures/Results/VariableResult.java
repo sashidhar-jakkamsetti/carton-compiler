@@ -59,6 +59,13 @@ public class VariableResult implements IResult
     @Override 
     public String toString()
     {
-        return variable.toString();
+        if(isArray)
+        {
+            return variable.address + "BaseAddress";
+        }
+        else
+        {
+            return variable.toString();
+        }
     }
 }
