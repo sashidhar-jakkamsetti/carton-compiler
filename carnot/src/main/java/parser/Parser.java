@@ -125,7 +125,8 @@ public class Parser
             return null;
         }
 
-        return (VariableResult)vResult.clone();
+        // return (VariableResult)vResult.clone();
+        return vResult;
     }
 
     private IResult factor(IBlock cBlock, Function function)
@@ -725,6 +726,7 @@ public class Parser
                     iResult.set(function.returnInstruction.iid);
                 }
                 cBlock.addInstruction(iCodeGenerator.compute(opToken, iResult, rResult));
+                rResult = rResult.clone();
             }
         }
         else
@@ -733,10 +735,6 @@ public class Parser
             return null;
         }
 
-        if(rResult != null)
-        {
-            return rResult.clone();
-        }
         return rResult;
     }
 
