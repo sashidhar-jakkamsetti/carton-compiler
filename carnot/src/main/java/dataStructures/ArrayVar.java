@@ -57,6 +57,26 @@ public class ArrayVar extends Variable
     }
 
     @Override
+    public ArrayVar clone()
+    {
+        ArrayVar a = new ArrayVar(name, address, version);
+        a.arraySize = arraySize;
+        a.indexList = new ArrayList<IResult>();
+        for(IResult iResult : indexList)
+        {
+            a.indexList.add(iResult.clone());
+        }
+        a.dimentionList = new ArrayList<Integer>();
+        if(dimentionList != null){
+            for(Integer i : dimentionList)
+            {
+                a.dimentionList.add(i);
+            }
+        }
+        return a;
+    }
+
+    @Override
     public String toString()
     {
         return String.format("%s_%s", name, version);

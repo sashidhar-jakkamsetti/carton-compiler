@@ -35,7 +35,9 @@ public class InstructionResult implements IResult
     @Override
     public IResult clone() 
     {
-        return null;
+        InstructionResult iResult = new InstructionResult();
+        iResult.iid = iid;
+        return (IResult)iResult;
     }
 
     @Override

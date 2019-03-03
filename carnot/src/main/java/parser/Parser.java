@@ -125,6 +125,7 @@ public class Parser
             return null;
         }
 
+        // return (VariableResult)vResult.clone();
         return vResult;
     }
 
@@ -180,6 +181,7 @@ public class Parser
                 {
                     if(inputSym.isSameType(TokenType.closeparenToken))
                     {
+                        result = result.toInstruction();
                         next();
                     }
                     else 
@@ -194,6 +196,10 @@ public class Parser
                 break;
         }
 
+        if(result != null)
+        {
+            return result.clone();
+        }
         return result;
     }
 
@@ -210,8 +216,13 @@ public class Parser
                 IResult yResult = factor(cBlock, function);
                 if(yResult != null)
                 {
-                    xResult.setIid(iCodeGenerator.getPC());
+                    if(xResult.getIid() > 0) 
+                    {
+                        xResult = xResult.toInstruction();
+                    }
                     iCodeGenerator.compute(cBlock, opToken, xResult, yResult);
+                    xResult = xResult.clone();
+                    xResult.setIid(iCodeGenerator.getPC() - 1);
                 }
             }
         }
@@ -236,11 +247,10 @@ public class Parser
                     {
                         xResult = xResult.toInstruction();
                     }
-                    else
-                    {
-                        xResult.setIid(iCodeGenerator.getPC());
-                    }
+
                     iCodeGenerator.compute(cBlock, opToken, xResult, yResult);
+                    xResult = xResult.clone();
+                    xResult.setIid(iCodeGenerator.getPC() - 1);
                 }
             }    
         }
@@ -254,6 +264,11 @@ public class Parser
         IResult xResult = expression(cBlock, function);
         if(xResult != null)
         {
+            if(xResult.getIid() > 0) 
+            {
+                xResult = xResult.toInstruction();
+                xResult.setIid(iCodeGenerator.getPC() - 1);
+            }
             while(inputSym.isRelationOp())
             {
                 Token opToken = inputSym;
@@ -262,6 +277,11 @@ public class Parser
                 IResult yResult = expression(cBlock, function);
                 if(yResult != null)
                 {
+                    if(yResult.getIid() > 0) 
+                    {
+                        yResult = yResult.toInstruction();
+                        yResult.setIid(iCodeGenerator.getPC() - 1);
+                    }
                     iCodeGenerator.compute(cBlock, opToken, xResult, yResult);
                     bResult.condition = opToken;
                     bResult.fixuplocation = iCodeGenerator.getPC();
@@ -271,7 +291,7 @@ public class Parser
             }
         }
 
-        return bResult;
+        return (BranchResult)bResult.clone();
     }
 
     private void assignment(IBlock cBlock, Function function)
@@ -293,6 +313,7 @@ public class Parser
                         if(rhsResult.getIid() > 0) 
                         {
                             rhsResult = rhsResult.toInstruction();
+                            rhsResult.set(iCodeGenerator.getPC() - 1);
                         }
 
                         Variable v = ((VariableResult)lhsResult).variable;
@@ -307,11 +328,10 @@ public class Parser
                             else
                             {
                                 iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult);
+                                v.version = iCodeGenerator.getPC() - 1;
+                                vManager.updateSsaMap(v.address, v.version);
+                                vManager.updateDefUseChain(v.address, v.version, v.version);
                             }
-
-                            v.version = iCodeGenerator.getPC() - 1;
-                            vManager.updateSsaMap(v.address, v.version);
-                            vManager.updateDefUseChain(v.address, v.version, v.version);
                         }
                         else if(function != null && function.vManager.isVariable(v.address))
                         {
@@ -324,11 +344,10 @@ public class Parser
                             else
                             {
                                 iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult);
+                                v.version = iCodeGenerator.getPC() - 1;
+                                function.vManager.updateSsaMap(v.address, v.version);
+                                function.vManager.updateDefUseChain(v.address, v.version, v.version);
                             }
-
-                            v.version = iCodeGenerator.getPC() - 1;
-                            function.vManager.updateSsaMap(v.address, v.version);
-                            function.vManager.updateDefUseChain(v.address, v.version, v.version);
                         }
                     }
                 }
@@ -377,6 +396,10 @@ public class Parser
                 bResult.condition = opToken;
                 
                 iCodeGenerator.compute(cBlock, opToken, bResult);
+                if(callFunction.returnInstruction != null)
+                {
+                    return callFunction.returnInstruction.clone();
+                }
                 return callFunction.returnInstruction;
             }
 
@@ -533,6 +556,7 @@ public class Parser
                     Block eBlock = cfg.initializeBlock();
                     iBlock.setElseBlock(eBlock);
                     eBlock.setParent(iBlock);
+                    iBlock.fixupBranch(bResult.fixuplocation, eBlock);
 
                     vManager.setSsaMap(cBlock.getGlobalSsa());
                     if(function != null)
@@ -545,7 +569,6 @@ public class Parser
                     {
                         return null;
                     }
-                    iBlock.fixupBranch(bResult.fixuplocation, eBlock);
                     eBlock.setChild(jBlock);
                     jBlock.setElseBlock(eBlock);
                     
@@ -711,7 +734,12 @@ public class Parser
                 {
                     iResult.set(function.returnInstruction.iid);
                 }
-                iCodeGenerator.compute(cBlock, opToken, iResult, rResult);
+                if(rResult.getIid() > 0)
+                {
+                    rResult = rResult.toInstruction();
+                }
+                iCodeGenerator.compute(cBlock, opToken, iResult, rResult);                
+                rResult = rResult.clone();
             }
         }
         else

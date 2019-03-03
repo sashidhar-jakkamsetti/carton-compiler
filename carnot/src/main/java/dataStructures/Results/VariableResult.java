@@ -41,7 +41,18 @@ public class VariableResult implements IResult
     @Override
     public IResult clone() 
     {
-        return null;
+        VariableResult vResult = new VariableResult();
+        vResult.iid = iid;
+        vResult.isArray = isArray;
+        if(isArray)
+        {
+            vResult.variable = ((ArrayVar)variable).clone();
+        }
+        else
+        {
+            vResult.variable = variable.clone();
+        }
+        return (IResult)vResult;
     }
 
     @Override
