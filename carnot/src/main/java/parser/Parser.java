@@ -263,6 +263,11 @@ public class Parser
         IResult xResult = expression(cBlock, function);
         if(xResult != null)
         {
+            if(xResult.getIid() > 0) 
+            {
+                xResult = xResult.toInstruction();
+                xResult.setIid(iCodeGenerator.getPC() - 1);
+            }
             while(inputSym.isRelationOp())
             {
                 Token opToken = inputSym;
@@ -271,6 +276,11 @@ public class Parser
                 IResult yResult = expression(cBlock, function);
                 if(yResult != null)
                 {
+                    if(yResult.getIid() > 0) 
+                    {
+                        yResult = yResult.toInstruction();
+                        yResult.setIid(iCodeGenerator.getPC() - 1);
+                    }
                     cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
                     bResult.condition = opToken;
                     bResult.fixuplocation = iCodeGenerator.getPC();

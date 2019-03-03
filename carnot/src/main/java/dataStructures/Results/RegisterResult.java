@@ -59,6 +59,6 @@ public class RegisterResult implements IResult
     @Override 
     public String toString()
     {
-        return "";
+        return String.format("R%s", register);
     }
 }
