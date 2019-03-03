@@ -327,11 +327,11 @@ public class Parser
                             else
                             {
                                 cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
-                            }
 
-                            v.version = iCodeGenerator.getPC() - 1;
-                            vManager.updateSsaMap(v.address, v.version);
-                            vManager.updateDefUseChain(v.address, v.version, v.version);
+                                v.version = iCodeGenerator.getPC() - 1;
+                                vManager.updateSsaMap(v.address, v.version);
+                                vManager.updateDefUseChain(v.address, v.version, v.version);
+                            }
                         }
                         else if(function != null && function.vManager.isVariable(v.address))
                         {
@@ -344,11 +344,11 @@ public class Parser
                             else
                             {
                                 cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
-                            }
 
-                            v.version = iCodeGenerator.getPC() - 1;
-                            function.vManager.updateSsaMap(v.address, v.version);
-                            function.vManager.updateDefUseChain(v.address, v.version, v.version);
+                                v.version = iCodeGenerator.getPC() - 1;
+                                function.vManager.updateSsaMap(v.address, v.version);
+                                function.vManager.updateDefUseChain(v.address, v.version, v.version);
+                            }
                         }
                     }
                 }
