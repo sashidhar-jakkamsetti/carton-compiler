@@ -735,6 +735,10 @@ public class Parser
                 {
                     iResult.set(function.returnInstruction.iid);
                 }
+                if(rResult.getIid() > 0)
+                {
+                    rResult = rResult.toInstruction();
+                }
                 cBlock.addInstruction(iCodeGenerator.compute(opToken, iResult, rResult));
                 rResult = rResult.clone();
             }

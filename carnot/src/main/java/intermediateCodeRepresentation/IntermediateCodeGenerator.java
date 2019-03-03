@@ -111,7 +111,6 @@ public class IntermediateCodeGenerator
             instructions.add(compute(OperatorCode.mul, res, new ConstantResult(4)));
             instructions.add(compute(OperatorCode.add, new RegisterResult(28), new ConstantResult(array.getBaseAddress().address)));  // Frame Pointer is R28
             instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
-            instructions.add(compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
@@ -120,9 +119,9 @@ public class IntermediateCodeGenerator
                 {
                     res1 = res1.toInstruction();
                 }
+                instructions.add(compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
                 instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
                 instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
-                instructions.add(compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
             }
 
             instructions.add(compute(OperatorCode.store, new InstructionResult(pc - 1), rhsResult));
