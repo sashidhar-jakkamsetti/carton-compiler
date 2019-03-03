@@ -85,4 +85,19 @@ public class ControlFlowGraph
     {
         return blocks;
     }
+
+    public Instruction getInstruction(Integer id)
+    {
+        Instruction rInstruction = null;
+        for (IBlock block : blocks) 
+        {
+            rInstruction = block.getInstruction(id);
+            if(rInstruction != null)
+            {
+                return rInstruction;
+            }
+        }
+        
+        return rInstruction;
+    }
 }

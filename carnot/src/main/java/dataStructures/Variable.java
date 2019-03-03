@@ -27,4 +27,9 @@ public class Variable
     {
         return String.format("%s_%s", name, version);
     }
+
+    public Boolean equals(Variable variable)
+    {
+        return address == variable.address;
+    }
 }

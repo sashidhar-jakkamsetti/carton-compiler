@@ -18,7 +18,7 @@ public class Parser
 
     private ControlFlowGraph cfg;
     private VariableManager vManager;
-    private IntermediateCodeGenerator iCodeGenerator;
+    private static IntermediateCodeGenerator iCodeGenerator;
     private static String cfileName;
 
     public static Parser getInstance(String fileName)
@@ -52,7 +52,7 @@ public class Parser
     public ControlFlowGraph parse()
     {
         cfg = new ControlFlowGraph();
-        iCodeGenerator = new IntermediateCodeGenerator();
+        iCodeGenerator = IntermediateCodeGenerator.getInstance();
         vManager = cfg.mVariableManager;
         next();
         cfg.done = computation();
@@ -146,7 +146,7 @@ public class Parser
 
                         if(((VariableResult)result).isArray)
                         {
-                            cBlock.addInstruction(iCodeGenerator.loadArrayElement(vManager, result));
+                            iCodeGenerator.loadArrayElement(cBlock, vManager, result);
                             result = result.toInstruction();
                             result.set(iCodeGenerator.getPC() - 1);
                         }
@@ -159,7 +159,7 @@ public class Parser
 
                         if(((VariableResult)result).isArray)
                         {
-                            cBlock.addInstruction(iCodeGenerator.loadArrayElement(function.vManager, result));
+                            iCodeGenerator.loadArrayElement(cBlock, function.vManager, result);
                             result = result.toInstruction();
                             result.set(iCodeGenerator.getPC() - 1);
                         }
@@ -211,7 +211,7 @@ public class Parser
                 if(yResult != null)
                 {
                     xResult.setIid(iCodeGenerator.getPC());
-                    cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
+                    iCodeGenerator.compute(cBlock, opToken, xResult, yResult);
                 }
             }
         }
@@ -240,7 +240,7 @@ public class Parser
                     {
                         xResult.setIid(iCodeGenerator.getPC());
                     }
-                    cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
+                    iCodeGenerator.compute(cBlock, opToken, xResult, yResult);
                 }
             }    
         }
@@ -262,7 +262,7 @@ public class Parser
                 IResult yResult = expression(cBlock, function);
                 if(yResult != null)
                 {
-                    cBlock.addInstruction(iCodeGenerator.compute(opToken, xResult, yResult));
+                    iCodeGenerator.compute(cBlock, opToken, xResult, yResult);
                     bResult.condition = opToken;
                     bResult.fixuplocation = iCodeGenerator.getPC();
                     bResult.iid = iCodeGenerator.getPC() - 1;
@@ -300,13 +300,13 @@ public class Parser
                         {
                             if(((VariableResult)lhsResult).isArray)
                             {
-                                cBlock.addInstruction(iCodeGenerator.storeArrayElement(vManager, lhsResult, rhsResult));
+                                iCodeGenerator.storeArrayElement(cBlock, vManager, lhsResult, rhsResult);
                                 lhsResult = lhsResult.toInstruction();
                                 lhsResult.set(iCodeGenerator.getPC() - 1);
                             }
                             else
                             {
-                                cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
+                                iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult);
                             }
 
                             v.version = iCodeGenerator.getPC() - 1;
@@ -317,13 +317,13 @@ public class Parser
                         {
                             if(((VariableResult)lhsResult).isArray)
                             {
-                                cBlock.addInstruction(iCodeGenerator.storeArrayElement(function.vManager, lhsResult, rhsResult));
+                                iCodeGenerator.storeArrayElement(cBlock, function.vManager, lhsResult, rhsResult);
                                 lhsResult = lhsResult.toInstruction();
                                 lhsResult.set(iCodeGenerator.getPC() - 1);
                             }
                             else
                             {
-                                cBlock.addInstruction(iCodeGenerator.compute(opToken, lhsResult, rhsResult));
+                                iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult);
                             }
 
                             v.version = iCodeGenerator.getPC() - 1;
@@ -356,7 +356,7 @@ public class Parser
                         IResult pResult = expression(cBlock, function);
                         if(pResult != null)
                         {
-                            cBlock.addInstruction(iCodeGenerator.compute(OperatorCode.move, callFunction.getParameter(idx++), pResult));
+                            iCodeGenerator.compute(cBlock, OperatorCode.move, callFunction.getParameter(idx++), pResult);
                         }
                     }while(inputSym.isSameType(TokenType.commaToken));
                     
@@ -376,7 +376,7 @@ public class Parser
                 bResult.set(callFunction.head);
                 bResult.condition = opToken;
                 
-                cBlock.addInstruction(iCodeGenerator.compute(opToken, bResult));
+                iCodeGenerator.compute(cBlock, opToken, bResult);
                 return callFunction.returnInstruction;
             }
 
@@ -404,7 +404,7 @@ public class Parser
                         error(new IncorrectSyntaxException("Open parenthesis not found while parsing InputNum statement."));
                         return null;
                     }
-                    cBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
+                    iCodeGenerator.compute(cBlock, opToken, null, null);
                     return new InstructionResult(iCodeGenerator.getPC() - 1);
                 }
                 else if(inputSym.value.equals("OutputNum"))
@@ -416,7 +416,7 @@ public class Parser
                         IResult pResult = expression(cBlock, function);
                         if(pResult != null)
                         {
-                            cBlock.addInstruction(iCodeGenerator.compute(opToken, pResult, null));
+                            iCodeGenerator.compute(cBlock, opToken, pResult, null);
                         }
                         if(inputSym.isSameType(TokenType.closeparenToken))
                         {
@@ -456,7 +456,7 @@ public class Parser
                         error(new IncorrectSyntaxException("Open parenthesis not found while parsing InputNum statement."));
                         return null;
                     }
-                    cBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
+                    iCodeGenerator.compute(cBlock, opToken, null, null);
                     return null;
                 }
             }
@@ -485,7 +485,7 @@ public class Parser
             jBlock.setParent(iBlock);
 
             BranchResult bResult = relation(iBlock, function);
-            iBlock.addInstruction(iCodeGenerator.compute(bResult.condition, bResult));
+            iCodeGenerator.compute(iBlock, bResult.condition, bResult);
 
             if(function == null)
             {
@@ -514,7 +514,7 @@ public class Parser
                     return null;
                 }
                 bResult2.set(jBlock);
-                tBlock.addInstruction(iCodeGenerator.compute(bResult2.condition, bResult2));
+                iCodeGenerator.compute(tBlock, bResult2.condition, bResult2);
                 tBlock.setChild(jBlock);
                 jBlock.setThenBlock(tBlock);
                 
@@ -614,7 +614,7 @@ public class Parser
             lBlock.setParent(wBlock);
 
             BranchResult bResult = relation(wBlock, function);
-            wBlock.addInstruction(iCodeGenerator.compute(bResult.condition, bResult));
+            iCodeGenerator.compute(wBlock, bResult.condition, bResult);
             
             if(function == null)
             {
@@ -643,7 +643,7 @@ public class Parser
                 {
                     next();
                     bResult2.set(wBlock);
-                    lBlock.addInstruction(iCodeGenerator.compute(bResult2.condition, bResult2));
+                    iCodeGenerator.compute(lBlock, bResult2.condition, bResult2);
                     lBlock.setChild(wBlock);
             
                     if(function == null)
@@ -711,7 +711,7 @@ public class Parser
                 {
                     iResult.set(function.returnInstruction.iid);
                 }
-                cBlock.addInstruction(iCodeGenerator.compute(opToken, iResult, rResult));
+                iCodeGenerator.compute(cBlock, opToken, iResult, rResult);
             }
         }
         else
@@ -835,7 +835,6 @@ public class Parser
         {
             if(inputSym.isSameType(TokenType.ident))
             {
-                // Variables are given
                 VariableResult vResult = new VariableResult();
                 if(dimentionList.isEmpty())
                 {
@@ -1047,7 +1046,7 @@ public class Parser
                     {
                         Token opToken = inputSym;
                         next();
-                        lBlock.addInstruction(iCodeGenerator.compute(opToken, null, null));
+                        iCodeGenerator.compute(lBlock, opToken, null, null);
                         return true;
                     }
                     else

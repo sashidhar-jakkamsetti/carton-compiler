@@ -2,37 +2,45 @@ package intermediateCodeRepresentation;
 
 import java.util.*;
 import dataStructures.*;
+import dataStructures.Blocks.IBlock;
 import dataStructures.Instructions.*;
-import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
+import optimization.Optimizer;
 
 public class PhiManager
 {
     public HashMap<Integer, PhiInstruction> phis;
+    private static IntermediateCodeGenerator iCodeGenerator;
+    private static Optimizer optimizer;
 
     public PhiManager()
     {
         phis = new HashMap<Integer, PhiInstruction>();
+        iCodeGenerator = IntermediateCodeGenerator.getInstance();
+        optimizer = Optimizer.getInstance();
     }
 
-    public void addPhi(Variable x, IResult x1, IResult x2, IntermediateCodeGenerator iCodeGenerator) 
+    public void addPhi(IBlock block, Variable x, IResult x1, IResult x2) 
     {
         if(!isExists(x))
         {
-            PhiInstruction phiInstruction = (PhiInstruction)iCodeGenerator.compute(OperatorCode.phi, x1, x2);
+            PhiInstruction phiInstruction = new PhiInstruction(iCodeGenerator.getPC());
+            iCodeGenerator.incrementPC();
+
             x.version = phiInstruction.id;
             phiInstruction.variable = x;
             phiInstruction.operandX = x1;
             phiInstruction.operandY = x2;
             phis.put(x.address, phiInstruction);
+            optimizer.optimize(block, phiInstruction);
         }
         else
         {
-            updatePhi(x, x1, x2);
+            updatePhi(block, x, x1, x2);
         }
     }
 
-    public void updatePhi(Variable x, IResult x1, IResult x2)
+    public void updatePhi(IBlock block, Variable x, IResult x1, IResult x2)
     {
         if(isExists(x))
         {
@@ -56,6 +64,7 @@ public class PhiManager
             {
                 phis.get(x.address).variable.version = x.version;
             }
+            optimizer.optimize(block, phis.get(x.address));
         }
     }
 

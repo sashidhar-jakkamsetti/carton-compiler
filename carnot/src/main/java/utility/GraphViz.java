@@ -18,7 +18,6 @@ public class GraphViz
     {
         this.cfg = cfg;
         blockStack = new Stack<IBlock>();
-        alreadyPrintedBlocks = new boolean[cfg.getAllBlocks().size()];
         this.program = program;
     }
 
@@ -27,24 +26,34 @@ public class GraphViz
         return graphFileName;
     }
 
-    public void print()
+    public void print(Boolean optimized)
     {
         try 
         {
             Integer len = program.split("/").length;
             String filesuffix = program.split("/")[len - 1].replace(".txt", "");
-    
-            graphFileName = "graphs/" + filesuffix + ".cgf.gv";
+            
+            if(optimized)
+            {
+                graphFileName = "graphs/" + filesuffix + ".optimized.cgf.gv";
+            }
+            else 
+            {
+                graphFileName = "graphs/" + filesuffix + ".cgf.gv";
+            }
             File file = new File(graphFileName);
             FileWriter out = new FileWriter(file);
 
             out.write("digraph g {\n");
             out.write("node [shape=box, height=.1, nojustify=true];\n");
 
-            addFunction(cfg.head, "main", out);
+            blockStack.clear();
+            alreadyPrintedBlocks = new boolean[cfg.getAllBlocks().size()];
+
+            addFunction(cfg.head, "main", optimized, out);
             for (Function function : cfg.functions) 
             {
-                addFunction(function.head, function.name, out);
+                addFunction(function.head, function.name, optimized, out);
             }
 
             out.write("}");
@@ -57,7 +66,7 @@ public class GraphViz
         }
     }
 
-    private void addFunction(IBlock head, String funcName, FileWriter out) throws IOException
+    private void addFunction(IBlock head, String funcName, Boolean optimized, FileWriter out) throws IOException
     {
         blockStack.push(head);
         alreadyPrintedBlocks[head.getId()] = true;
@@ -145,7 +154,7 @@ public class GraphViz
                     edges.add(addEdge(cBlock, cBlock.getChild()));
                 }
             }
-            out.write(cBlock.toString());
+            out.write(cBlock.toString(optimized));
             out.write("\"];\n");
         }
         for(String edge : edges)

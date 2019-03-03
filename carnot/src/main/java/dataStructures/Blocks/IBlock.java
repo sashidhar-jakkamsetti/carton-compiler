@@ -10,7 +10,7 @@ public interface IBlock
     public List<Instruction> getInstructions();
     public void addInstruction(Instruction instruction);
     public void addInstruction(ArrayList<Instruction> instruction);
-    public Instruction getInstruction(int programCounter);
+    public Instruction getInstruction(Integer programCounter);
     public void setParent(IBlock block);
     public IBlock getParent();
     public void setChild(IBlock block);
@@ -21,4 +21,5 @@ public interface IBlock
     public HashMap<Integer, Integer> getLocalSsa();
 
     public Instruction searchCommonSubexpression(Instruction instruction);
+    public void addSubexpression(Instruction instruction);
 }

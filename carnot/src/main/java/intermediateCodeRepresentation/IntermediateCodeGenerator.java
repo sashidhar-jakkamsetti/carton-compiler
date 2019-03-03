@@ -12,10 +12,21 @@ import optimization.Optimizer;
 
 public class IntermediateCodeGenerator
 {
-    private Integer pc;
-    private Optimizer optimizer;
+    private static Integer pc;
+    private static Optimizer optimizer;
+    private static IntermediateCodeGenerator iCodeGenerator;
 
-    public IntermediateCodeGenerator()
+    public static IntermediateCodeGenerator getInstance()
+    {
+        if(iCodeGenerator == null)
+        {
+            iCodeGenerator = new IntermediateCodeGenerator();
+        }
+
+        return iCodeGenerator;
+    }
+
+    private IntermediateCodeGenerator()
     {
         pc = 0;
         optimizer = Optimizer.getInstance();
@@ -26,49 +37,60 @@ public class IntermediateCodeGenerator
         return pc;
     }
 
-    public Instruction compute(Token opToken, BranchResult y)
+    public void incrementPC()
+    {
+        pc++;
+    }
+
+    public void compute(IBlock block, Token opToken, BranchResult y)
     {
         OperatorCode opCode  = Operator.branchingOperator.get(opToken.type);
+        Instruction instruction;
         if(opCode == OperatorCode.bra)
         {
-            return new Instruction(pc++, opCode, null, y);
+            instruction = new Instruction(pc++, opCode, null, y);
         }
         else
         {
-            return new Instruction(pc++, opCode, y.toInstruction(), y);
+            instruction = new Instruction(pc++, opCode, y.toInstruction(), y);
         }
+
+        block.addInstruction(instruction);
+        optimizer.optimize(block, instruction);
     }
 
-    public Instruction compute(Token opToken, IResult x, IResult y)
+    public void compute(IBlock block, Token opToken, IResult x, IResult y)
     {
-        OperatorCode opCode = Operator.getOpCode(opToken);
-        
-        return compute(opCode, x, y);
+        compute(block, Operator.getOpCode(opToken), x, y);
     }
 
-    public Instruction compute(OperatorCode opCode, IResult x, IResult y)
+    public void compute(IBlock block, OperatorCode opCode, IResult x, IResult y)
     {
+        if(opCode == null)
+        {
+            return;
+        }
+
+        Instruction instruction;
         if(opCode == OperatorCode.move || opCode == OperatorCode.store)
         {
-            return new Instruction(pc++, opCode, y, x);
+            instruction = new Instruction(pc++, opCode, y, x);
         }
         else if(opCode == OperatorCode.load)
         {
-            return new Instruction(pc++, opCode, null, y);
-        }
-        else if(opCode == OperatorCode.phi)
-        {
-            return new PhiInstruction(pc++);
+            instruction = new Instruction(pc++, opCode, null, y);
         }
         else
         {
-            return new Instruction(pc++, opCode, x, y);
+            instruction = new Instruction(pc++, opCode, x, y);
         }
+
+        block.addInstruction(instruction);
+        optimizer.optimize(block, instruction);
     }
 
-    public ArrayList<Instruction> loadArrayElement(VariableManager vManager, IResult vResult) 
+    public void loadArrayElement(IBlock block, VariableManager vManager, IResult vResult) 
     {
-        ArrayList<Instruction> instructions = new  ArrayList<Instruction>();
         ArrayVar array = (ArrayVar)((VariableResult)vResult).variable;
 
         if(array.indexList.size() > 0)
@@ -78,7 +100,7 @@ public class IntermediateCodeGenerator
             {
                 res = res.toInstruction();
             }
-            instructions.add(compute(OperatorCode.mul, res, new ConstantResult(4)));
+            compute(block, OperatorCode.mul, res, new ConstantResult(4));
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
@@ -87,21 +109,18 @@ public class IntermediateCodeGenerator
                 {
                     res1 = res1.toInstruction();
                 }
-                instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
-                instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
+                compute(block, OperatorCode.mul, res1, new ConstantResult(4));
+                compute(block, OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
             }
-            instructions.add(compute(OperatorCode.add, new ConstantResult(0), vResult));
+            compute(block, OperatorCode.add, new ConstantResult(0), vResult);
 
-            instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
-            instructions.add(compute(OperatorCode.load, null, new InstructionResult(pc - 1)));
+            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
+            compute(block, OperatorCode.load, null, new InstructionResult(pc - 1));
         }
-        
-        return instructions;
     }
 
-    public ArrayList<Instruction> storeArrayElement(VariableManager vManager, IResult lhsResult, IResult rhsResult) 
+    public void storeArrayElement(IBlock block, VariableManager vManager, IResult lhsResult, IResult rhsResult) 
     {
-        ArrayList<Instruction> instructions = new  ArrayList<Instruction>();
         ArrayVar array = (ArrayVar)((VariableResult)lhsResult).variable;
 
         if(array.indexList.size() > 0)
@@ -111,7 +130,7 @@ public class IntermediateCodeGenerator
             {
                 res = res.toInstruction();
             }
-            instructions.add(compute(OperatorCode.mul, res, new ConstantResult(4)));
+            compute(block, OperatorCode.mul, res, new ConstantResult(4));
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
@@ -120,16 +139,14 @@ public class IntermediateCodeGenerator
                 {
                     res1 = res1.toInstruction();
                 }
-                instructions.add(compute(OperatorCode.mul, res1, new ConstantResult(4)));
-                instructions.add(compute(OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
+                compute(block, OperatorCode.mul, res1, new ConstantResult(4));
+                compute(block, OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
             }
-            instructions.add(compute(OperatorCode.add, new ConstantResult(0), lhsResult));
+            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult);
 
-            instructions.add(compute(OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2)));
-            instructions.add(compute(OperatorCode.store, new InstructionResult(pc - 1), rhsResult));
+            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
+            compute(block, OperatorCode.store, new InstructionResult(pc - 1), rhsResult);
         }
-
-        return instructions;
     }
 
     public void declareVariable(IBlock block, VariableManager vManager, VariableResult vResult, Boolean put) throws IllegalVariableException
@@ -153,7 +170,7 @@ public class IntermediateCodeGenerator
                 vManager.addVariable(vResult.variable.address);
                 if(put)
                 {
-                    block.addInstruction(compute(OperatorCode.move, vResult, new ConstantResult()));
+                    compute(block, OperatorCode.move, vResult, new ConstantResult());
                 }
             }
         }

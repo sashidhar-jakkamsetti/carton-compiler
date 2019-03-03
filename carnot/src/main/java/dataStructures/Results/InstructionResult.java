@@ -2,7 +2,6 @@ package dataStructures.Results;
 
 public class InstructionResult implements IResult
 {
-    //public Instruction instruction;
     public Integer iid;
 
     public InstructionResult()
@@ -42,7 +41,8 @@ public class InstructionResult implements IResult
     @Override
     public Boolean equals(IResult result) 
     {
-        return false;
+        InstructionResult iResult = (InstructionResult)result;
+        return iid == iResult.iid;
     }
 
     @Override

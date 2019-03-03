@@ -51,7 +51,8 @@ public class ConstantResult implements IResult
     @Override
     public Boolean equals(IResult result) 
     {
-        return false;
+        ConstantResult cResult = (ConstantResult)result;
+        return constant == cResult.constant;
     }
 
     @Override

@@ -129,7 +129,7 @@ public class JoinBlock extends Block implements IBlock
                 VariableResult x2 = new VariableResult();
                 x2.set(new Variable(address2identifier.get(key), key, iSsaMap.get(key)));
 
-                phiManager.addPhi(x, x1, x2, iCodeGenerator);
+                phiManager.addPhi(this, x, x1, x2);
                 ssaMap.put(key, x.version);
             }
 
@@ -144,11 +144,11 @@ public class JoinBlock extends Block implements IBlock
 
                     if(phiManager.isExists(x))
                     {
-                        phiManager.updatePhi(x, null, x2);
+                        phiManager.updatePhi(this, x, null, x2);
                     }
                     else
                     {
-                        phiManager.addPhi(x, x1, x2, iCodeGenerator);
+                        phiManager.addPhi(this, x, x1, x2);
                         ssaMap.put(key, x.version);
                     }
                 }

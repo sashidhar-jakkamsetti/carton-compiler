@@ -16,7 +16,15 @@ public class Engine
             if(cfg.done)
             {
                 GraphViz graphPrinter = new GraphViz(cfg, program);
-                graphPrinter.print();
+
+                // Stage 1 control flow graph
+                graphPrinter.print(false);
+                Runtime.getRuntime().exec(
+                        String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                );
+
+                // Stage 2 optimized cfg
+                graphPrinter.print(true);
                 Runtime.getRuntime().exec(
                         String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                 );

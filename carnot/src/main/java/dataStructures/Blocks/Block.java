@@ -45,7 +45,7 @@ public class Block implements IBlock
         this.instructions.addAll(instructions);
     }
 
-    public Instruction getInstruction(int programCounter)
+    public Instruction getInstruction(Integer programCounter)
     {
         return (Instruction)instructions.stream().filter(instruction -> instruction.id == programCounter).toArray()[0];
     }
@@ -70,12 +70,25 @@ public class Block implements IBlock
         return child;
     }
 
-    public String toString()
+    public String toString(Boolean optimized)
     {
         StringBuilder sb = new StringBuilder();
+        String instructionString = "";
         for(Instruction instruction : instructions)
         {
-            sb.append(instruction.toString() + "\\l");
+            if(optimized)
+            {
+                instructionString = instruction.akaI.toString();
+            }
+            else 
+            {
+                instructionString = instruction.toString();
+            }
+
+            if(instructionString != null || instructionString != "")
+            {
+                sb.append(instruction.toString() + "\\l");
+            }
         }
 
         return sb.toString();

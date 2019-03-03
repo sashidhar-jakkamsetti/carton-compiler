@@ -11,7 +11,7 @@ public class Instruction
     public IResult operandY;
 
     public DeleteMode deleteMode;
-    public Instruction akaInstruction;
+    public Instruction akaI;
 
     public enum DeleteMode
     {
@@ -36,13 +36,13 @@ public class Instruction
         operandY = y;
         deleteMode = DeleteMode._NotDeleted;
 
-        akaInstruction.id = id;
-        akaInstruction.opcode = opcode;
+        akaI.id = id;
+        akaI.opcode = opcode;
     }
 
     public void setAkaInstruction(Instruction akaInstruction) 
     {
-        this.akaInstruction = akaInstruction;
+        this.akaI = akaInstruction;
     }
 
     public void setAkaInstruction(IResult x, IResult y)
@@ -57,17 +57,29 @@ public class Instruction
         {
             if(x instanceof VariableResult && !((VariableResult)x).isArray)
             {
-                akaInstruction.operandX = new InstructionResult(((VariableResult)x).variable.version);
+                akaI.operandX = new InstructionResult(((VariableResult)x).variable.version);
             }
             else 
             {
-                akaInstruction.operandX = x;
+                akaI.operandX = x;
             }
         }
     }
 
     @Override
     public String toString()
+    {
+        if(deleteMode == DeleteMode._NotDeleted)
+        {
+            return toStringUtil();
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private String toStringUtil()
     {
         String ret = "";
         if(operandX != null && operandY != null)

@@ -120,7 +120,7 @@ public class WhileBlock extends Block implements IBlock
                 VariableResult x2 = new VariableResult();
                 x2.set(new Variable(address2identifier.get(key), key, lSsaMap.get(key)));
 
-                phiManager.addPhi(x, x1, x2, iCodeGenerator);
+                phiManager.addPhi(this, x, x1, x2);
                 ssaMap.put(key, x.version);
             }
         }

@@ -27,7 +27,7 @@ public class Optimizer
         return optimizer;
     }
 
-    public void optimize(Block block, Instruction instruction)
+    public void optimize(IBlock block, Instruction instruction)
     {
         // Copy Propagation
         if(instruction.opcode == OperatorCode.move)
@@ -36,19 +36,19 @@ public class Optimizer
             {
                 instruction.deleteMode = DeleteMode.NUMBER;
                 instruction.setAkaInstructionOperand(instruction.operandX);
-                cpMap.put(instruction.id, instruction.akaInstruction.operandX);
+                cpMap.put(instruction.id, instruction.akaI.operandX);
             }
 
             if(instruction.operandY instanceof VariableResult)
             {
                 instruction.deleteMode = DeleteMode.CP;
                 instruction.setAkaInstruction(instruction.operandX, instruction.operandY);
-                if(instruction.akaInstruction.operandX instanceof InstructionResult 
-                            && cpMap.containsKey(instruction.akaInstruction.operandX.getIid()))
+                if(instruction.akaI.operandX instanceof InstructionResult 
+                            && cpMap.containsKey(instruction.akaI.operandX.getIid()))
                 {
-                    instruction.akaInstruction.operandX = cpMap.get(instruction.akaInstruction.operandX.getIid());
+                    instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
                 }
-                cpMap.put(instruction.akaInstruction.operandY.getIid(), instruction.akaInstruction.operandX);
+                cpMap.put(instruction.akaI.operandY.getIid(), instruction.akaI.operandX);
             }
         }
         else 
@@ -61,21 +61,21 @@ public class Optimizer
                             instruction.opcode == OperatorCode.load || instruction.opcode == OperatorCode.phi)
             {
                 instruction.setAkaInstruction(instruction.operandX, instruction.operandY);
-                if(instruction.akaInstruction.operandX != null 
-                        && instruction.akaInstruction.operandX instanceof InstructionResult 
-                                && cpMap.containsKey(instruction.akaInstruction.operandX.getIid()))
+                if(instruction.akaI.operandX != null 
+                        && instruction.akaI.operandX instanceof InstructionResult 
+                                && cpMap.containsKey(instruction.akaI.operandX.getIid()))
                 {
-                    instruction.akaInstruction.operandX = cpMap.get(instruction.akaInstruction.operandX.getIid());
+                    instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
                 }
 
-                if(instruction.akaInstruction.operandY != null 
-                        && instruction.akaInstruction.operandY instanceof InstructionResult 
-                                && cpMap.containsKey(instruction.akaInstruction.operandY.getIid()))
+                if(instruction.akaI.operandY != null 
+                        && instruction.akaI.operandY instanceof InstructionResult 
+                                && cpMap.containsKey(instruction.akaI.operandY.getIid()))
                 {
-                    instruction.akaInstruction.operandY = cpMap.get(instruction.akaInstruction.operandY.getIid());
+                    instruction.akaI.operandY = cpMap.get(instruction.akaI.operandY.getIid());
                 }
 
-                Instruction cSubexpression = block.searchCommonSubexpression(instruction.akaInstruction);
+                Instruction cSubexpression = block.searchCommonSubexpression(instruction.akaI);
                 if(cSubexpression != null)
                 {
                     instruction.setAkaInstruction(cSubexpression);
@@ -83,7 +83,7 @@ public class Optimizer
                 }
                 else
                 {
-                    block.addSubexpression(instruction.akaInstruction);
+                    block.addSubexpression(instruction.akaI);
                 }
             }
         }
