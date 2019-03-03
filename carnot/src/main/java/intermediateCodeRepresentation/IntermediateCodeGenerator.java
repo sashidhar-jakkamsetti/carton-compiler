@@ -10,7 +10,7 @@ import optimization.Optimizer;
 
 public class IntermediateCodeGenerator
 {
-    private static Integer pc;
+    private Integer pc;
     private static Optimizer optimizer;
     private static IntermediateCodeGenerator iCodeGenerator;
 
@@ -22,6 +22,12 @@ public class IntermediateCodeGenerator
         }
 
         return iCodeGenerator;
+    }
+
+    public void reset()
+    {
+        pc = 0;
+        optimizer.reset();
     }
 
     private IntermediateCodeGenerator()
@@ -99,7 +105,7 @@ public class IntermediateCodeGenerator
                 res = res.toInstruction();
             }
             compute(block, OperatorCode.mul, res, new ConstantResult(4));
-            compute(block, OperatorCode.add, new RegisterResult(28), new ConstantResult(array.getBaseAddress().address));  // Frame Pointer is R28
+            compute(block, OperatorCode.add, new ConstantResult(0), vResult);  // Frame Pointer is R28
             compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
             compute(block, OperatorCode.load, null, new InstructionResult(pc - 1));
 
@@ -129,7 +135,7 @@ public class IntermediateCodeGenerator
                 res = res.toInstruction();
             }
             compute(block, OperatorCode.mul, res, new ConstantResult(4));
-            compute(block, OperatorCode.add, new RegisterResult(28), new ConstantResult(array.getBaseAddress().address));  // Frame Pointer is R28
+            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult);  // Frame Pointer is R28
             compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
 
             for (Integer index = 1; index < array.indexList.size(); index++)

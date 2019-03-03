@@ -47,8 +47,12 @@ public class RegisterResult implements IResult
     @Override
     public Boolean equals(IResult result) 
     {
-        RegisterResult rResult = (RegisterResult)result;
-        return register == rResult.register;
+        if(result instanceof RegisterResult)
+        {
+            RegisterResult rResult = (RegisterResult)result;
+            return register == rResult.register;
+        }
+        return false;
     }
 
     @Override

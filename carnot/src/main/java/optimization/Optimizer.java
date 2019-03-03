@@ -17,6 +17,11 @@ public class Optimizer
         cpMap = new HashMap<Integer, IResult>();
     }
 
+    public void reset()
+    {
+        cpMap.clear();
+    }
+
     public static Optimizer getInstance()
     {
         if(optimizer == null)
@@ -29,26 +34,44 @@ public class Optimizer
 
     public void optimize(IBlock block, Instruction instruction)
     {
+        instruction.setAkaInstruction(instruction.operandX, instruction.operandY);
+
         // Copy Propagation
         if(instruction.opcode == OperatorCode.move)
         {
-            if(instruction.operandX instanceof ConstantResult && instruction.operandY instanceof VariableResult)
+            if(instruction.operandY instanceof InstructionResult)
             {
-                instruction.deleteMode = DeleteMode.NUMBER;
-                instruction.setAkaInstructionOperand(instruction.operandX);
-                cpMap.put(instruction.id, instruction.akaI.operandX);
+                if(instruction.akaI.operandX instanceof InstructionResult 
+                        && cpMap.containsKey(instruction.akaI.operandX.getIid()))
+                {
+                    instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
+                }
             }
 
             if(instruction.operandY instanceof VariableResult)
             {
-                instruction.deleteMode = DeleteMode.CP;
-                instruction.setAkaInstruction(instruction.operandX, instruction.operandY);
-                if(instruction.akaI.operandX instanceof InstructionResult 
-                            && cpMap.containsKey(instruction.akaI.operandX.getIid()))
+                // Don't disturb formal parameters
+                if(instruction.akaI.operandY instanceof VariableResult 
+                            && ((VariableResult)instruction.akaI.operandY).variable.version == -1)
                 {
-                    instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
+                    return;
                 }
-                cpMap.put(instruction.akaI.operandY.getIid(), instruction.akaI.operandX);
+
+                if(instruction.operandX instanceof ConstantResult)
+                {
+                    instruction.deleteMode = DeleteMode.NUMBER;
+                    cpMap.put(instruction.id, instruction.akaI.operandX);
+                }
+                else
+                {
+                    instruction.deleteMode = DeleteMode.CP;
+                    if(instruction.akaI.operandX instanceof InstructionResult 
+                                && cpMap.containsKey(instruction.akaI.operandX.getIid()))
+                    {
+                        instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
+                    }
+                    cpMap.put(instruction.akaI.operandY.getIid(), instruction.akaI.operandX);
+                }
             }
         }
         else 
@@ -60,7 +83,6 @@ public class Optimizer
                         instruction.opcode == OperatorCode.cmp || instruction.opcode == OperatorCode.store ||
                             instruction.opcode == OperatorCode.load || instruction.opcode == OperatorCode.phi)
             {
-                instruction.setAkaInstruction(instruction.operandX, instruction.operandY);
                 if(instruction.akaI.operandX != null 
                         && instruction.akaI.operandX instanceof InstructionResult 
                                 && cpMap.containsKey(instruction.akaI.operandX.getIid()))
@@ -79,11 +101,34 @@ public class Optimizer
                 if(cSubexpression != null)
                 {
                     instruction.setAkaInstruction(cSubexpression);
+                    cpMap.put(instruction.id, new InstructionResult(cSubexpression.id));
                     instruction.deleteMode = DeleteMode.CSE;
                 }
                 else
                 {
+                    if(instruction.opcode == OperatorCode.phi)
+                    {
+                        if(instruction.akaI.operandX instanceof InstructionResult 
+                            && instruction.akaI.operandY instanceof InstructionResult
+                                && instruction.akaI.operandX.getIid() == instruction.akaI.operandY.getIid())
+                        {
+                            instruction.deleteMode = DeleteMode.CP;
+                            cpMap.put(instruction.id, instruction.operandX);
+                        }
+                    }
                     block.addSubexpression(instruction.akaI);
+                }
+            }
+            else if(instruction.opcode == OperatorCode.write || instruction.opcode == OperatorCode.bne ||
+                        instruction.opcode == OperatorCode.beq || instruction.opcode == OperatorCode.ble ||
+                            instruction.opcode == OperatorCode.blt || instruction.opcode == OperatorCode.bge ||
+                                instruction.opcode == OperatorCode.bgt)
+            {
+                if(instruction.akaI.operandX != null 
+                        && instruction.akaI.operandX instanceof InstructionResult 
+                                && cpMap.containsKey(instruction.akaI.operandX.getIid()))
+                {
+                    instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
                 }
             }
         }

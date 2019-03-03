@@ -39,22 +39,23 @@ public class DomTreeNode
             }
             instructions.get(OperatorCode.load).add(instruction);
         }
-
-        if(!instructions.containsKey(instruction.opcode))
+        else
         {
-            instructions.put(instruction.opcode, new ArrayList<Instruction>());
+            if(!instructions.containsKey(instruction.opcode))
+            {
+                instructions.put(instruction.opcode, new ArrayList<Instruction>());
+            }
+            instructions.get(instruction.opcode).add(instruction);
         }
-
-        instructions.get(instruction.opcode).add(instruction);
     }
 
     public Instruction find(Instruction instruction)
     {
         if(instruction.opcode != OperatorCode.store && instructions.containsKey(instruction.opcode))
         {
-            
-            for(Integer idx = instructions.get(instruction.opcode).size(); idx >= 0; idx--)
+            for(Integer idx = instructions.get(instruction.opcode).size() - 1; idx >= 0; idx--)
             {
+                // TODO: Kill not working
                 if(instruction.opcode == OperatorCode.load 
                         && instructions.get(instruction.opcode).get(idx).opcode == OperatorCode.store)
                 {

@@ -74,9 +74,12 @@ public class BranchResult implements IResult
     @Override
     public Boolean equals(IResult result) 
     {
-        BranchResult bResult = (BranchResult)result;
-
-        return condition.type == bResult.condition.type && targetBlock.getId() == bResult.targetBlock.getId();
+        if(result instanceof BranchResult)
+        {
+            BranchResult bResult = (BranchResult)result;
+            return condition.type == bResult.condition.type && targetBlock.getId() == bResult.targetBlock.getId();
+        }
+        return false;
     }
 
     @Override

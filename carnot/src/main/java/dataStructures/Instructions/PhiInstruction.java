@@ -11,12 +11,15 @@ public class PhiInstruction extends Instruction
     public PhiInstruction(Integer programCounter)
     {
         super(programCounter);
-        opcode = Operator.OperatorCode.phi;
+        opcode = OperatorCode.phi;
+        deleteMode = DeleteMode._NotDeleted;
+        akaI = new Instruction(programCounter);
+        akaI.opcode = opcode;
     }
     
     public PhiInstruction(Integer programCounter, Variable variable, IResult x, IResult y)
     {
-        super(programCounter, Operator.OperatorCode.phi, x, y);
+        super(programCounter, OperatorCode.phi, x, y);
         this.variable = variable;
     }
 

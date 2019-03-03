@@ -1,6 +1,7 @@
 package dataStructures.Instructions;
 
 import dataStructures.Results.*;
+import dataStructures.Variable;
 import dataStructures.Operator.OperatorCode;
 
 public class Instruction 
@@ -36,7 +37,7 @@ public class Instruction
         operandY = y;
         deleteMode = DeleteMode._NotDeleted;
 
-        akaI.id = id;
+        akaI = new Instruction(programCounter);
         akaI.opcode = opcode;
     }
 
@@ -47,39 +48,43 @@ public class Instruction
 
     public void setAkaInstruction(IResult x, IResult y)
     {
-        setAkaInstructionOperand(x);
-        setAkaInstructionOperand(y);
+        setAkaInstructionOperand(x, true);
+        setAkaInstructionOperand(y, false);
     }
 
-    public void setAkaInstructionOperand(IResult x)
+    public void setAkaInstructionOperand(IResult r, Boolean bOperandX)
     {
-        if(x != null)
+        if(r != null)
         {
-            if(x instanceof VariableResult && !((VariableResult)x).isArray)
+            // Arrays and formal parameters are not condensed to intruction results. What about global variables?
+            if(r instanceof VariableResult && !((VariableResult)r).isArray && ((VariableResult)r).variable.version != -1)
             {
-                akaI.operandX = new InstructionResult(((VariableResult)x).variable.version);
+                Variable v = ((VariableResult)r).variable;
+                if(bOperandX)
+                {
+                    akaI.operandX = new InstructionResult(v.version);
+                }
+                else
+                {
+                    akaI.operandY = new InstructionResult(v.version);
+                }
             }
             else 
             {
-                akaI.operandX = x;
+                if(bOperandX)
+                {
+                    akaI.operandX = r;
+                }
+                else
+                {
+                    akaI.operandY = r;
+                }
             }
         }
     }
 
     @Override
     public String toString()
-    {
-        if(deleteMode == DeleteMode._NotDeleted)
-        {
-            return toStringUtil();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    private String toStringUtil()
     {
         String ret = "";
         if(operandX != null && operandY != null)
@@ -119,7 +124,12 @@ public class Instruction
             }
             else
             {
-                return operandX.equals(instruction.operandX) && operandY.equals(instruction.operandY);
+                Boolean res = operandX.equals(instruction.operandX) && operandY.equals(instruction.operandY);
+                if((opcode == OperatorCode.mul || opcode == OperatorCode.add) && !res)
+                {
+                    res = operandX.equals(instruction.operandY) && operandY.equals(instruction.operandX);
+                }
+                return res;
             }
         }
 

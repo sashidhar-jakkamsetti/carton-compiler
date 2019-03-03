@@ -53,6 +53,7 @@ public class Parser
     {
         cfg = new ControlFlowGraph();
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
+        iCodeGenerator.reset();
         vManager = cfg.mVariableManager;
         next();
         cfg.done = computation();
@@ -313,7 +314,7 @@ public class Parser
                         if(rhsResult.getIid() > 0) 
                         {
                             rhsResult = rhsResult.toInstruction();
-                            rhsResult.set(iCodeGenerator.getPC() - 1);
+                            // rhsResult.set(iCodeGenerator.getPC() - 1); // Fishy?
                         }
 
                         Variable v = ((VariableResult)lhsResult).variable;
@@ -327,8 +328,8 @@ public class Parser
                             }
                             else
                             {
+                                v.version = iCodeGenerator.getPC();
                                 iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult);
-                                v.version = iCodeGenerator.getPC() - 1;
                                 vManager.updateSsaMap(v.address, v.version);
                                 vManager.updateDefUseChain(v.address, v.version, v.version);
                             }
@@ -343,8 +344,8 @@ public class Parser
                             }
                             else
                             {
+                                v.version = iCodeGenerator.getPC();
                                 iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult);
-                                v.version = iCodeGenerator.getPC() - 1;
                                 function.vManager.updateSsaMap(v.address, v.version);
                                 function.vManager.updateDefUseChain(v.address, v.version, v.version);
                             }
@@ -866,7 +867,7 @@ public class Parser
                 VariableResult vResult = new VariableResult();
                 if(dimentionList.isEmpty())
                 {
-                    Variable var = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), -1);
+                    Variable var = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
                     vResult.set(var);
                 }
                 else
@@ -884,7 +885,7 @@ public class Parser
                     }
                     else
                     {
-                        iCodeGenerator.declareVariable(function.head, function.vManager, vResult, false);
+                        iCodeGenerator.declareVariable(function.head, function.vManager, vResult, true);
                     }
                 }
                 catch(Exception e)
@@ -923,13 +924,13 @@ public class Parser
             next();
             while(inputSym.isSameType(TokenType.ident))
             {
-                // Formal parameters are given -2 as the version number.
-                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), iCodeGenerator.getPC());
+                // Formal parameters are given -1 as the version number.
+                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), -1);
                 VariableResult vResult = new VariableResult();
                 vResult.set(v);
                 try
                 {
-                    iCodeGenerator.declareVariable(function.head, function.vManager, vResult, true);
+                    iCodeGenerator.declareVariable(function.head, function.vManager, vResult, false);
                 }
                 catch(Exception e)
                 {

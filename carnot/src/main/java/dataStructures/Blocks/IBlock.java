@@ -1,5 +1,6 @@
 package dataStructures.Blocks;
 
+import dataStructures.DomTreeNode;
 import dataStructures.Instructions.*;
 
 import java.util.*;
@@ -22,4 +23,5 @@ public interface IBlock
 
     public Instruction searchCommonSubexpression(Instruction instruction);
     public void addSubexpression(Instruction instruction);
+    public DomTreeNode getDomTreeNode();
 }

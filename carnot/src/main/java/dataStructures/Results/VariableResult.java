@@ -58,8 +58,12 @@ public class VariableResult implements IResult
     @Override
     public Boolean equals(IResult result) 
     {
-        VariableResult vResult = (VariableResult)result;
-        return variable.equals(vResult.variable) && isArray == vResult.isArray;
+        if(result instanceof VariableResult)
+        {
+            VariableResult vResult = (VariableResult)result;
+            return variable.equals(vResult.variable) && isArray == vResult.isArray;
+        }
+        return false;
     }
 
     @Override

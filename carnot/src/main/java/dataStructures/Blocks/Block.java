@@ -2,10 +2,9 @@ package dataStructures.Blocks;
 
 import dataStructures.DomTreeNode;
 import dataStructures.Instructions.*;
+import dataStructures.Instructions.Instruction.DeleteMode;
 
 import java.util.*;
-
-import javax.swing.text.AsyncBoxView.ChildState;
 
 public class Block implements IBlock
 {
@@ -23,6 +22,7 @@ public class Block implements IBlock
         instructions = new ArrayList<Instruction>();
         parent = null;
         child = null;
+        dTreeNode = new DomTreeNode(id);
         globalSsa = new HashMap<Integer, Integer>();
         localSsa = new HashMap<Integer, Integer>();
     }
@@ -55,6 +55,7 @@ public class Block implements IBlock
     public void setParent(IBlock block)
     {
         parent = (Block)block;
+        dTreeNode.setParent(block.getDomTreeNode());
     }
 
     public IBlock getParent()
@@ -72,6 +73,11 @@ public class Block implements IBlock
         return child;
     }
 
+    public DomTreeNode getDomTreeNode()
+    {
+        return dTreeNode;
+    }
+
     public String toString(Boolean optimized)
     {
         StringBuilder sb = new StringBuilder();
@@ -80,16 +86,20 @@ public class Block implements IBlock
         {
             if(optimized)
             {
-                instructionString = instruction.akaI.toString();
+                if(instruction.deleteMode == DeleteMode._NotDeleted)
+                {
+                    instructionString = instruction.akaI.toString();
+                }
             }
             else 
             {
                 instructionString = instruction.toString();
             }
 
-            if(instructionString != null || instructionString != "")
+            if(instructionString != null && instructionString != "")
             {
-                sb.append(instruction.toString() + "\\l");
+                sb.append(instructionString + "\\l");
+                instructionString = "";
             }
         }
 
@@ -119,7 +129,7 @@ public class Block implements IBlock
     public Instruction searchCommonSubexpression(Instruction instruction)
     {
         Instruction cSubexpression = dTreeNode.find(instruction);
-        if(cSubexpression == null)
+        if(cSubexpression == null && parent != null)
         {
             cSubexpression = parent.searchCommonSubexpression(instruction);
         }

@@ -35,16 +35,19 @@ public class InstructionResult implements IResult
     @Override
     public IResult clone() 
     {
-        InstructionResult iResult = new InstructionResult();
-        iResult.iid = iid;
+        InstructionResult iResult = new InstructionResult(iid);
         return (IResult)iResult;
     }
 
     @Override
     public Boolean equals(IResult result) 
     {
-        InstructionResult iResult = (InstructionResult)result;
-        return iid == iResult.iid;
+        if(result instanceof InstructionResult)
+        {
+            InstructionResult iResult = (InstructionResult)result;
+            return iid == iResult.iid;
+        }
+        return false;
     }
 
     @Override

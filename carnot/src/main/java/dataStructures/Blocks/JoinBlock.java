@@ -3,6 +3,7 @@ package dataStructures.Blocks;
 import dataStructures.*;
 import dataStructures.Instructions.Instruction;
 import dataStructures.Instructions.PhiInstruction;
+import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Results.*;
 import intermediateCodeRepresentation.*;
 
@@ -53,19 +54,54 @@ public class JoinBlock extends Block implements IBlock
     }
 
     @Override
-    public String toString()
+    public String toString(Boolean optimized)
     {
         StringBuilder sb = new StringBuilder();
+        String instructionString = "";
         if(phiManager != null && phiManager.phis != null && phiManager.phis.keySet().size() > 0)
         {
             for(PhiInstruction instruction : phiManager.phis.values())
             {
-                sb.append(instruction.toString() + "\\l");
+                if(optimized)
+                {
+                    if(instruction.deleteMode == DeleteMode._NotDeleted)
+                    {
+                        instructionString = instruction.akaI.toString();
+                    }
+                }
+                else 
+                {
+                    instructionString = instruction.toString();
+                }
+    
+                if(instructionString != null && instructionString != "")
+                {
+                    sb.append(instructionString + "\\l");
+                    instructionString = "";
+                }
             }
         }
+        
+        instructionString = "";
         for(Instruction instruction : instructions)
         {
-            sb.append(instruction.toString() + "\\l");
+            if(optimized)
+            {
+                if(instruction.deleteMode == DeleteMode._NotDeleted)
+                {
+                    instructionString = instruction.akaI.toString();
+                }
+            }
+            else 
+            {
+                instructionString = instruction.toString();
+            }
+
+            if(instructionString != null && instructionString != "")
+            {
+                sb.append(instructionString + "\\l");
+                instructionString = "";
+            }
         }
 
         return sb.toString();
