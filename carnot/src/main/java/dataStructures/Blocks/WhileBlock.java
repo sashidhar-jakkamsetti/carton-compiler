@@ -54,7 +54,7 @@ public class WhileBlock extends Block implements IBlock
         }
 
         Optional<PhiInstruction> filteredInstruction = phiManager.phis.values().stream().filter(phi -> phi.id == programCounter).findFirst();
-        if(!filteredInstruction.isEmpty())
+        if(filteredInstruction.isPresent())
         {
             return filteredInstruction.get();
         }
