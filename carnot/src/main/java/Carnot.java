@@ -103,6 +103,18 @@ public class Carnot
             return;
         }
 
+        if(System.getProperty("user.dir").contains("carnot/target/classes"))
+        {
+            String prefix = System.getProperty("user.dir").replace("carnot/target/classes","");
+            buildInfo.setProgram(prefix + buildInfo.getProgram());
+            buildInfo.setOutputpath(prefix + buildInfo.getOutputpath());
+        }
+        else
+        {
+            buildInfo.setProgram(System.getProperty("user.dir") + "/" + buildInfo.getProgram());
+            buildInfo.setOutputpath(System.getProperty("user.dir") + "/" + buildInfo.getOutputpath());
+        }
+        
         if(buildInfo.getProgram().endsWith("/"))
         {
             File folder = new File(buildInfo.getProgram());
