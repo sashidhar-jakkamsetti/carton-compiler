@@ -7,7 +7,7 @@ import utility.BuildConfigLoader;
 import utility.BuildInfo;
 import utility.GraphViz;
 
-public class Engine 
+public class Carnot 
 {
     public static boolean run(BuildInfo buildInfo) throws Exception
     {
@@ -21,7 +21,7 @@ public class Engine
 
                 if(buildInfo.getAbstractControlFlowGraph())
                 {
-                    graphPrinter.print(false);
+                    graphPrinter.print(false, false);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                     );
@@ -29,7 +29,7 @@ public class Engine
 
                 if(buildInfo.getOptimize())
                 {
-                    graphPrinter.print(true);
+                    graphPrinter.print(true, false);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                     );
@@ -37,7 +37,7 @@ public class Engine
 
                 if(buildInfo.getEliminateDeadCode())
                 {
-                    graphPrinter.print(true);
+                    graphPrinter.print(true, true);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                     );
@@ -45,7 +45,7 @@ public class Engine
 
                 if(buildInfo.getAllocateRegister())
                 {
-                    graphPrinter.print(true);
+                    graphPrinter.print(true, true);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                     );
@@ -53,7 +53,7 @@ public class Engine
 
                 if(buildInfo.getInstructionScheduling())
                 {
-                    graphPrinter.print(true);
+                    graphPrinter.print(true, true);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                     );
@@ -61,7 +61,7 @@ public class Engine
 
                 if(buildInfo.getGenerateMachineCode())
                 {
-                    graphPrinter.print(true);
+                    graphPrinter.print(true, true);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
                     );
@@ -83,7 +83,7 @@ public class Engine
         }
         else
         {
-            buildFile = "carnot/carnot.xml";
+            buildFile = "carnot/build.config";
         }
 
         BuildConfigLoader loader = new BuildConfigLoader(buildFile);
@@ -103,7 +103,6 @@ public class Engine
             return;
         }
 
-        // If folder, take all the files and parse them.
         if(buildInfo.getProgram().endsWith("/"))
         {
             File folder = new File(buildInfo.getProgram());
