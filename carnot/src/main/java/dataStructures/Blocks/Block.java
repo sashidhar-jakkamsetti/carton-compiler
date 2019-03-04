@@ -78,7 +78,7 @@ public class Block implements IBlock
     public Instruction getInstruction(Integer programCounter)
     {
         Optional<Instruction> filteredInstruction = instructions.stream().filter(instruction -> instruction.id == programCounter).findFirst();
-        if(!filteredInstruction.isEmpty())
+        if(filteredInstruction.isPresent())
         {
             return filteredInstruction.get();
         }

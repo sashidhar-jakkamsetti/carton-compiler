@@ -37,15 +37,21 @@ public class DomTreeNode
             {
                 instructions.put(OperatorCode.load, new ArrayList<Instruction>());
             }
-            instructions.get(OperatorCode.load).add(instruction);
+            instructions.get(OperatorCode.load).add(instruction.clone());
         }
-        else
+        if(!instructions.containsKey(instruction.opcode))
         {
-            if(!instructions.containsKey(instruction.opcode))
-            {
-                instructions.put(instruction.opcode, new ArrayList<Instruction>());
-            }
-            instructions.get(instruction.opcode).add(instruction);
+            instructions.put(instruction.opcode, new ArrayList<Instruction>());
+        }
+        instructions.get(instruction.opcode).add(instruction.clone());
+    }
+
+    public void delete(Instruction instruction)
+    {
+        if(instructions.containsKey(instruction.opcode))
+        {
+            ArrayList<Instruction> is = instructions.get(instruction.opcode);
+            is.removeIf(i -> i.id == instruction.id);
         }
     }
 

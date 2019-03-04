@@ -54,7 +54,7 @@ public class WhileBlock extends Block implements IBlock
         }
 
         Optional<PhiInstruction> filteredInstruction = phiManager.phis.values().stream().filter(phi -> phi.id == programCounter).findFirst();
-        if(!filteredInstruction.isEmpty())
+        if(filteredInstruction.isPresent())
         {
             return filteredInstruction.get();
         }
@@ -168,7 +168,7 @@ public class WhileBlock extends Block implements IBlock
             stopTable.put(key, false);
         }
 
-        updatePhiVarOccurances(instructions, stopTable);
+        updatePhiVarOccurances(this, instructions, stopTable);
 
         Stack<IBlock> nBlocks = new Stack<IBlock>();
         Stack<IBlock> nfBlocks = new Stack<IBlock>();
@@ -248,7 +248,7 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
-    public void updatePhiVarOccurances(List<Instruction> instructions, HashMap<Integer, Boolean> stopTable)
+    public void updatePhiVarOccurances(IBlock b, List<Instruction> instructions, HashMap<Integer, Boolean> stopTable)
     {
         for (Instruction instruction : instructions) 
         {
@@ -260,6 +260,7 @@ public class WhileBlock extends Block implements IBlock
                 {
                     PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
                     varToUpdate.version = phiInstr.variable.version;
+                    IntermediateCodeGenerator.optimizer.optimize(b, instruction);
                 }
             }
 
@@ -273,6 +274,7 @@ public class WhileBlock extends Block implements IBlock
                     {
                         PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
                         varToUpdate.version = phiInstr.variable.version;
+                        IntermediateCodeGenerator.optimizer.optimize(b, instruction);
                     }
                 }
             }
@@ -328,6 +330,6 @@ public class WhileBlock extends Block implements IBlock
             }
         }
 
-        updatePhiVarOccurances(b.getInstructions(), stopTable);
+        updatePhiVarOccurances(b, b.getInstructions(), stopTable);
     }
 }

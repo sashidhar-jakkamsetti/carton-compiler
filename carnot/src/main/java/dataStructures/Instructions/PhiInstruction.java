@@ -24,6 +24,30 @@ public class PhiInstruction extends Instruction
     }
 
     @Override
+    public PhiInstruction clone()
+    {
+        PhiInstruction instr = new PhiInstruction(id);
+        instr.opcode = opcode;
+        if(operandX != null)
+        {
+            instr.operandX = operandX.clone();
+        }
+        if(operandY != null)
+        {
+            instr.operandY = operandY.clone();
+        }
+        instr.deleteMode = deleteMode;
+        instr.akaI = new Instruction(id);
+        if(akaI != null)
+        {
+            instr.akaI.opcode = akaI.opcode;
+            instr.akaI.operandX = akaI.operandX.clone();
+            instr.akaI.operandY = akaI.operandY.clone();
+        }
+        return instr;
+    }
+
+    @Override
     public String toString()
     {
         return String.format("%s : PHI %s := %s %s",

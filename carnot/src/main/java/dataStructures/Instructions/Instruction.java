@@ -84,6 +84,30 @@ public class Instruction
     }
 
     @Override
+    public Instruction clone()
+    {
+        Instruction instr = new Instruction(id);
+        instr.opcode = opcode;
+        if(operandX != null)
+        {
+            instr.operandX = operandX.clone();
+        }
+        if(operandY != null)
+        {
+            instr.operandY = operandY.clone();
+        }
+        instr.deleteMode = deleteMode;
+        instr.akaI = new Instruction(id);
+        if(akaI != null)
+        {
+            instr.akaI.opcode = akaI.opcode;
+            instr.akaI.operandX = akaI.operandX.clone();
+            instr.akaI.operandY = akaI.operandY.clone();
+        }
+        return instr;
+    }
+
+    @Override
     public String toString()
     {
         String ret = "";
