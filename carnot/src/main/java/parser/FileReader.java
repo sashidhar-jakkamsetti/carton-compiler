@@ -92,7 +92,7 @@ public class FileReader {
         System.out.println("Caught exception while parsing file: " 
                 + cfileName + " at line: " + lineNo + " column: " + charPosition);
 
-        System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
-                exception.getStackTrace()));
+        System.out.println(String.format("%s : %s\n", exception.toString(), exception.getMessage()));
+        exception.printStackTrace();
     }
 }

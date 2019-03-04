@@ -61,8 +61,8 @@ public class GraphViz
         }
         catch(Exception exception)
         {
-            System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
-                                exception.getStackTrace()));
+            System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage()));
+            exception.printStackTrace();
         }
     }
 

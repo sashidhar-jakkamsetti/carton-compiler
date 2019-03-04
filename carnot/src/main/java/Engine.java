@@ -62,11 +62,11 @@ public class Engine
                 File file = listOfFiles[i];
                 if(file.getAbsolutePath().endsWith(".txt"))
                 {
+                    Integer len = file.getAbsolutePath().split("/").length;
+                    String filesuffix = file.getAbsolutePath().split("/")[len - 1];
                     try
                     {
                         boolean status = run(file.getAbsolutePath());
-                        Integer len = file.getAbsolutePath().split("/").length;
-                        String filesuffix = file.getAbsolutePath().split("/")[len - 1];
                         if(status)
                         {
                             System.out.println(filesuffix + " done.");
@@ -80,8 +80,11 @@ public class Engine
                     }
                     catch(Exception exception)
                     {
-                        System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
-                            exception.getStackTrace()));
+                        failCount += 1;
+                        failFiles.add(filesuffix);
+                        System.out.println(filesuffix + " FAILED.");
+                        System.out.println(String.format("%s : %s\n", exception.toString(), exception.getMessage()));
+                        exception.printStackTrace();
                     }
                 }
             }
@@ -116,8 +119,8 @@ public class Engine
             }
             catch(Exception exception)
             {
-                System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage(),
-                    exception.getStackTrace()));
+                System.out.println(String.format("%s : %s\n", exception.toString(), exception.getMessage()));
+                exception.printStackTrace();
             }
         }
     }

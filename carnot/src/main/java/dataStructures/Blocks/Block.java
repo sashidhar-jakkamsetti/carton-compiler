@@ -5,6 +5,7 @@ import dataStructures.Instructions.*;
 import dataStructures.Instructions.Instruction.DeleteMode;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class Block implements IBlock
 {
@@ -47,11 +48,6 @@ public class Block implements IBlock
         this.instructions.addAll(instructions);
     }
 
-    public Instruction getInstruction(Integer programCounter)
-    {
-        return (Instruction)instructions.stream().filter(instruction -> instruction.id == programCounter).toArray()[0];
-    }
-
     public void setParent(IBlock block)
     {
         parent = (Block)block;
@@ -76,6 +72,18 @@ public class Block implements IBlock
     public DomTreeNode getDomTreeNode()
     {
         return dTreeNode;
+    }
+
+    @Override
+    public Instruction getInstruction(Integer programCounter)
+    {
+        Optional<Instruction> filteredInstruction = instructions.stream().filter(instruction -> instruction.id == programCounter).findFirst();
+        if(!filteredInstruction.isEmpty())
+        {
+            return filteredInstruction.get();
+        }
+
+        return null;
     }
 
     public String toString(Boolean optimized)

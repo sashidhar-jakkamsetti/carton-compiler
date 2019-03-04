@@ -10,8 +10,8 @@ import optimization.Optimizer;
 
 public class IntermediateCodeGenerator
 {
-    private Integer pc;
-    private static Optimizer optimizer;
+    private static Integer pc;
+    public static Optimizer optimizer;
     private static IntermediateCodeGenerator iCodeGenerator;
 
     public static IntermediateCodeGenerator getInstance()

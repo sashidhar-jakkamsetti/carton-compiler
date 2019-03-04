@@ -57,6 +57,7 @@ public class Parser
         vManager = cfg.mVariableManager;
         next();
         cfg.done = computation();
+        IntermediateCodeGenerator.optimizer.eliminateDeadCode(cfg);
         return cfg;
     }
 

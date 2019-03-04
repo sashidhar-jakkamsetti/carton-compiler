@@ -44,6 +44,24 @@ public class JoinBlock extends Block implements IBlock
         return elseBlock;
     }
 
+    @Override
+    public Instruction getInstruction(Integer programCounter)
+    {
+        Instruction instruction = super.getInstruction(programCounter);
+        if(instruction != null)
+        {
+            return instruction;
+        }
+
+        Optional<PhiInstruction> filteredInstruction = phiManager.phis.values().stream().filter(phi -> phi.id == programCounter).findFirst();
+        if(!filteredInstruction.isEmpty())
+        {
+            return filteredInstruction.get();
+        }
+
+        return null;
+    }
+
     public List<PhiInstruction> getPhis()
     {
         if(phiManager != null && phiManager.phis != null && phiManager.phis.values().size() > 0)
@@ -81,29 +99,7 @@ public class JoinBlock extends Block implements IBlock
                 }
             }
         }
-        
-        instructionString = "";
-        for(Instruction instruction : instructions)
-        {
-            if(optimized)
-            {
-                if(instruction.deleteMode == DeleteMode._NotDeleted)
-                {
-                    instructionString = instruction.akaI.toString();
-                }
-            }
-            else 
-            {
-                instructionString = instruction.toString();
-            }
-
-            if(instructionString != null && instructionString != "")
-            {
-                sb.append(instructionString + "\\l");
-                instructionString = "";
-            }
-        }
-
+        sb.append(super.toString(optimized));
         return sb.toString();
     }
 
