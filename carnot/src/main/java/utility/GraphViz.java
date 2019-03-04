@@ -12,13 +12,15 @@ public class GraphViz
     private Stack<IBlock> blockStack;
     private boolean[] alreadyPrintedBlocks;
     private String program;
+    private String outputpath;
     private String graphFileName;
 
-    public GraphViz(ControlFlowGraph cfg, String program)
+    public GraphViz(ControlFlowGraph cfg, String program, String outputpath)
     {
         this.cfg = cfg;
         blockStack = new Stack<IBlock>();
         this.program = program;
+        this.outputpath = outputpath;
     }
 
     public String getGraphFileName()
@@ -26,7 +28,7 @@ public class GraphViz
         return graphFileName;
     }
 
-    public void print(Boolean optimized)
+    public void print(Boolean optimized, Boolean dce)
     {
         try 
         {
@@ -35,12 +37,20 @@ public class GraphViz
             
             if(optimized)
             {
-                graphFileName = "graphs/" + filesuffix + ".optimized.cgf.gv";
+                if(dce)
+                {
+                    graphFileName = outputpath + filesuffix + ".optimized.dce.gv";
+                }
+                else
+                {
+                    graphFileName = outputpath + filesuffix + ".optimized.gv";
+                }
             }
             else 
             {
-                graphFileName = "graphs/" + filesuffix + ".cgf.gv";
+                graphFileName = outputpath + filesuffix + ".cgf.gv";
             }
+            
             File file = new File(graphFileName);
             FileWriter out = new FileWriter(file);
 
@@ -50,10 +60,10 @@ public class GraphViz
             blockStack.clear();
             alreadyPrintedBlocks = new boolean[cfg.getAllBlocks().size()];
 
-            addFunction(cfg.head, "main", optimized, out);
+            addFunction(cfg.head, "main", optimized, dce, out);
             for (Function function : cfg.functions) 
             {
-                addFunction(function.head, function.name, optimized, out);
+                addFunction(function.head, function.name, optimized, dce, out);
             }
 
             out.write("}");
@@ -61,12 +71,12 @@ public class GraphViz
         }
         catch(Exception exception)
         {
-            System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage()));
+            System.out.println(String.format("%s : %s\n", exception.toString(), exception.getMessage()));
             exception.printStackTrace();
         }
     }
 
-    private void addFunction(IBlock head, String funcName, Boolean optimized, FileWriter out) throws IOException
+    private void addFunction(IBlock head, String funcName, Boolean optimized, Boolean dce, FileWriter out) throws IOException
     {
         blockStack.push(head);
         alreadyPrintedBlocks[head.getId()] = true;
@@ -154,7 +164,7 @@ public class GraphViz
                     edges.add(addEdge(cBlock, cBlock.getChild()));
                 }
             }
-            out.write(cBlock.toString(optimized));
+            out.write(cBlock.toString(optimized, dce));
             out.write("\"];\n");
         }
         for(String edge : edges)

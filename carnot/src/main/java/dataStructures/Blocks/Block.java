@@ -86,7 +86,12 @@ public class Block implements IBlock
         return null;
     }
 
-    public String toString(Boolean optimized)
+    public String toString(Boolean optimized, Boolean dce)
+    {
+        return toStringUtil(this.instructions, optimized, dce);
+    }
+
+    protected String toStringUtil(List<Instruction> instructions, Boolean optimized, Boolean dce)
     {
         StringBuilder sb = new StringBuilder();
         String instructionString = "";
@@ -94,9 +99,19 @@ public class Block implements IBlock
         {
             if(optimized)
             {
-                if(instruction.deleteMode == DeleteMode._NotDeleted)
+                if(dce)
                 {
-                    instructionString = instruction.akaI.toString();
+                    if(instruction.deleteMode == DeleteMode._NotDeleted)
+                    {
+                        instructionString = instruction.akaI.toString();
+                    }
+                }
+                else
+                {
+                    if(instruction.deleteMode == DeleteMode._NotDeleted || instruction.deleteMode == DeleteMode.DCE)
+                    {
+                        instructionString = instruction.akaI.toString();
+                    }
                 }
             }
             else 

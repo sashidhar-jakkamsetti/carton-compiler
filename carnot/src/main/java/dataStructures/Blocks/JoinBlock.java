@@ -72,34 +72,12 @@ public class JoinBlock extends Block implements IBlock
     }
 
     @Override
-    public String toString(Boolean optimized)
+    public String toString(Boolean optimized, Boolean dce)
     {
         StringBuilder sb = new StringBuilder();
-        String instructionString = "";
-        if(phiManager != null && phiManager.phis != null && phiManager.phis.keySet().size() > 0)
-        {
-            for(PhiInstruction instruction : phiManager.phis.values())
-            {
-                if(optimized)
-                {
-                    if(instruction.deleteMode == DeleteMode._NotDeleted)
-                    {
-                        instructionString = instruction.akaI.toString();
-                    }
-                }
-                else 
-                {
-                    instructionString = instruction.toString();
-                }
-    
-                if(instructionString != null && instructionString != "")
-                {
-                    sb.append(instructionString + "\\l");
-                    instructionString = "";
-                }
-            }
-        }
-        sb.append(super.toString(optimized));
+        ArrayList<Instruction> phiInstructions = new ArrayList(phiManager.phis.values());
+        sb.append(super.toStringUtil(phiInstructions, optimized, dce));
+        sb.append(super.toString(optimized, dce));
         return sb.toString();
     }
 
