@@ -260,7 +260,6 @@ public class WhileBlock extends Block implements IBlock
                 {
                     PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
                     varToUpdate.version = phiInstr.variable.version;
-                    IntermediateCodeGenerator.optimizer.optimize(b, instruction);
                 }
             }
 
@@ -274,7 +273,6 @@ public class WhileBlock extends Block implements IBlock
                     {
                         PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
                         varToUpdate.version = phiInstr.variable.version;
-                        IntermediateCodeGenerator.optimizer.optimize(b, instruction);
                     }
                 }
             }
@@ -290,6 +288,7 @@ public class WhileBlock extends Block implements IBlock
                     }
                 }
             }
+            IntermediateCodeGenerator.optimizer.optimize(b, instruction);
         }
     }
 

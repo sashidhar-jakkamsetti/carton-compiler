@@ -46,7 +46,7 @@ public class IntermediateCodeGenerator
         pc++;
     }
 
-    public void compute(IBlock block, Token opToken, BranchResult y)
+    public void compute(IBlock block, Token opToken, BranchResult y, Boolean optimize)
     {
         OperatorCode opCode  = Operator.branchingOperator.get(opToken.type);
         Instruction instruction;
@@ -60,15 +60,18 @@ public class IntermediateCodeGenerator
         }
 
         block.addInstruction(instruction);
-        optimizer.optimize(block, instruction);
+        if(optimize)
+        {
+            optimizer.optimize(block, instruction);
+        }
     }
 
-    public void compute(IBlock block, Token opToken, IResult x, IResult y)
+    public void compute(IBlock block, Token opToken, IResult x, IResult y, Boolean optimize)
     {
-        compute(block, Operator.getOpCode(opToken), x, y);
+        compute(block, Operator.getOpCode(opToken), x, y, optimize);
     }
 
-    public void compute(IBlock block, OperatorCode opCode, IResult x, IResult y)
+    public void compute(IBlock block, OperatorCode opCode, IResult x, IResult y, Boolean optimize)
     {
         if(opCode == null)
         {
@@ -90,10 +93,13 @@ public class IntermediateCodeGenerator
         }
 
         block.addInstruction(instruction);
-        optimizer.optimize(block, instruction);
+        if(optimize)
+        {
+            optimizer.optimize(block, instruction);
+        }
     }
 
-    public void loadArrayElement(IBlock block, VariableManager vManager, IResult vResult) 
+    public void loadArrayElement(IBlock block, VariableManager vManager, IResult vResult, Boolean optimize) 
     {
         ArrayVar array = (ArrayVar)((VariableResult)vResult).variable;
 
@@ -104,10 +110,10 @@ public class IntermediateCodeGenerator
             {
                 res = res.toInstruction();
             }
-            compute(block, OperatorCode.mul, res, new ConstantResult(4));
-            compute(block, OperatorCode.add, new ConstantResult(0), vResult);  // Frame Pointer is R28
-            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
-            compute(block, OperatorCode.load, null, new InstructionResult(pc - 1));
+            compute(block, OperatorCode.mul, res, new ConstantResult(4), optimize);
+            compute(block, OperatorCode.add, new ConstantResult(0), vResult, optimize);  // Frame Pointer is R28
+            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
+            compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
@@ -116,14 +122,14 @@ public class IntermediateCodeGenerator
                 {
                     res1 = res1.toInstruction();
                 }
-                compute(block, OperatorCode.mul, res1, new ConstantResult(4));
-                compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
-                compute(block, OperatorCode.load, null, new InstructionResult(pc - 1));
+                compute(block, OperatorCode.mul, res1, new ConstantResult(4), optimize);
+                compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
+                compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
             }
         }
     }
 
-    public void storeArrayElement(IBlock block, VariableManager vManager, IResult lhsResult, IResult rhsResult) 
+    public void storeArrayElement(IBlock block, VariableManager vManager, IResult lhsResult, IResult rhsResult, Boolean optimize) 
     {
         ArrayVar array = (ArrayVar)((VariableResult)lhsResult).variable;
 
@@ -134,9 +140,9 @@ public class IntermediateCodeGenerator
             {
                 res = res.toInstruction();
             }
-            compute(block, OperatorCode.mul, res, new ConstantResult(4));
-            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult);  // Frame Pointer is R28
-            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
+            compute(block, OperatorCode.mul, res, new ConstantResult(4), optimize);
+            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult, optimize);  // Frame Pointer is R28
+            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
@@ -145,16 +151,16 @@ public class IntermediateCodeGenerator
                 {
                     res1 = res1.toInstruction();
                 }
-                compute(block, OperatorCode.load, null, new InstructionResult(pc - 1));
-                compute(block, OperatorCode.mul, res1, new ConstantResult(4));
-                compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2));
+                compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
+                compute(block, OperatorCode.mul, res1, new ConstantResult(4), optimize);
+                compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
             }
 
-            compute(block, OperatorCode.store, new InstructionResult(pc - 1), rhsResult);
+            compute(block, OperatorCode.store, new InstructionResult(pc - 1), rhsResult, optimize);
         }
     }
 
-    public void declareVariable(IBlock block, VariableManager vManager, VariableResult vResult, Boolean put) throws IllegalVariableException
+    public void declareVariable(IBlock block, VariableManager vManager, VariableResult vResult, Boolean put, Boolean optimize) throws IllegalVariableException
     {
         if(vManager.isVariable(vResult.variable.address))
         {
@@ -175,7 +181,7 @@ public class IntermediateCodeGenerator
                 vManager.addVariable(vResult.variable.address);
                 if(put)
                 {
-                    compute(block, OperatorCode.move, vResult, new ConstantResult());
+                    compute(block, OperatorCode.move, vResult, new ConstantResult(), optimize);
                 }
             }
         }
