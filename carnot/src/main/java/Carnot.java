@@ -17,7 +17,7 @@ public class Carnot
             ControlFlowGraph cfg = parser.parse();
             if(cfg.done)
             {
-                GraphViz graphPrinter = new GraphViz(cfg, buildInfo.getProgram());
+                GraphViz graphPrinter = new GraphViz(cfg, buildInfo.getProgram(), buildInfo.getOutputpath());
 
                 if(buildInfo.getAbstractControlFlowGraph())
                 {

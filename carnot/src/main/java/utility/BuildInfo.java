@@ -13,6 +13,7 @@ public class BuildInfo
     boolean allocateRegister;
     boolean instructionScheduling;
     boolean generateMachineCode;
+    String outputpath;
 
     public String getProgram() 
     {
@@ -90,4 +91,16 @@ public class BuildInfo
     {
         this.instructionScheduling = instructionScheduling;
     }
+
+    public String getOutputpath() 
+    {
+        return outputpath;
+    }
+
+    @XmlElement
+    public void setOutputpath(String outputpath) 
+    {
+        this.outputpath = outputpath;
+    }
+
 }

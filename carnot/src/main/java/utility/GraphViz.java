@@ -12,13 +12,15 @@ public class GraphViz
     private Stack<IBlock> blockStack;
     private boolean[] alreadyPrintedBlocks;
     private String program;
+    private String outputpath;
     private String graphFileName;
 
-    public GraphViz(ControlFlowGraph cfg, String program)
+    public GraphViz(ControlFlowGraph cfg, String program, String outputpath)
     {
         this.cfg = cfg;
         blockStack = new Stack<IBlock>();
         this.program = program;
+        this.outputpath = outputpath;
     }
 
     public String getGraphFileName()
@@ -35,12 +37,20 @@ public class GraphViz
             
             if(optimized)
             {
-                graphFileName = "graphs/" + filesuffix + ".optimized.cgf.gv";
+                if(dce)
+                {
+                    graphFileName = outputpath + filesuffix + ".optimized.dce.gv";
+                }
+                else
+                {
+                    graphFileName = outputpath + filesuffix + ".optimized.gv";
+                }
             }
             else 
             {
-                graphFileName = "graphs/" + filesuffix + ".cgf.gv";
+                graphFileName = outputpath + filesuffix + ".cgf.gv";
             }
+            
             File file = new File(graphFileName);
             FileWriter out = new FileWriter(file);
 
@@ -61,7 +71,7 @@ public class GraphViz
         }
         catch(Exception exception)
         {
-            System.out.println(String.format("%s : %s\n%s", exception.toString(), exception.getMessage()));
+            System.out.println(String.format("%s : %s\n", exception.toString(), exception.getMessage()));
             exception.printStackTrace();
         }
     }
