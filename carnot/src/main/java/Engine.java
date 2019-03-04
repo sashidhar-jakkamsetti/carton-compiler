@@ -3,31 +3,69 @@ import java.util.*;
 
 import intermediateCodeRepresentation.ControlFlowGraph;
 import parser.Parser;
+import utility.BuildConfigLoader;
+import utility.BuildInfo;
 import utility.GraphViz;
 
 public class Engine 
 {
-    public static boolean run(String program) throws Exception
+    public static boolean run(BuildInfo buildInfo) throws Exception
     {
-        Parser parser = Parser.getInstance(program);
+        Parser parser = Parser.getInstance(buildInfo.getProgram());
         if(parser != null)
         {
             ControlFlowGraph cfg = parser.parse();
             if(cfg.done)
             {
-                GraphViz graphPrinter = new GraphViz(cfg, program);
+                GraphViz graphPrinter = new GraphViz(cfg, buildInfo.getProgram());
 
-                // Stage 1 control flow graph
-                graphPrinter.print(false);
-                Runtime.getRuntime().exec(
-                        String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
-                );
+                if(buildInfo.getAbstractControlFlowGraph())
+                {
+                    graphPrinter.print(false);
+                    Runtime.getRuntime().exec(
+                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                    );
+                }
 
-                // Stage 2 optimized cfg
-                graphPrinter.print(true);
-                Runtime.getRuntime().exec(
-                        String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
-                );
+                if(buildInfo.getOptimize())
+                {
+                    graphPrinter.print(true);
+                    Runtime.getRuntime().exec(
+                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                    );
+                }
+
+                if(buildInfo.getEliminateDeadCode())
+                {
+                    graphPrinter.print(true);
+                    Runtime.getRuntime().exec(
+                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                    );
+                }
+
+                if(buildInfo.getAllocateRegister())
+                {
+                    graphPrinter.print(true);
+                    Runtime.getRuntime().exec(
+                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                    );
+                }
+
+                if(buildInfo.getInstructionScheduling())
+                {
+                    graphPrinter.print(true);
+                    Runtime.getRuntime().exec(
+                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                    );
+                }
+
+                if(buildInfo.getGenerateMachineCode())
+                {
+                    graphPrinter.print(true);
+                    Runtime.getRuntime().exec(
+                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                    );
+                }
 
                 return true;
             }
@@ -38,20 +76,37 @@ public class Engine
 
     public static void main( String[] args )
     {
-        String program;
+        String buildFile;
         if(args.length > 0) 
         {
-            program = args[0];
+            buildFile = args[0];
         }
         else
         {
-            program = "testprograms/";
+            buildFile = "carnot/carnot.xml";
+        }
+
+        BuildConfigLoader loader = new BuildConfigLoader(buildFile);
+        BuildInfo buildInfo;
+        try
+        {
+            buildInfo = loader.load();
+            if(buildInfo == null || buildInfo.getProgram().isEmpty())
+            {
+                return;
+            }
+        }
+        catch(Exception exception)
+        {
+            System.out.println(String.format("%s : %s\n", exception.toString(), exception.getMessage()));
+            exception.printStackTrace();
+            return;
         }
 
         // If folder, take all the files and parse them.
-        if(program.endsWith("/"))
+        if(buildInfo.getProgram().endsWith("/"))
         {
-            File folder = new File(program);
+            File folder = new File(buildInfo.getProgram());
             File[] listOfFiles = folder.listFiles();
             Arrays.sort(listOfFiles);
             Integer failCount = 0;
@@ -64,9 +119,10 @@ public class Engine
                 {
                     Integer len = file.getAbsolutePath().split("/").length;
                     String filesuffix = file.getAbsolutePath().split("/")[len - 1];
+                    buildInfo.setProgram(file.getAbsolutePath());
                     try
                     {
-                        boolean status = run(file.getAbsolutePath());
+                        boolean status = run(buildInfo);
                         if(status)
                         {
                             System.out.println(filesuffix + " done.");
@@ -106,9 +162,9 @@ public class Engine
         {
             try
             {
-                Integer len = program.split("/").length;
-                String filesuffix = program.split("/")[len - 1];
-                if(run(program))
+                Integer len = buildInfo.getProgram().split("/").length;
+                String filesuffix = buildInfo.getProgram().split("/")[len - 1];
+                if(run(buildInfo))
                 {
                     System.out.println(filesuffix + " done.");
                 }
