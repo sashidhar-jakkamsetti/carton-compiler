@@ -2,6 +2,7 @@ import java.io.File;
 import java.util.*;
 
 import intermediateCodeRepresentation.ControlFlowGraph;
+import intermediateCodeRepresentation.IntermediateCodeGenerator;
 import parser.Parser;
 import utility.BuildConfigLoader;
 import utility.BuildInfo;
@@ -37,6 +38,7 @@ public class Carnot
 
                 if(buildInfo.getEliminateDeadCode())
                 {
+                    IntermediateCodeGenerator.optimizer.eliminateDeadCode(cfg);
                     graphPrinter.print(true, true);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
@@ -51,7 +53,7 @@ public class Carnot
                     );
                 }
 
-                if(buildInfo.getInstructionScheduling())
+                if(buildInfo.getScheduleInstruction())
                 {
                     graphPrinter.print(true, true);
                     Runtime.getRuntime().exec(

@@ -11,7 +11,7 @@ public class BuildInfo
     boolean optimize;
     boolean eliminateDeadCode;
     boolean allocateRegister;
-    boolean instructionScheduling;
+    boolean scheduleInstruction;
     boolean generateMachineCode;
     String outputpath;
 
@@ -81,15 +81,15 @@ public class BuildInfo
         this.generateMachineCode = generateMachineCode;
     }
 
-    public boolean getInstructionScheduling() 
+    public boolean getScheduleInstruction() 
     {
-        return instructionScheduling;
+        return scheduleInstruction;
     }
 
     @XmlElement
-    public void setInstructionScheduling(boolean instructionScheduling) 
+    public void setScheduleInstruction(boolean scheduleInstruction) 
     {
-        this.instructionScheduling = instructionScheduling;
+        this.scheduleInstruction = scheduleInstruction;
     }
 
     public String getOutputpath() 
