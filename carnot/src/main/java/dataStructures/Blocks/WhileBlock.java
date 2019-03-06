@@ -3,7 +3,6 @@ package dataStructures.Blocks;
 import dataStructures.*;
 import dataStructures.Results.*;
 import dataStructures.Instructions.*;
-import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Operator.OperatorCode;
 import intermediateCodeRepresentation.*;
 
@@ -108,17 +107,18 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
-    public void createPhis(IBlock lBlock, HashMap<Integer, String> address2identifier, IntermediateCodeGenerator iCodeGenerator)
+    public void createPhis(IBlock lBlock, HashMap<Integer, String> address2identifier, 
+                        IntermediateCodeGenerator iCodeGenerator, Boolean optimize)
     {
-        createPhis(address2identifier, iCodeGenerator, parent.globalSsa, lBlock.getGlobalSsa(), globalSsa);
-        createPhis(address2identifier, iCodeGenerator, parent.localSsa, lBlock.getLocalSsa(), localSsa);
+        createPhis(address2identifier, iCodeGenerator, parent.globalSsa, lBlock.getGlobalSsa(), globalSsa, optimize);
+        createPhis(address2identifier, iCodeGenerator, parent.localSsa, lBlock.getLocalSsa(), localSsa, optimize);
     }
 
     private void createPhis(
                 HashMap<Integer, String> address2identifier, IntermediateCodeGenerator iCodeGenerator,
                 HashMap<Integer, Integer> pSsaMap, 
-                HashMap<Integer, Integer> lSsaMap, HashMap<Integer, Integer> ssaMap
-                )
+                HashMap<Integer, Integer> lSsaMap, HashMap<Integer, Integer> ssaMap,
+                Boolean optimize)
     {
         for (Integer key : pSsaMap.keySet()) 
         {
@@ -130,14 +130,14 @@ public class WhileBlock extends Block implements IBlock
                 VariableResult x2 = new VariableResult();
                 x2.set(new Variable(address2identifier.get(key), key, lSsaMap.get(key)));
 
-                phiManager.addPhi(this, x, x1, x2);
+                phiManager.addPhi(this, x, x1, x2, optimize);
                 ssaMap.put(key, x.version);
             }
         }
     }
 
     // TODO: update defUseChain.
-    public void updatePhiVarOccurances()
+    public void updatePhiVarOccurances(Boolean optimize)
     {
         HashMap<Integer, Boolean> stopTable = new HashMap<Integer, Boolean>();
         for (Integer key : phiManager.phis.keySet()) 
@@ -145,7 +145,7 @@ public class WhileBlock extends Block implements IBlock
             stopTable.put(key, false);
         }
 
-        updatePhiVarOccurances(this, instructions, stopTable);
+        updatePhiVarOccurances(this, instructions, stopTable, optimize);
 
         Stack<IBlock> nBlocks = new Stack<IBlock>();
         Stack<IBlock> nfBlocks = new Stack<IBlock>();
@@ -166,7 +166,7 @@ public class WhileBlock extends Block implements IBlock
             }
 
             alreadyVisitedBlocks[cBlock.getId()] = true;
-            updatePhiVarOccurances(cBlock, stopTable);
+            updatePhiVarOccurances(cBlock, stopTable, optimize);
 
             if(cBlock instanceof WhileBlock)
             {
@@ -225,7 +225,7 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
-    public void updatePhiVarOccurances(IBlock b, List<Instruction> instructions, HashMap<Integer, Boolean> stopTable)
+    public void updatePhiVarOccurances(IBlock b, List<Instruction> instructions, HashMap<Integer, Boolean> stopTable, Boolean optimize)
     {
         for (Instruction instruction : instructions) 
         {
@@ -265,11 +265,15 @@ public class WhileBlock extends Block implements IBlock
                     }
                 }
             }
-            IntermediateCodeGenerator.optimizer.optimize(b, instruction);
+
+            if(optimize)
+            {
+                IntermediateCodeGenerator.optimizer.optimize(b, instruction);
+            }
         }
     }
 
-    public void updatePhiVarOccurances(IBlock b, HashMap<Integer, Boolean> stopTable)
+    public void updatePhiVarOccurances(IBlock b, HashMap<Integer, Boolean> stopTable, Boolean optimize)
     {
         if(b instanceof WhileBlock || b instanceof JoinBlock)
         {
@@ -303,9 +307,14 @@ public class WhileBlock extends Block implements IBlock
                         }
                     }
                 }
+
+                if(optimize)
+                {
+                    IntermediateCodeGenerator.optimizer.optimize(b, i);
+                }
             }
         }
 
-        updatePhiVarOccurances(b, b.getInstructions(), stopTable);
+        updatePhiVarOccurances(b, b.getInstructions(), stopTable, optimize);
     }
 }

@@ -9,6 +9,7 @@ import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
 import exceptions.*;
 import intermediateCodeRepresentation.*;
+import utility.BuildInfo;
 
 public class Parser 
 {
@@ -49,14 +50,26 @@ public class Parser
         }
     }
 
-    public ControlFlowGraph parse()
+    public ControlFlowGraph parse(BuildInfo buildInfo)
     {
         cfg = new ControlFlowGraph();
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
         iCodeGenerator.reset();
         vManager = cfg.mVariableManager;
         next();
-        cfg.done = computation(true);
+
+        if(buildInfo.getOptimize())
+        {
+            cfg.done = computation(true);
+            if(buildInfo.getEliminateDeadCode())
+            {
+                IntermediateCodeGenerator.optimizer.eliminateDeadCode(cfg);
+            }
+        }
+        else
+        {
+            cfg.done = computation(false);
+        }
         return cfg;
     }
 
@@ -126,7 +139,6 @@ public class Parser
             return null;
         }
 
-        // return (VariableResult)vResult.clone();
         return vResult;
     }
 
@@ -590,7 +602,7 @@ public class Parser
                 if(inputSym.isSameType(TokenType.fiToken))
                 {
                     next();
-                    jBlock.createPhis(scanner.address2Identifier, iCodeGenerator);
+                    jBlock.createPhis(scanner.address2Identifier, iCodeGenerator, optimize);
 
                     if(function == null)
                     {
@@ -623,10 +635,11 @@ public class Parser
         return jBlock;
     }
 
-    private IBlock whileStatement(IBlock cBlock, Function function)
+    private IBlock whileStatement(IBlock cBlock, Function function, Boolean optimizeOut)
     {
-        Boolean optimize = false;
         IBlock fBlock = null;
+        Boolean optimizeIn = false;
+
         if(inputSym.isSameType(TokenType.whileToken))
         {
             next();
@@ -638,8 +651,8 @@ public class Parser
             wBlock.setLoopBlock(lBlock);
             lBlock.setParent(wBlock);
 
-            BranchResult bResult = relation(wBlock, function, optimize);
-            iCodeGenerator.compute(wBlock, bResult.condition, bResult, optimize);
+            BranchResult bResult = relation(wBlock, function, optimizeIn);
+            iCodeGenerator.compute(wBlock, bResult.condition, bResult, optimizeIn);
             
             if(function == null)
             {
@@ -659,7 +672,7 @@ public class Parser
                 bResult2.set(wBlock);
                 next();
 
-                lBlock = statSequence(lBlock, function, optimize);
+                lBlock = statSequence(lBlock, function, optimizeIn);
                 if(lBlock == null)
                 {
                     return null;
@@ -668,7 +681,7 @@ public class Parser
                 {
                     next();
                     bResult2.set(wBlock);
-                    iCodeGenerator.compute(lBlock, bResult2.condition, bResult2, optimize);
+                    iCodeGenerator.compute(lBlock, bResult2.condition, bResult2, optimizeIn);
                     lBlock.setChild(wBlock);
             
                     if(function == null)
@@ -680,7 +693,7 @@ public class Parser
                         lBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
                     }
 
-                    wBlock.createPhis(lBlock, scanner.address2Identifier, iCodeGenerator);
+                    wBlock.createPhis(lBlock, scanner.address2Identifier, iCodeGenerator, optimizeIn || optimizeOut);
                     if(function == null)
                     {
                         wBlock.updateIncomingVManager(vManager, null);
@@ -689,7 +702,8 @@ public class Parser
                     {
                         wBlock.updateIncomingVManager(vManager, function.vManager);
                     }
-                    wBlock.updatePhiVarOccurances();
+
+                    wBlock.updatePhiVarOccurances(optimizeOut);
 
                     fBlock = cfg.initializeBlock();
                     fBlock.setParent(wBlock);
@@ -772,7 +786,7 @@ public class Parser
         }
         else if(inputSym.isSameType(TokenType.whileToken))
         {
-            block = whileStatement(cBlock, function);
+            block = whileStatement(cBlock, function, optimize);
         }
         else if(inputSym.isSameType(TokenType.returnToken))
         {

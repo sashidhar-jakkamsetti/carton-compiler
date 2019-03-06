@@ -20,7 +20,7 @@ public class PhiManager
         optimizer = Optimizer.getInstance();
     }
 
-    public void addPhi(IBlock block, Variable x, IResult x1, IResult x2) 
+    public void addPhi(IBlock block, Variable x, IResult x1, IResult x2, Boolean optimize) 
     {
         if(!isExists(x))
         {
@@ -32,15 +32,18 @@ public class PhiManager
             phiInstruction.operandX = x1;
             phiInstruction.operandY = x2;
             phis.put(x.address, phiInstruction);
-            optimizer.optimize(block, phiInstruction);
+            if(optimize)
+            {
+                optimizer.optimize(block, phiInstruction);
+            }
         }
         else
         {
-            updatePhi(block, x, x1, x2);
+            updatePhi(block, x, x1, x2, optimize);
         }
     }
 
-    public void updatePhi(IBlock block, Variable x, IResult x1, IResult x2)
+    public void updatePhi(IBlock block, Variable x, IResult x1, IResult x2, Boolean optimize)
     {
         if(isExists(x))
         {
@@ -64,7 +67,11 @@ public class PhiManager
             {
                 phis.get(x.address).variable.version = x.version;
             }
-            optimizer.optimize(block, phis.get(x.address));
+            
+            if(optimize)
+            {
+                optimizer.optimize(block, phis.get(x.address));
+            }
         }
     }
 
