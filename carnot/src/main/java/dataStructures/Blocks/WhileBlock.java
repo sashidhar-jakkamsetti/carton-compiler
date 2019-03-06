@@ -139,13 +139,7 @@ public class WhileBlock extends Block implements IBlock
     // TODO: update defUseChain.
     public void updatePhiVarOccurances(Boolean optimize)
     {
-        HashMap<Integer, Boolean> stopTable = new HashMap<Integer, Boolean>();
-        for (Integer key : phiManager.phis.keySet()) 
-        {
-            stopTable.put(key, false);
-        }
-
-        updatePhiVarOccurances(this, instructions, stopTable, optimize);
+        updatePhiVarOccurances(this, instructions, optimize);
 
         Stack<IBlock> nBlocks = new Stack<IBlock>();
         Stack<IBlock> nfBlocks = new Stack<IBlock>();
@@ -166,7 +160,7 @@ public class WhileBlock extends Block implements IBlock
             }
 
             alreadyVisitedBlocks[cBlock.getId()] = true;
-            updatePhiVarOccurances(cBlock, stopTable, optimize);
+            updatePhiVarOccurances(cBlock, optimize);
 
             if(cBlock instanceof WhileBlock)
             {
@@ -225,55 +219,46 @@ public class WhileBlock extends Block implements IBlock
         }
     }
 
-    public void updatePhiVarOccurances(IBlock b, List<Instruction> instructions, HashMap<Integer, Boolean> stopTable, Boolean optimize)
+    public void updatePhiVarOccurances(IBlock b, List<Instruction> instructions, Boolean optimize)
     {
-        for (Instruction instruction : instructions) 
+        for (Instruction i : instructions) 
         {
-            if(instruction.operandX instanceof VariableResult)
+            if(i.operandX instanceof VariableResult)
             {
-                Variable varToUpdate = ((VariableResult)instruction.operandX).variable;
+                Variable varToUpdate = ((VariableResult)i.operandX).variable;
 
-                if(stopTable.containsKey(varToUpdate.address) && !stopTable.get(varToUpdate.address))
+                if(phiManager.phis.containsKey(varToUpdate.address))
                 {
                     PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
-                    varToUpdate.version = phiInstr.variable.version;
-                }
-            }
-
-            if(instruction.opcode != OperatorCode.move)
-            {
-                if(instruction.operandY instanceof VariableResult)
-                {
-                    Variable varToUpdate = ((VariableResult)instruction.operandY).variable;
-
-                    if(stopTable.containsKey(varToUpdate.address) && !stopTable.get(varToUpdate.address))
+                    if(varToUpdate.version == ((VariableResult)phiInstr.operandX).variable.version)
                     {
-                        PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
                         varToUpdate.version = phiInstr.variable.version;
                     }
                 }
             }
-            else
-            {
-                if(instruction.operandY instanceof VariableResult)
-                {
-                    Variable varToUpdate = ((VariableResult)instruction.operandY).variable;
 
-                    if(stopTable.containsKey(varToUpdate.address) && !stopTable.get(varToUpdate.address))
+            if(i.operandY instanceof VariableResult)
+            {
+                Variable varToUpdate = ((VariableResult)i.operandY).variable;
+
+                if(phiManager.phis.containsKey(varToUpdate.address))
+                {
+                    PhiInstruction phiInstr = phiManager.phis.get(varToUpdate.address);
+                    if(varToUpdate.version == ((VariableResult)phiInstr.operandX).variable.version)
                     {
-                        stopTable.put(varToUpdate.address, true);
+                        varToUpdate.version = phiInstr.variable.version;
                     }
                 }
             }
 
             if(optimize)
             {
-                IntermediateCodeGenerator.optimizer.optimize(b, instruction);
+                IntermediateCodeGenerator.optimizer.optimize(b, i);
             }
         }
     }
 
-    public void updatePhiVarOccurances(IBlock b, HashMap<Integer, Boolean> stopTable, Boolean optimize)
+    public void updatePhiVarOccurances(IBlock b, Boolean optimize)
     {
         if(b instanceof WhileBlock || b instanceof JoinBlock)
         {
@@ -289,21 +274,27 @@ public class WhileBlock extends Block implements IBlock
 
             for (PhiInstruction i : bPhis)
             {
-                if(phiManager.phis.containsKey(i.variable.address) 
-                        && stopTable.containsKey(i.variable.address))
+                if(phiManager.phis.containsKey(i.variable.address))
                 {
-                    PhiInstruction phiI = phiManager.phis.get(i.variable.address);
-                    if(i.operandX instanceof VariableResult && phiI.operandX instanceof VariableResult)
+                    PhiInstruction phiInstr = phiManager.phis.get(i.variable.address);
+                    if(phiInstr.operandX instanceof VariableResult)
                     {
-                        if(((VariableResult)i.operandX).variable.version == ((VariableResult)phiI.operandX).variable.version)
+                        if(i.operandX instanceof VariableResult)
                         {
-                            ((VariableResult)i.operandX).variable.version = phiI.variable.version;
-                            stopTable.put(phiI.variable.address, true);
+                            Variable varToUpdate = ((VariableResult)i.operandX).variable;
+                            if(varToUpdate.version == ((VariableResult)phiInstr.operandX).variable.version)
+                            {
+                                varToUpdate.version = phiInstr.variable.version;
+                            }
                         }
-                        else if(((VariableResult)i.operandY).variable.version == ((VariableResult)phiI.operandX).variable.version)
+            
+                        if(i.operandY instanceof VariableResult)
                         {
-                            ((VariableResult)i.operandY).variable.version = phiI.variable.version;
-                            stopTable.put(phiI.variable.address, true);
+                            Variable varToUpdate = ((VariableResult)i.operandY).variable;
+                            if(varToUpdate.version == ((VariableResult)phiInstr.operandX).variable.version)
+                            {
+                                varToUpdate.version = phiInstr.variable.version;
+                            }
                         }
                     }
                 }
@@ -315,6 +306,6 @@ public class WhileBlock extends Block implements IBlock
             }
         }
 
-        updatePhiVarOccurances(b, b.getInstructions(), stopTable, optimize);
+        updatePhiVarOccurances(b, b.getInstructions(), optimize);
     }
 }

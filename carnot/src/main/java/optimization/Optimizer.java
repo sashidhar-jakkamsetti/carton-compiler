@@ -58,7 +58,7 @@ public class Optimizer
                 instructionUseCount[instruction.id] += 1;
                 if(instruction.akaI.operandX instanceof InstructionResult)
                 {
-                    updateOptimizerMapsOperandX(instruction);
+                    condenseOperandX(instruction);
                 }
                 return;
             }
@@ -72,7 +72,7 @@ public class Optimizer
                     instructionUseCount[instruction.id] += 1;
                     if(instruction.akaI.operandX instanceof InstructionResult)
                     {
-                        updateOptimizerMapsOperandX(instruction);
+                        condenseOperandX(instruction);
                     }
                     return;
                 }
@@ -87,7 +87,7 @@ public class Optimizer
                     instruction.deleteMode = DeleteMode.CP;
                     if(instruction.akaI.operandX instanceof InstructionResult)
                     {
-                        updateOptimizerMapsOperandX(instruction);
+                        condenseOperandX(instruction);
                         if(instruction.akaI.operandX instanceof InstructionResult)
                         {
                             instructionUseCount[instruction.akaI.operandX.getIid()] -= 1;
@@ -107,13 +107,13 @@ public class Optimizer
             if(instruction.akaI.operandX != null 
                     && instruction.akaI.operandX instanceof InstructionResult)
             {
-                updateOptimizerMapsOperandX(instruction);
+                condenseOperandX(instruction);
             }
     
             if(instruction.akaI.operandY != null 
                     && instruction.akaI.operandY instanceof InstructionResult)
             {
-                updateOptimizerMapsOperandY(instruction);
+                condenseOperandY(instruction);
             }
     
             Instruction cSubexpression = block.searchCommonSubexpression(instruction.akaI);
@@ -147,12 +147,12 @@ public class Optimizer
             if(instruction.akaI.operandX != null 
                     && instruction.akaI.operandX instanceof InstructionResult)
             {
-                updateOptimizerMapsOperandX(instruction);
+                condenseOperandX(instruction);
             }
         }
     }
 
-    private void updateOptimizerMapsOperandX(Instruction instruction)
+    private void condenseOperandX(Instruction instruction)
     {
         instructionUseCount[instruction.akaI.operandX.getIid()] += 1;
         if(cpMap.containsKey(instruction.akaI.operandX.getIid()))
@@ -166,7 +166,7 @@ public class Optimizer
         }
     }
 
-    private void updateOptimizerMapsOperandY(Instruction instruction)
+    private void condenseOperandY(Instruction instruction)
     {
         instructionUseCount[instruction.akaI.operandY.getIid()] += 1;
         if(cpMap.containsKey(instruction.akaI.operandY.getIid()))
