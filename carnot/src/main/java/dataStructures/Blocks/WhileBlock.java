@@ -3,7 +3,6 @@ package dataStructures.Blocks;
 import dataStructures.*;
 import dataStructures.Results.*;
 import dataStructures.Instructions.*;
-import dataStructures.Operator.OperatorCode;
 import intermediateCodeRepresentation.*;
 
 import java.util.*;
@@ -307,5 +306,103 @@ public class WhileBlock extends Block implements IBlock
         }
 
         updatePhiVarOccurances(b, b.getInstructions(), optimize);
+    }
+
+    public void optimizeWhilePhis(Boolean optimize)
+    {
+        optimizeWhilePhis(this, optimize);
+
+        Stack<IBlock> nBlocks = new Stack<IBlock>();
+        Stack<IBlock> nfBlocks = new Stack<IBlock>();
+        nBlocks.add(loopBlock);
+        Boolean alreadyVisitedBlocks[] = new Boolean[1000];
+        Arrays.fill(alreadyVisitedBlocks, false);
+        alreadyVisitedBlocks[id] = true;
+        while((!nBlocks.isEmpty() || !nfBlocks.isEmpty()))
+        {
+            IBlock cBlock;
+            if(!nBlocks.isEmpty())
+            {
+                cBlock = nBlocks.pop();
+            }
+            else 
+            {
+                cBlock = nfBlocks.pop();
+            }
+
+            alreadyVisitedBlocks[cBlock.getId()] = true;
+            optimizeWhilePhis(cBlock, optimize);
+
+            if(cBlock instanceof WhileBlock)
+            {
+                if(((WhileBlock)cBlock).getLoopBlock() != null)
+                {
+                    if(!alreadyVisitedBlocks[((WhileBlock)cBlock).getLoopBlock().getId()])
+                    {
+                        nBlocks.push(((WhileBlock)cBlock).getLoopBlock());
+                    }
+                }
+
+                if(((WhileBlock)cBlock).getFollowBlock() != null)
+                {
+                    if(!alreadyVisitedBlocks[((WhileBlock)cBlock).getFollowBlock().getId()])
+                    {
+                        nfBlocks.push(((WhileBlock)cBlock).getFollowBlock());
+                    }
+                }
+            }
+            else if(cBlock instanceof IfBlock)
+            {
+                if(((IfBlock)cBlock).getThenBlock() != null)
+                {
+                    if(!alreadyVisitedBlocks[((IfBlock)cBlock).getThenBlock().getId()])
+                    {
+                        nBlocks.push(((IfBlock)cBlock).getThenBlock());
+                    }
+                }
+
+                if(((IfBlock)cBlock).getElseBlock() != null)
+                {
+                    if(!alreadyVisitedBlocks[((IfBlock)cBlock).getElseBlock().getId()])
+                    {
+                        nBlocks.push(((IfBlock)cBlock).getElseBlock());
+                    }
+                }
+
+                if(((IfBlock)cBlock).getJoinBlock() != null)
+                {
+                    if(!alreadyVisitedBlocks[((IfBlock)cBlock).getJoinBlock().getId()])
+                    {
+                        nfBlocks.push(((IfBlock)cBlock).getJoinBlock());
+                    }
+                }
+            }
+            else 
+            {
+                if(cBlock.getChild() != null)
+                {
+                    if(!(cBlock.getChild() instanceof JoinBlock) && !alreadyVisitedBlocks[cBlock.getChild().getId()])
+                    {
+                        nBlocks.push(cBlock.getChild());
+                    }
+                }
+            }
+        }
+    }
+
+    private void optimizeWhilePhis(IBlock b, Boolean optimize)
+    {
+        if(optimize)
+        {
+            List<PhiInstruction> bPhis;
+            if(b instanceof WhileBlock)
+            {
+                bPhis = ((WhileBlock)b).getPhis();
+                for (PhiInstruction i : bPhis)
+                {
+                    IntermediateCodeGenerator.optimizer.optimize(b, i);
+                }
+            }
+        }
     }
 }

@@ -5,7 +5,7 @@ import java.util.Arrays;
 public class RegisterAllocator
 {
     private static boolean[] registers;
-    private static final Integer REGISTER_CAPACITY = 32;
+    private static final Integer REGISTER_CAPACITY = 10;
 
     private static RegisterAllocator registerAllocator;
 
@@ -13,7 +13,7 @@ public class RegisterAllocator
     {
         Arrays.fill(registers, false);
         registers[0] = true;
-        registers[31] = true;
+        registers[9] = true;
     }
 
     public static RegisterAllocator getInstance()

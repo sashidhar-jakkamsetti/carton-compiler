@@ -693,7 +693,7 @@ public class Parser
                         lBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
                     }
 
-                    wBlock.createPhis(lBlock, scanner.address2Identifier, iCodeGenerator, optimizeIn || optimizeOut);
+                    wBlock.createPhis(lBlock, scanner.address2Identifier, iCodeGenerator, optimizeIn);
                     if(function == null)
                     {
                         wBlock.updateIncomingVManager(vManager, null);
@@ -704,7 +704,7 @@ public class Parser
                     }
 
                     wBlock.updatePhiVarOccurances(optimizeOut);
-
+                    wBlock.optimizeWhilePhis(optimizeOut);
                     fBlock = cfg.initializeBlock();
                     fBlock.setParent(wBlock);
                     wBlock.setFollowBlock(fBlock);
