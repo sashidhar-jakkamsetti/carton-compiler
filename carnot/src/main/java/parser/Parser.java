@@ -9,7 +9,6 @@ import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
 import exceptions.*;
 import intermediateCodeRepresentation.*;
-import utility.BuildInfo;
 
 public class Parser 
 {
@@ -50,26 +49,14 @@ public class Parser
         }
     }
 
-    public ControlFlowGraph parse(BuildInfo buildInfo)
+    public ControlFlowGraph parse()
     {
         cfg = new ControlFlowGraph();
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
         iCodeGenerator.reset();
         vManager = cfg.mVariableManager;
         next();
-
-        if(buildInfo.getOptimize())
-        {
-            cfg.done = computation(true);
-            if(buildInfo.getEliminateDeadCode())
-            {
-                IntermediateCodeGenerator.optimizer.eliminateDeadCode(cfg);
-            }
-        }
-        else
-        {
-            cfg.done = computation(false);
-        }
+        cfg.done = computation(true);
         return cfg;
     }
 
@@ -683,6 +670,7 @@ public class Parser
                     bResult2.set(wBlock);
                     iCodeGenerator.compute(lBlock, bResult2.condition, bResult2, optimizeIn);
                     lBlock.setChild(wBlock);
+                    wBlock.setChild(lBlock); // Bad name!
             
                     if(function == null)
                     {
@@ -1042,7 +1030,7 @@ public class Parser
         if(inputSym.isSameType(TokenType.beginToken))
         {
             next();
-            statSequence(function.head, function, optimize);
+            function.tail = (Block)statSequence(function.head, function, optimize);
             if(inputSym.isSameType(TokenType.endToken))
             {
                 next();
@@ -1078,8 +1066,8 @@ public class Parser
             if(inputSym.isSameType(TokenType.beginToken))
             {
                 next();
-                IBlock lBlock = statSequence(cfg.head, null, optimize);
-                if(lBlock == null)
+                cfg.tail = (Block)statSequence(cfg.head, null, optimize);
+                if(cfg.tail == null)
                 {
                     return false;
                 }
@@ -1090,7 +1078,7 @@ public class Parser
                     {
                         Token opToken = inputSym;
                         next();
-                        iCodeGenerator.compute(lBlock, opToken, null, null, optimize);
+                        iCodeGenerator.compute(cfg.tail, opToken, null, null, optimize);
                         return true;
                     }
                     else

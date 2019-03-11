@@ -9,7 +9,7 @@ import dataStructures.Instructions.*;
 public class ControlFlowGraph
 {
     public Block head;
-    public List<Instruction> instructions;
+    public Block tail;
     private List<Block> blocks;
     public VariableManager mVariableManager;
     public Boolean done;

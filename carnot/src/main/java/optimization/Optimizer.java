@@ -69,6 +69,12 @@ public class Optimizer
                 if(instruction.akaI.operandY instanceof VariableResult 
                             && ((VariableResult)instruction.akaI.operandY).variable.version == -1)
                 {
+                    if(instruction.akaI.operandX instanceof VariableResult 
+                                && ((VariableResult)instruction.akaI.operandY).variable.version == -1)
+                    {
+                        instruction.deleteMode = DeleteMode.CP;
+                    }
+
                     instructionUseCount[instruction.id] += 1;
                     if(instruction.akaI.operandX instanceof InstructionResult)
                     {

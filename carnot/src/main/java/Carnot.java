@@ -1,11 +1,10 @@
 import java.io.File;
 import java.util.*;
 
-import intermediateCodeRepresentation.ControlFlowGraph;
+import intermediateCodeRepresentation.*;
 import parser.Parser;
-import utility.BuildConfigLoader;
-import utility.BuildInfo;
-import utility.GraphViz;
+import registerAllocation.*;
+import utility.*;
 
 public class Carnot 
 {
@@ -14,57 +13,58 @@ public class Carnot
         Parser parser = Parser.getInstance(buildInfo.getProgram());
         if(parser != null)
         {
-            ControlFlowGraph cfg = parser.parse(buildInfo);
+            ControlFlowGraph cfg = parser.parse();
             if(cfg.done)
             {
                 GraphViz graphPrinter = new GraphViz(cfg, buildInfo.getProgram(), buildInfo.getOutputpath());
 
                 if(buildInfo.getAbstractControlFlowGraph())
                 {
-                    graphPrinter.print(false, false);
+                    graphPrinter.print(false, false, false, false);
                     Runtime.getRuntime().exec(
-                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
+                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
+                                            graphPrinter.getGraphFileName().replace(".gv", ".png"))
                     );
-                }
 
-                if(buildInfo.getOptimize())
-                {
-                    graphPrinter.print(true, false);
-                    Runtime.getRuntime().exec(
-                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
-                    );
-                }
+                    if(buildInfo.getOptimize())
+                    {
+                        graphPrinter.print(true, false, false, false);
+                        Runtime.getRuntime().exec(
+                                String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
+                                                graphPrinter.getGraphFileName().replace(".gv", ".png"))
+                        );
 
-                if(buildInfo.getEliminateDeadCode())
-                {
-                    graphPrinter.print(true, true);
-                    Runtime.getRuntime().exec(
-                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
-                    );
-                }
+                        if(buildInfo.getEliminateDeadCode())
+                        {
+                            IntermediateCodeGenerator.optimizer.eliminateDeadCode(cfg);
+                            graphPrinter.print(true, true, false, false);
+                            Runtime.getRuntime().exec(
+                                    String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
+                                                    graphPrinter.getGraphFileName().replace(".gv", ".png"))
+                            );
+                        }
+                    }
 
-                if(buildInfo.getAllocateRegister())
-                {
-                    graphPrinter.print(true, true);
-                    Runtime.getRuntime().exec(
-                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
-                    );
-                }
+                    if(buildInfo.getAllocateRegister())
+                    {
+                        InterferenceGraph iGraph = new InterferenceGraph(cfg);
+                        iGraph.construct();
+                        RegisterAllocator rAllocator = new RegisterAllocator(iGraph, buildInfo.getRegsize());
+                        Boolean success = rAllocator.allocate(cfg);
+                        if(success)
+                        {
+                            graphPrinter.print(false, false, true, false);
+                            Runtime.getRuntime().exec(
+                                    String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
+                                                    graphPrinter.getGraphFileName().replace(".gv", ".png"))
+                            );
 
-                if(buildInfo.getScheduleInstruction())
-                {
-                    graphPrinter.print(true, true);
-                    Runtime.getRuntime().exec(
-                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
-                    );
-                }
-
-                if(buildInfo.getGenerateMachineCode())
-                {
-                    graphPrinter.print(true, true);
-                    Runtime.getRuntime().exec(
-                            String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), graphPrinter.getGraphFileName() + ".png")
-                    );
+                            if(buildInfo.getGenerateMachineCode())
+                            {
+                                graphPrinter.print(false, false, false, true);
+                            }
+                        }
+                    }
                 }
 
                 return true;

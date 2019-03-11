@@ -12,9 +12,16 @@ public class Function
     public Integer address;
 
     public Block head;
+    public Block tail;
     public VariableManager vManager;
     public InstructionResult returnInstruction;
     private ArrayList<IResult> parameters;
+
+    public Function(Block head, Block tail)
+    {
+        this.head = head;
+        this.tail = tail;
+    }
 
     public Function(String name, Integer address)
     {

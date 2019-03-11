@@ -6,11 +6,9 @@ import registerAllocation.*;
 
 public class MachineCodeGenerator 
 {
-    private RegisterAllocator registerAllocator;
-
     public MachineCodeGenerator()
     {
-        registerAllocator = RegisterAllocator.getInstance();
+
     }
 
     private void load(IResult result)

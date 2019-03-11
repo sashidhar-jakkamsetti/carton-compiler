@@ -3,7 +3,6 @@ package dataStructures.Blocks;
 import dataStructures.*;
 import dataStructures.Instructions.Instruction;
 import dataStructures.Instructions.PhiInstruction;
-import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Results.*;
 import intermediateCodeRepresentation.*;
 
@@ -39,7 +38,7 @@ public class JoinBlock extends Block implements IBlock
         elseBlock = (Block)block;
     }
 
-    public IBlock getElseBlock(IBlock block)
+    public IBlock getElseBlock()
     {
         return elseBlock;
     }
@@ -62,6 +61,11 @@ public class JoinBlock extends Block implements IBlock
         return null;
     }
 
+    public HashMap<Integer, PhiInstruction> getPhiMap()
+    {
+        return phiManager.phis;
+    }
+
     public List<PhiInstruction> getPhis()
     {
         if(phiManager != null && phiManager.phis != null && phiManager.phis.values().size() > 0)
@@ -72,12 +76,20 @@ public class JoinBlock extends Block implements IBlock
     }
 
     @Override
-    public String toString(Boolean optimized, Boolean dce)
+    public String toString(Boolean optimized, Boolean dce, Boolean colored, Boolean mCode)
     {
         StringBuilder sb = new StringBuilder();
-        ArrayList<Instruction> phiInstructions = new ArrayList(phiManager.phis.values());
-        sb.append(super.toStringUtil(phiInstructions, optimized, dce));
-        sb.append(super.toString(optimized, dce));
+        if(colored || mCode)
+        {
+            sb.append(super.toString(optimized, dce, colored, mCode));
+        }
+        else
+        {
+            ArrayList<Instruction> phiInstructions = new ArrayList(phiManager.phis.values());
+            sb.append(super.toStringUtil(phiInstructions, optimized, dce, colored, mCode));
+            sb.append(super.toString(optimized, dce, colored, mCode));
+        }
+        
         return sb.toString();
     }
 

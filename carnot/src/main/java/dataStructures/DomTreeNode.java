@@ -39,11 +39,14 @@ public class DomTreeNode
             }
             instructions.get(OperatorCode.load).add(instruction.clone());
         }
-        if(!instructions.containsKey(instruction.opcode))
+        else
         {
+            if(!instructions.containsKey(instruction.opcode))
+            {
+                instructions.put(instruction.opcode, new ArrayList<Instruction>());
+            }
             instructions.put(instruction.opcode, new ArrayList<Instruction>());
         }
-        instructions.get(instruction.opcode).add(instruction.clone());
     }
 
     public void delete(Instruction instruction)
@@ -55,7 +58,7 @@ public class DomTreeNode
         }
     }
 
-    public Instruction find(Instruction instruction)
+    public Boolean find(Instruction instruction, Instruction cSubexpression)
     {
         if(instruction.opcode != OperatorCode.store && instructions.containsKey(instruction.opcode))
         {
@@ -65,16 +68,17 @@ public class DomTreeNode
                 if(instruction.opcode == OperatorCode.load 
                         && instructions.get(instruction.opcode).get(idx).opcode == OperatorCode.store)
                 {
-                    return null;
+                    return false;
                 }
                 
                 if(instructions.get(instruction.opcode).get(idx).equals(instruction))
                 {
-                    return instructions.get(instruction.opcode).get(idx);
+                    cSubexpression = instructions.get(instruction.opcode).get(idx);
+                    return true;
                 }
             }
         }
         
-        return null;
+        return true;
     }
 }

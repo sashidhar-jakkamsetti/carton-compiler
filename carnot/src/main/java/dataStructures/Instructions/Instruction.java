@@ -1,7 +1,10 @@
 package dataStructures.Instructions;
 
 import dataStructures.Results.*;
-import dataStructures.Variable;
+
+import java.util.*;
+
+import dataStructures.*;
 import dataStructures.Operator.OperatorCode;
 
 public class Instruction 
@@ -12,7 +15,8 @@ public class Instruction
     public IResult operandY;
 
     public DeleteMode deleteMode;
-    public Instruction akaI;
+    public Instruction akaI; // Holds optimized instruction 
+    public Instruction coloredI; // Holds register allocated instruction
 
     public enum DeleteMode
     {
@@ -39,11 +43,19 @@ public class Instruction
 
         akaI = new Instruction(programCounter);
         akaI.opcode = opcode;
+
+        coloredI = new Instruction(programCounter);
+        coloredI.opcode = opcode;
     }
 
     public void setAkaInstruction(Instruction akaInstruction) 
     {
         this.akaI = akaInstruction;
+    }
+
+    public void setColoredInstruction(Instruction coloredInstruction) 
+    {
+        this.coloredI = coloredInstruction;
     }
 
     public void setAkaInstruction(IResult x, IResult y)
@@ -83,6 +95,61 @@ public class Instruction
         }
     }
 
+    public void setColoredInstruction(HashMap<Integer, LiveRange> iGraph)
+    {
+        setColoredInstructionOperand(iGraph, true);
+        setColoredInstructionOperand(iGraph, false);
+    }
+
+    public void setColoredInstructionOperand(HashMap<Integer, LiveRange> iGraph, Boolean bOperandX)
+    {
+        if(akaI != null)
+        {
+            if(bOperandX && akaI.operandX != null)
+            {
+                if(akaI.operandX instanceof InstructionResult)
+                {
+                    if(iGraph.containsKey(akaI.operandX.getIid()))
+                    {
+                        coloredI.operandX = new RegisterResult(iGraph.get(akaI.operandX.getIid()).color);
+                    }
+                }
+                else if(akaI.operandX instanceof ConstantResult)
+                {
+                    if(((ConstantResult)akaI.operandX).constant == 0)
+                    {
+                        coloredI.operandX = new RegisterResult(0);
+                    }
+                }
+            }
+            else if(!bOperandX && akaI.operandY != null)
+            {
+                if(akaI.operandY instanceof InstructionResult)
+                {
+                    if(iGraph.containsKey(akaI.operandY.getIid()))
+                    {
+                        coloredI.operandY = new RegisterResult(iGraph.get(akaI.operandY.getIid()).color);
+                    }
+                }
+                else if(akaI.operandY instanceof BranchResult)
+                {
+                    ArrayList<Instruction> targetInstructions = (ArrayList<Instruction>)((BranchResult)akaI.operandY).targetBlock.getInstructions();
+                    if(targetInstructions.size() > 0)
+                    {
+                        coloredI.operandY = new InstructionResult(targetInstructions.get(0).id);
+                    }
+                }
+                else if(akaI.operandY instanceof ConstantResult)
+                {
+                    if(((ConstantResult)akaI.operandY).constant == 0)
+                    {
+                        coloredI.operandY = new RegisterResult(0);
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public Instruction clone()
     {
@@ -101,8 +168,27 @@ public class Instruction
         if(akaI != null)
         {
             instr.akaI.opcode = akaI.opcode;
-            instr.akaI.operandX = akaI.operandX.clone();
-            instr.akaI.operandY = akaI.operandY.clone();
+            if(akaI.operandX != null)
+            {
+                instr.akaI.operandX = akaI.operandX.clone();
+            }
+            if(akaI.operandY != null)
+            {
+                instr.akaI.operandY = akaI.operandY.clone();
+            }
+        }
+        instr.coloredI = new Instruction(id);
+        if(coloredI != null)
+        {
+            instr.coloredI.opcode = coloredI.opcode;
+            if(coloredI.operandX != null)
+            {
+                instr.coloredI.operandX = coloredI.operandX.clone();
+            }
+            if(coloredI.operandY != null)
+            {
+                instr.coloredI.operandY = coloredI.operandY.clone();
+            }
         }
         return instr;
     }
