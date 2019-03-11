@@ -64,6 +64,10 @@ public class Carnot
                                 graphPrinter.print(false, false, false, true);
                             }
                         }
+                        else 
+                        {
+                            throw new Exception("Register allocation failed during graph coloring.");
+                        }
                     }
                 }
 

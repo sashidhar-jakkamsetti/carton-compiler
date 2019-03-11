@@ -169,10 +169,9 @@ public class Block implements IBlock
 
     public Instruction searchCommonSubexpression(Instruction instruction)
     {
-        Instruction cSubexpression = new Instruction(-1);
-        Boolean isGood = dTreeNode.find(instruction, cSubexpression);
+        Instruction cSubexpression = dTreeNode.find(instruction);
 
-        if(isGood)
+        if(cSubexpression.id != -2)
         {
             if(cSubexpression.id == -1)
             {

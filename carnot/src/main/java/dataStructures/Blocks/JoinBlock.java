@@ -3,6 +3,7 @@ package dataStructures.Blocks;
 import dataStructures.*;
 import dataStructures.Instructions.Instruction;
 import dataStructures.Instructions.PhiInstruction;
+import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Results.*;
 import intermediateCodeRepresentation.*;
 
@@ -63,7 +64,15 @@ public class JoinBlock extends Block implements IBlock
 
     public HashMap<Integer, PhiInstruction> getPhiMap()
     {
-        return phiManager.phis;
+        HashMap<Integer, PhiInstruction> maturePhiMap = new HashMap<Integer, PhiInstruction>();
+        for (PhiInstruction phi : phiManager.phis.values()) 
+        {
+            if(phi.deleteMode == DeleteMode._NotDeleted)
+            {
+                maturePhiMap.put(phi.id, phi);
+            }
+        }
+        return maturePhiMap;
     }
 
     public List<PhiInstruction> getPhis()

@@ -49,15 +49,19 @@ public class InterferenceGraph
             JoinBlock jBlock = (JoinBlock)block;
             construct(jBlock, liveSet);
             phiEliminator.eliminate(jBlock);
-            List<PhiInstruction> phis = jBlock.getPhis();
+            List<PhiInstruction> phis = new ArrayList<PhiInstruction>(jBlock.getPhiMap().values());
 
             ArrayList<Integer> copyLiveSetThen = new ArrayList<Integer>(liveSet);
-            for(Integer i = phis.size() - 1; i >= 0; i++)
+            for(Integer i = phis.size() - 1; i >= 0; i--)
             {
-                Integer idx = i;
-                copyLiveSetThen.removeIf(ins -> ins == phis.get(idx).akaI.id);
-                //addToLive(phis.get(idx).akaI.operandX, copyLiveSetThen);
-                addToGraph(phis.get(idx).akaI.operandX, copyLiveSetThen);
+                Integer id = phis.get(i).akaI.id;
+                copyLiveSetThen.removeIf(ins -> ins == id);
+                if(!iGraph.containsKey(id))
+                {
+                    LiveRange dummy = new LiveRange(id);
+                    iGraph.put(id, dummy);
+                }
+                addToGraph(phis.get(i).akaI.operandX, copyLiveSetThen);
             }
 
             IBlock tBlock = jBlock.getThenBlock();
@@ -74,12 +78,16 @@ public class InterferenceGraph
             }
 
             ArrayList<Integer> copyLiveSetElse = new ArrayList<Integer>(liveSet);
-            for(Integer i = phis.size() - 1; i >= 0; i++)
+            for(Integer i = phis.size() - 1; i >= 0; i--)
             {
-                Integer idx = i;
-                copyLiveSetElse.removeIf(ins -> ins == phis.get(idx).akaI.id);
-                //addToLive(phis.get(idx).akaI.operandY, copyLiveSetElse);
-                addToGraph(phis.get(idx).akaI.operandY, copyLiveSetElse);
+                Integer id = phis.get(i).akaI.id;
+                copyLiveSetElse.removeIf(ins -> ins == id);
+                if(!iGraph.containsKey(id))
+                {
+                    LiveRange dummy = new LiveRange(id);
+                    iGraph.put(id, dummy);
+                }
+                addToGraph(phis.get(i).akaI.operandY, copyLiveSetElse);
             }
 
             IBlock eBlock = jBlock.getElseBlock();
@@ -123,7 +131,7 @@ public class InterferenceGraph
         else if(block instanceof WhileBlock)
         {
             WhileBlock wBlock = (WhileBlock)block;
-            List<PhiInstruction> phis = wBlock.getPhis();
+            List<PhiInstruction> phis = new ArrayList<PhiInstruction>(wBlock.getPhiMap().values());
             // Not clear why two iterations. But prof told to do so.
             for(Integer k = 0; k < 2; k++)
             {
@@ -131,11 +139,16 @@ public class InterferenceGraph
                 phiEliminator.eliminate(wBlock);
 
                 ArrayList<Integer> copyLiveSetLoop = new ArrayList<Integer>(liveSet);
-                for(Integer i = phis.size() - 1; i >= 0; i++)
+                for(Integer i = phis.size() - 1; i >= 0; i--)
                 {
-                    Integer idx = i;
-                    copyLiveSetLoop.removeIf(ins -> ins == phis.get(idx).akaI.id);
-                    addToGraph(phis.get(idx).akaI.operandY, copyLiveSetLoop);
+                    Integer id = phis.get(i).akaI.id;
+                    copyLiveSetLoop.removeIf(ins -> ins == id);
+                    if(!iGraph.containsKey(id))
+                    {
+                        LiveRange dummy = new LiveRange(id);
+                        iGraph.put(id, dummy);
+                    }
+                    addToGraph(phis.get(i).akaI.operandY, copyLiveSetLoop);
                 }
     
                 IBlock lBlock = wBlock.getChild();
@@ -156,11 +169,16 @@ public class InterferenceGraph
             }
             
             construct(wBlock, liveSet);
-            for(Integer i = phis.size() - 1; i >= 0; i++)
+            for(Integer i = phis.size() - 1; i >= 0; i--)
             {
-                Integer idx = i;
-                liveSet.removeIf(ins -> ins == phis.get(idx).akaI.id);
-                addToGraph(phis.get(idx).akaI.operandX, liveSet);
+                Integer id = phis.get(i).akaI.id;
+                liveSet.removeIf(ins -> ins == id);
+                if(!iGraph.containsKey(id))
+                {
+                    LiveRange dummy = new LiveRange(id);
+                    iGraph.put(id, dummy);
+                }
+                addToGraph(phis.get(i).akaI.operandX, liveSet);
             }
 
             return wBlock.getParent();

@@ -104,12 +104,12 @@ public class IntermediateCodeGenerator
         if(block != null && opCode == OperatorCode.move)
         {
             Instruction instruction = new Instruction(pc++, opCode, y, x);
-            instruction.setAkaInstruction(x, y);
+            instruction.setAkaInstruction(y, x);
             if(block.getInstructions().size() > 0)
             {
-                if(Operator.branchOpCodes.contains(block.getInstruction(block.getInstructions().size() - 1).opcode))
+                if(Operator.branchOpCodes.contains(block.getInstructions().get((block.getInstructions().size() - 1)).opcode))
                 {
-                    block.addInstruction(instruction, block.getInstructions().size() - 2);
+                    block.addInstruction(instruction, block.getInstructions().size() - 1);
                 }
                 else
                 {

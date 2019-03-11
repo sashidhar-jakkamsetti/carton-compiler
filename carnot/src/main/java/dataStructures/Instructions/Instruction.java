@@ -107,6 +107,7 @@ public class Instruction
         {
             if(bOperandX && akaI.operandX != null)
             {
+                coloredI.operandX = akaI.operandX;
                 if(akaI.operandX instanceof InstructionResult)
                 {
                     if(iGraph.containsKey(akaI.operandX.getIid()))
@@ -114,16 +115,10 @@ public class Instruction
                         coloredI.operandX = new RegisterResult(iGraph.get(akaI.operandX.getIid()).color);
                     }
                 }
-                else if(akaI.operandX instanceof ConstantResult)
-                {
-                    if(((ConstantResult)akaI.operandX).constant == 0)
-                    {
-                        coloredI.operandX = new RegisterResult(0);
-                    }
-                }
             }
             else if(!bOperandX && akaI.operandY != null)
             {
+                coloredI.operandY = akaI.operandY;
                 if(akaI.operandY instanceof InstructionResult)
                 {
                     if(iGraph.containsKey(akaI.operandY.getIid()))
@@ -137,13 +132,6 @@ public class Instruction
                     if(targetInstructions.size() > 0)
                     {
                         coloredI.operandY = new InstructionResult(targetInstructions.get(0).id);
-                    }
-                }
-                else if(akaI.operandY instanceof ConstantResult)
-                {
-                    if(((ConstantResult)akaI.operandY).constant == 0)
-                    {
-                        coloredI.operandY = new RegisterResult(0);
                     }
                 }
             }

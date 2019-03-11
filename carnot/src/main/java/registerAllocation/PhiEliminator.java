@@ -35,20 +35,20 @@ public class PhiEliminator
 
                     if(jBlock.getThenBlock() != null)
                     {
-                        iCodeGenerator.insertInstructionAtLast(jBlock.getThenBlock(), OperatorCode.move, vResult, i.operandX);
+                        iCodeGenerator.insertInstructionAtLast(jBlock.getThenBlock(), OperatorCode.move, vResult, i.akaI.operandX);
                     }
                     else
                     {
-                        iCodeGenerator.insertInstructionAtLast(jBlock.getParent(), OperatorCode.move, vResult, i.operandX);
+                        iCodeGenerator.insertInstructionAtLast(jBlock.getParent(), OperatorCode.move, vResult, i.akaI.operandX);
                     }
 
                     if(jBlock.getElseBlock() != null)
                     {
-                        iCodeGenerator.insertInstructionAtLast(jBlock.getElseBlock(), OperatorCode.move, vResult, i.operandY);
+                        iCodeGenerator.insertInstructionAtLast(jBlock.getElseBlock(), OperatorCode.move, vResult, i.akaI.operandY);
                     }
                     else
                     {
-                        iCodeGenerator.insertInstructionAtLast(jBlock.getParent(), OperatorCode.move, vResult, i.operandY);
+                        iCodeGenerator.insertInstructionAtLast(jBlock.getParent(), OperatorCode.move, vResult, i.akaI.operandY);
                     }
                 }
             }
@@ -64,8 +64,8 @@ public class PhiEliminator
                 {
                     VariableResult vResult = new VariableResult();
                     vResult.set(i.variable);
-                    iCodeGenerator.insertInstructionAtLast(wBlock.getParent(), OperatorCode.move, vResult, i.operandX);
-                    iCodeGenerator.insertInstructionAtLast(wBlock.getChild(), OperatorCode.move, vResult, i.operandY);
+                    iCodeGenerator.insertInstructionAtLast(wBlock.getParent(), OperatorCode.move, vResult, i.akaI.operandX);
+                    iCodeGenerator.insertInstructionAtLast(wBlock.getChild(), OperatorCode.move, vResult, i.akaI.operandY);
                 }
             }
         }

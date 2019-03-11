@@ -62,7 +62,12 @@ public class WhileBlock extends Block implements IBlock
 
     public HashMap<Integer, PhiInstruction> getPhiMap()
     {
-        return phiManager.phis;
+        HashMap<Integer, PhiInstruction> maturePhiMap = new HashMap<Integer, PhiInstruction>();
+        for (PhiInstruction phi : phiManager.phis.values()) 
+        {
+            maturePhiMap.put(phi.id, phi);
+        }
+        return maturePhiMap;
     }
 
     public List<PhiInstruction> getPhis()

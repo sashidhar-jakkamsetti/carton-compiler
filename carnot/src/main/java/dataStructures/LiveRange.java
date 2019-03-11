@@ -1,7 +1,6 @@
 package dataStructures;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 
 public class LiveRange
 {
@@ -27,7 +26,7 @@ public class LiveRange
 
     public void addNeighbor(Integer id)
     {
-        if(!neighbors.contains(id))
+        if(!neighbors.contains(id) && this.id != id)
         {
             neighbors.add(id);
         }
@@ -39,6 +38,13 @@ public class LiveRange
         {
             addNeighbor(id);
         }
+    }
+
+    public LiveRange clone()
+    {
+        LiveRange clone = new LiveRange(id, color, cost, alive);
+        clone.addNeighbors(neighbors);
+        return clone;
     }
 
     public String toString()

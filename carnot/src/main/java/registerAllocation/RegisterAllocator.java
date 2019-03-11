@@ -35,12 +35,14 @@ public class RegisterAllocator
         spillAddress = 100;
         clusterCounter = 1000;
         clusters = new HashMap<Integer, ArrayList<LiveRange>>();
+        id2cluster = new HashMap<Integer, ArrayList<Integer>>();
     }
 
     public Boolean allocate(ControlFlowGraph cfg)
     {
         groupClusters();
         color();
+        adjustSpillAddress();
         ungroupClusters();
         if(checkColoring())
         {
@@ -54,6 +56,7 @@ public class RegisterAllocator
                     }
                 }
             }
+            return true;
         }
         return false;
     }
@@ -75,7 +78,6 @@ public class RegisterAllocator
         live.alive = false;
 
         color();
-        live.alive = true;
 
         Integer availableColor = getAvailableColor(live, regSize);
         if(availableColor == -1)
@@ -86,13 +88,25 @@ public class RegisterAllocator
         {
             live.color = availableColor;
         }
+        live.alive = true;
+    }
+
+    private void adjustSpillAddress()
+    {
+        for (LiveRange live : iGraph.values()) 
+        {
+            if(live.alive && live.color > trueRegSize)
+            {
+                live.color += spillAddress - trueRegSize;
+            }
+        }
     }
 
     private Integer findAppropriateNode()
     {
         for (Integer id : iGraph.keySet()) 
         {
-            if(iGraph.get(id).neighbors.size() < regSize)
+            if(iGraph.get(id).alive && iGraph.get(id).neighbors.size() < regSize)
             {
                 return id;
             }
@@ -107,7 +121,7 @@ public class RegisterAllocator
         Integer rId = -1;
         for (Integer id : iGraph.keySet()) 
         {
-            if(iGraph.get(id).cost < min)
+            if(iGraph.get(id).alive && iGraph.get(id).cost < min)
             {
                 min = iGraph.get(id).cost;
                 rId = id;
@@ -119,14 +133,14 @@ public class RegisterAllocator
 
     private Integer getAvailableColor(LiveRange live, Integer regSize)
     {
-        Boolean[] available = new Boolean[regSize];
+        Boolean[] available = new Boolean[regSize+1];
         Arrays.fill(available, true);
 
         for (Integer neighbor : live.neighbors) 
         {
             if(iGraph.get(neighbor).alive)
             {
-                available[neighbor] = false;
+                available[iGraph.get(neighbor).color] = false;
             }
         }
 
@@ -134,10 +148,6 @@ public class RegisterAllocator
         {
             if(available[i])
             {
-                if(i > trueRegSize)
-                {
-                    return spillAddress + i - trueRegSize;
-                }
                 return i;
             }
         }
@@ -152,14 +162,12 @@ public class RegisterAllocator
             clusterCounter += 1;
             PhiInstruction phi = phiWeb.get(phiId);
             addToCluster(phiId, clusterCounter);
-            replace(phiId, clusterCounter);
 
             if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
             {
                 if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), clusterCounter))
                 {
                     addToCluster(phi.akaI.operandX.getIid(), clusterCounter);
-                    replace(phi.akaI.operandX.getIid(), clusterCounter);
                 }
             }
 
@@ -168,7 +176,6 @@ public class RegisterAllocator
                 if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), clusterCounter))
                 {
                     addToCluster(phi.akaI.operandY.getIid(), clusterCounter);
-                    replace(phi.akaI.operandY.getIid(), clusterCounter);
                 }
             }
         }
@@ -183,6 +190,14 @@ public class RegisterAllocator
             }
             unified.cost /= clusters.get(clusterNo).size();
             iGraph.put(clusterNo, unified);
+        }
+
+        for (Integer clusterNo : clusters.keySet()) 
+        {
+            for (LiveRange individual : clusters.get(clusterNo)) 
+            {
+                replace(individual.id, clusterNo);
+            }
         }
     }
 
@@ -227,7 +242,7 @@ public class RegisterAllocator
                 id2cluster.put(id, new ArrayList<Integer>());
             }
 
-            clusters.get(clusterNo).add(iGraph.get(id));
+            clusters.get(clusterNo).add(iGraph.get(id).clone());
             id2cluster.get(id).add(clusterNo);
         }
     }
@@ -237,7 +252,10 @@ public class RegisterAllocator
         iGraph.put(live.id, live);
         for (Integer neighbor : live.neighbors) 
         {
-            iGraph.get(neighbor).addNeighbor(live.id);
+            if(iGraph.containsKey(neighbor))
+            {
+                iGraph.get(neighbor).addNeighbor(live.id);
+            }
         }
     }
 
@@ -255,17 +273,22 @@ public class RegisterAllocator
         iGraph.remove(id);
         for (LiveRange live : iGraph.values()) 
         {
-            live.neighbors.remove(id);
-            live.addNeighbor(clusterNo);
+            if(live.neighbors.contains(id))
+            {
+                live.neighbors.remove(id);
+                live.addNeighbor(clusterNo);
+            }
         }
     }
 
     private Boolean checkColoring()
     {
+        Integer coloredCount = 0;
         for (Integer id : iGraph.keySet()) 
         {
             if(iGraph.get(id).color > 0)
             {
+                coloredCount++;
                 for (Integer neighbor : iGraph.get(id).neighbors)
                 {
                     if(iGraph.get(id).color == iGraph.get(neighbor).color)
@@ -277,6 +300,12 @@ public class RegisterAllocator
             }
         }
 
-        return true;
+        if(coloredCount == iGraph.keySet().size())
+        {
+            return true;
+        }
+
+        System.out.println("All nodes are NOT colored.");
+        return false;
     }
 }
