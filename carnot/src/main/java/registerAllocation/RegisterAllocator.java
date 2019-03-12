@@ -381,6 +381,7 @@ public class RegisterAllocator
     private Boolean checkColoring()
     {
         Integer coloredCount = 0;
+        Integer wrongCount = 0;
         for (Integer id : iGraph.keySet()) 
         {
             if(iGraph.get(id).color > 0)
@@ -391,19 +392,27 @@ public class RegisterAllocator
                     if(!id.equals(neighbor) && iGraph.containsKey(id) && iGraph.containsKey(neighbor) 
                             && iGraph.get(id).color == iGraph.get(neighbor).color)
                     {
+                        wrongCount++;
                         System.out.println(String.format("Coloring gone wrong for node: %s", id.toString()));
-                        //return false;
                     }
                 }
             }
+        }
+
+        if(wrongCount > 0)
+        {
+            System.out.println(wrongCount.toString() + " nodes have wrong colors.");
+            return false;
         }
 
         if(coloredCount == iGraph.keySet().size())
         {
             return true;
         }
-
-        System.out.println("All nodes are NOT colored.");
-        return false;
+        else
+        {
+            System.out.println("All nodes are NOT colored.");
+            return false;
+        }
     }
 }
