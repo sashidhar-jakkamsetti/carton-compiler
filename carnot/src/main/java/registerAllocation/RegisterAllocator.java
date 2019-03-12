@@ -147,7 +147,7 @@ public class RegisterAllocator
 
         for (Integer neighbor : live.neighbors) 
         {
-            if(iGraph.get(neighbor).alive)
+            if(iGraph.containsKey(neighbor) && iGraph.get(neighbor).alive)
             {
                 available[iGraph.get(neighbor).color] = false;
             }
@@ -299,13 +299,16 @@ public class RegisterAllocator
     {
         for (Integer clusterNo : clusters.keySet()) 
         {
-            Integer clusterColor = iGraph.get(clusterNo).color;
-            remove(clusterNo);
-            for (LiveRange individual : clusters.get(clusterNo)) 
+            if(iGraph.containsKey(clusterNo))
             {
-                individual.color = clusterColor;
-                addLiveRange(individual);
-            }
+                Integer clusterColor = iGraph.get(clusterNo).color;
+                remove(clusterNo);
+                for (LiveRange individual : clusters.get(clusterNo)) 
+                {
+                    individual.color = clusterColor;
+                    addLiveRange(individual);
+                }
+            }   
         }
     }
 
@@ -385,10 +388,11 @@ public class RegisterAllocator
                 coloredCount++;
                 for (Integer neighbor : iGraph.get(id).neighbors)
                 {
-                    if(iGraph.get(id).color == iGraph.get(neighbor).color)
+                    if(!id.equals(neighbor) && iGraph.containsKey(id) && iGraph.containsKey(neighbor) 
+                            && iGraph.get(id).color == iGraph.get(neighbor).color)
                     {
                         System.out.println(String.format("Coloring gone wrong for node: %s", id.toString()));
-                        return false;
+                        //return false;
                     }
                 }
             }

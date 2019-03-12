@@ -33,6 +33,7 @@ public class MachineCodeGenerator
         for (Function f : cfg.functions) 
         {
             byteCode = new HashSet<MachineCode>();
+            f.vManager.setGlobalVariables(main.vManager.getVariables());
             generate(f, byteCode);
             byteCode.forEach(c -> mCode[mCodeCounter++] = c);
         }

@@ -172,6 +172,10 @@ public class GraphViz
             out.write(cBlock.toString(optimized, dce, colored));
             out.write("\"];\n");
         }
+        for(String edge : edges)
+        {
+            out.write(edge + ";\n");
+        }
         out.write("}\n");
     }
 
