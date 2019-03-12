@@ -2,7 +2,7 @@ package intermediateCodeRepresentation;
 
 import java.util.*;
 
-import dataStructures.Function;
+import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
 
@@ -15,6 +15,7 @@ public class ControlFlowGraph
     public Boolean done;
 
     public List<Function> functions;
+    public HashMap<Integer, LiveRange> iGraph;
 
     private Integer bc;
 
@@ -24,6 +25,7 @@ public class ControlFlowGraph
         head = new Block(bc++);
         blocks = new ArrayList<Block>();
         functions = new ArrayList<Function>();
+        iGraph = new HashMap<Integer, LiveRange>();
         mVariableManager = new VariableManager();
         done = false;
         blocks.add(head);

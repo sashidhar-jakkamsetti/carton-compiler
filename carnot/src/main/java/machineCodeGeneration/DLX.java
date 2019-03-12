@@ -238,7 +238,7 @@ public class DLX {
 	}
 
 	// Mnemonic-to-Opcode mapping
-	static final String mnemo[] = {
+	public static final String mnemo[] = {
 	"ADD","SUB","MUL","DIV","MOD","CMP","ERR","ERR","OR","AND","BIC","XOR","LSH","ASH","CHK","ERR",
 	"ADDI","SUBI","MULI","DIVI","MODI","CMPI","ERRI","ERRI","ORI","ANDI","BICI","XORI","LSHI","ASHI","CHKI","ERR",
 	"LDW","LDX","POP","ERR","STW","STX","PSH","ERR","BEQ","BNE","BLT","BGE","BLE","BGT","BSR","ERR",
@@ -373,7 +373,7 @@ public class DLX {
 		}
 	}
 	
-	static String disassemble(int instructionWord) {
+	public static String disassemble(int instructionWord) {
 		
 		disassem(instructionWord);
 		String line = mnemo[op] + "  ";
@@ -436,7 +436,7 @@ public class DLX {
 			}
 	}
 	
-	static int assemble(int op) {
+	public static int assemble(int op) {
 		if (op != WRL) {
 			System.out.println("DLX.assemble: the only instruction without arguments is WRL!");
 			bug(1);
@@ -444,7 +444,7 @@ public class DLX {
 	    return F1(op,0,0,0);
 	}
 	
-	static int assemble(int op, int arg1) {
+	public static int assemble(int op, int arg1) {
 		switch (op) {
 			
 			// F1 Format
@@ -471,7 +471,7 @@ public class DLX {
 		}
 	}
 	
-	static int assemble(int op, int arg1, int arg2) {
+	public static int assemble(int op, int arg1, int arg2) {
 		switch (op) {
 			
 			// F1 Format
@@ -495,7 +495,7 @@ public class DLX {
 		}
 	}
 	
-	static int assemble(int op, int arg1, int arg2, int arg3) {
+	public static int assemble(int op, int arg1, int arg2, int arg3) {
 		switch (op) {
 			
 			// F1 Format

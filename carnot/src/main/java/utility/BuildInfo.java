@@ -13,6 +13,7 @@ public class BuildInfo
     int regsize;
     boolean allocateRegister;
     boolean generateMachineCode;
+    boolean execute;
     String outputpath;
 
     public String getProgram() 
@@ -101,5 +102,16 @@ public class BuildInfo
     public void setRegsize(int regsize)
     {
         this.regsize = regsize;
+    }
+
+    public boolean getExecute() 
+    {
+        return execute;
+    }
+
+    @XmlElement
+    public void setExecute(boolean execute) 
+    {
+        this.execute = execute;
     }
 }

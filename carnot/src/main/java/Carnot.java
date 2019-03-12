@@ -2,6 +2,7 @@ import java.io.File;
 import java.util.*;
 
 import intermediateCodeRepresentation.*;
+import machineCodeGeneration.*;
 import parser.Parser;
 import registerAllocation.*;
 import utility.*;
@@ -20,7 +21,7 @@ public class Carnot
 
                 if(buildInfo.getAbstractControlFlowGraph())
                 {
-                    graphPrinter.print(false, false, false, false);
+                    graphPrinter.print(false, false, false);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
                                             graphPrinter.getGraphFileName().replace(".gv", ".png"))
@@ -28,7 +29,7 @@ public class Carnot
 
                     if(buildInfo.getOptimize())
                     {
-                        graphPrinter.print(true, false, false, false);
+                        graphPrinter.print(true, false, false);
                         Runtime.getRuntime().exec(
                                 String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
                                                 graphPrinter.getGraphFileName().replace(".gv", ".png"))
@@ -37,7 +38,7 @@ public class Carnot
                         if(buildInfo.getEliminateDeadCode())
                         {
                             IntermediateCodeGenerator.optimizer.eliminateDeadCode(cfg);
-                            graphPrinter.print(true, true, false, false);
+                            graphPrinter.print(true, true, false);
                             Runtime.getRuntime().exec(
                                     String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
                                                     graphPrinter.getGraphFileName().replace(".gv", ".png"))
@@ -53,7 +54,7 @@ public class Carnot
                         Boolean success = rAllocator.allocate(cfg);
                         if(success)
                         {
-                            graphPrinter.print(false, false, true, false);
+                            graphPrinter.print(false, false, true);
                             Runtime.getRuntime().exec(
                                     String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
                                                     graphPrinter.getGraphFileName().replace(".gv", ".png"))
@@ -61,7 +62,17 @@ public class Carnot
 
                             if(buildInfo.getGenerateMachineCode())
                             {
-                                graphPrinter.print(false, false, false, true);
+                                MachineCodeGenerator mCodeGenerator = new MachineCodeGenerator(cfg);
+                                mCodeGenerator.generate();
+                                MCodePrinter mcPrinter = new MCodePrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
+                                                                            buildInfo.getProgram(), buildInfo.getOutputpath());
+                                mcPrinter.print();
+
+                                if(buildInfo.getExecute())
+                                {
+                                    DLX.load(mCodeGenerator.getCode());
+                                    DLX.execute();
+                                }
                             }
                         }
                         else 

@@ -64,6 +64,7 @@ public class RegisterAllocator
                     }
                 }
             }
+            cfg.iGraph = iGraph;
             return true;
         }
         return false;

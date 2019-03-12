@@ -93,22 +93,18 @@ public class Block implements IBlock
         return null;
     }
 
-    public String toString(Boolean optimized, Boolean dce, Boolean colored, Boolean mCode)
+    public String toString(Boolean optimized, Boolean dce, Boolean colored)
     {
-        return toStringUtil(this.instructions, optimized, dce, colored, mCode);
+        return toStringUtil(this.instructions, optimized, dce, colored);
     }
 
-    protected String toStringUtil(List<Instruction> instructions, Boolean optimized, Boolean dce, Boolean colored, Boolean mCode)
+    protected String toStringUtil(List<Instruction> instructions, Boolean optimized, Boolean dce, Boolean colored)
     {
         StringBuilder sb = new StringBuilder();
         String instructionString = "";
         for(Instruction instruction : instructions)
         {
-            if(mCode)
-            {
-
-            }
-            else if(colored)
+            if(colored)
             {
                 if(instruction.deleteMode == DeleteMode._NotDeleted)
                 {
