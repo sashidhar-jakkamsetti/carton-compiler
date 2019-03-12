@@ -129,6 +129,7 @@ public class Instruction
                 }
                 else if(akaI.operandY instanceof BranchResult)
                 {
+                    // buggy.
                     Boolean isSet = false;
                     IBlock nBlock = ((BranchResult)akaI.operandY).targetBlock;
                     while(!isSet && nBlock != null)

@@ -412,7 +412,7 @@ public class RegisterAllocator
         else
         {
             System.out.println("All nodes are NOT colored.");
-            return false;
+            return false; 
         }
     }
 }

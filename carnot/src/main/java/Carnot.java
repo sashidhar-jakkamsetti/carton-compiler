@@ -64,7 +64,7 @@ public class Carnot
                             {
                                 MachineCodeGenerator mCodeGenerator = new MachineCodeGenerator(cfg);
                                 mCodeGenerator.generate();
-                                MCodePrinter mcPrinter = new MCodePrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
+                                MCPrinter mcPrinter = new MCPrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
                                                                             buildInfo.getProgram(), buildInfo.getOutputpath());
                                 mcPrinter.print();
 

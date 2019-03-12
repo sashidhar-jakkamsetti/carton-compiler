@@ -5,14 +5,14 @@ import java.io.FileWriter;
 
 import dataStructures.MachineCode;
 
-public class MCodePrinter
+public class MCPrinter
 {
     private MachineCode[] code;
     private Integer length;
     private String program;
     private String outputPath;
 
-    public MCodePrinter(MachineCode[] code, Integer length, String program, String outputPath)
+    public MCPrinter(MachineCode[] code, Integer length, String program, String outputPath)
     {
         this.code = code;
         this.length = length;
