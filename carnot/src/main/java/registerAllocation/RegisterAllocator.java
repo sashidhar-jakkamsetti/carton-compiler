@@ -6,6 +6,7 @@ import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
 import dataStructures.Instructions.Instruction.DeleteMode;
+import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.InstructionResult;
 import intermediateCodeRepresentation.*;
 
@@ -20,7 +21,7 @@ public class RegisterAllocator
     private Integer clusterCounter;
 
     private HashMap<Integer, ArrayList<LiveRange>> clusters;
-    private HashMap<Integer, ArrayList<Integer>> id2cluster;
+    private HashMap<Integer, Integer> id2cluster;
 
 
     public RegisterAllocator(InterferenceGraph iGraph, Integer actualRegsize)
@@ -35,7 +36,7 @@ public class RegisterAllocator
         spillAddress = 100;
         clusterCounter = 1000;
         clusters = new HashMap<Integer, ArrayList<LiveRange>>();
-        id2cluster = new HashMap<Integer, ArrayList<Integer>>();
+        id2cluster = new HashMap<Integer, Integer>();
     }
 
     public Boolean allocate(ControlFlowGraph cfg)
@@ -53,6 +54,13 @@ public class RegisterAllocator
                     if(instruction.deleteMode == DeleteMode._NotDeleted)
                     {
                         instruction.setColoredInstruction(iGraph);
+                        if(instruction.opcode == OperatorCode.move)
+                        {
+                            if(instruction.coloredI.operandX.equals(instruction.coloredI.operandY))
+                            {
+                                instruction.deleteMode = DeleteMode.CP;
+                            }
+                        }
                     }
                 }
             }
@@ -82,7 +90,7 @@ public class RegisterAllocator
         Integer availableColor = getAvailableColor(live, regSize);
         if(availableColor == -1)
         {
-            live.color = getAvailableColor(live, regSize++);
+            live.color = getAvailableColor(live, ++regSize);
         }
         else
         {
@@ -159,23 +167,108 @@ public class RegisterAllocator
     {
         for (Integer phiId : phiWeb.keySet()) 
         {
-            clusterCounter += 1;
             PhiInstruction phi = phiWeb.get(phiId);
-            addToCluster(phiId, clusterCounter);
-
-            if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+            if(id2cluster.containsKey(phiId))
             {
-                if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), clusterCounter))
+                if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
                 {
-                    addToCluster(phi.akaI.operandX.getIid(), clusterCounter);
+                    if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phiId)))
+                    {
+                        addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phiId));
+                    }
+                }
+    
+                if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                {
+                    if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phiId)))
+                    {
+                        addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phiId));
+                    }
                 }
             }
-
-            if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+            else if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult 
+                        && id2cluster.containsKey(phi.akaI.operandX.getIid()))
             {
-                if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), clusterCounter))
+                if(!isInterferingWithCluster(phiId, id2cluster.get(phi.akaI.operandX.getIid())))
                 {
-                    addToCluster(phi.akaI.operandY.getIid(), clusterCounter);
+                    addToCluster(phiId, id2cluster.get(phi.akaI.operandX.getIid()));
+                    if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid()));
+                        }
+                    }
+                }
+                else
+                {
+                    clusterCounter += 1;
+                    addToCluster(phiId, clusterCounter);
+
+                    if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), clusterCounter))
+                        {
+                            addToCluster(phi.akaI.operandY.getIid(), clusterCounter);
+                        }
+                        else if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid()));
+                        }
+                    }
+                }
+            }
+            else if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult 
+                        && id2cluster.containsKey(phi.akaI.operandY.getIid()))
+            {
+                if(!isInterferingWithCluster(phiId, id2cluster.get(phi.akaI.operandY.getIid())))
+                {
+                    addToCluster(phiId, id2cluster.get(phi.akaI.operandY.getIid()));
+                    if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid()));
+                        }
+                    }
+                }
+                else
+                {
+                    clusterCounter += 1;
+                    addToCluster(phiId, clusterCounter);
+
+                    if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), clusterCounter))
+                        {
+                            addToCluster(phi.akaI.operandX.getIid(), clusterCounter);
+                        }
+                        else if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid()));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                clusterCounter += 1;
+                addToCluster(phiId, clusterCounter);
+
+                if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+                {
+                    if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), clusterCounter))
+                    {
+                        addToCluster(phi.akaI.operandX.getIid(), clusterCounter);
+                    }
+                }
+    
+                if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                {
+                    if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), clusterCounter))
+                    {
+                        addToCluster(phi.akaI.operandY.getIid(), clusterCounter);
+                    }
                 }
             }
         }
@@ -217,33 +310,33 @@ public class RegisterAllocator
 
     private Boolean isInterferingWithCluster(Integer id, Integer clusterNo)
     {
-        for (LiveRange elementLiveRange : clusters.get(clusterNo)) 
+        if(clusters.containsKey(clusterNo))
         {
-            if(elementLiveRange.neighbors.contains(id))
+            for (LiveRange elementLiveRange : clusters.get(clusterNo)) 
             {
-                return true;
+                if(elementLiveRange.neighbors.contains(id))
+                {
+                    return true;
+                }
             }
+            return false;
         }
-
-        return false;
+        return true;
     }
 
     private void addToCluster(Integer id, Integer clusterNo)
     {
-        if(iGraph.containsKey(id))
+        if(iGraph.containsKey(id) && !id2cluster.containsKey(id))
         {
             if(!clusters.containsKey(clusterNo))
             {
                 clusters.put(clusterNo, new ArrayList<LiveRange>());
             }
 
-            if(!id2cluster.containsKey(id))
-            {
-                id2cluster.put(id, new ArrayList<Integer>());
-            }
-
-            clusters.get(clusterNo).add(iGraph.get(id).clone());
-            id2cluster.get(id).add(clusterNo);
+            LiveRange live = iGraph.get(id).clone();
+            live.alive = false;
+            clusters.get(clusterNo).add(live);
+            id2cluster.put(id, clusterNo);
         }
     }
 
