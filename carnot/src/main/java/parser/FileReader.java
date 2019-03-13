@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import utility.Constants;
+
 public class FileReader {
     private static FileReader fileReader;
     private BufferedReader bufferedReader;
@@ -12,7 +14,7 @@ public class FileReader {
     private Integer lineNo;
     private String line;
     private static String cfileName;
-    public static final int EOF = 255;
+    public static final int EOF = Constants.FILE_READER_END_OF_FILE_CHAR;
 
     public static FileReader getInstance(String fileName) 
     {

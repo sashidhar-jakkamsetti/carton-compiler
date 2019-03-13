@@ -5,6 +5,7 @@ import java.util.HashMap;
 import dataStructures.Token;
 import dataStructures.Token.TokenType;
 import exceptions.InvalidTokenException;
+import utility.Constants;
 
 public class Scanner {
     private char inputSym;
@@ -14,7 +15,7 @@ public class Scanner {
     private Token prevToken;
     private boolean errorFlag = false;
     private String stringUnderConstruction;
-    private Integer identifierAddressCounter;
+    private Integer identifierAddressCounter = Constants.SCANNER_IDENTIFIER_ADDRESS_OFFSET;
 
     public HashMap<String, Integer> identifier2Address;
     public HashMap<Integer, String> address2Identifier;
@@ -46,7 +47,6 @@ public class Scanner {
 
     private Scanner(String fileName) 
     {
-        identifierAddressCounter = 0;
         identifier2Address = new HashMap<String, Integer>();
         address2Identifier = new HashMap<Integer, String>();
 

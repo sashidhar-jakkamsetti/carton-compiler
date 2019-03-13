@@ -2,11 +2,12 @@ import java.io.File;
 import java.util.*;
 
 import intermediateCodeRepresentation.*;
-import parser.Parser;
+import machineCodeGeneration.*;
+import parser.*;
 import registerAllocation.*;
 import utility.*;
 
-public class Carnot 
+public class carnot 
 {
     public static boolean run(BuildInfo buildInfo) throws Exception
     {
@@ -20,7 +21,7 @@ public class Carnot
 
                 if(buildInfo.getAbstractControlFlowGraph())
                 {
-                    graphPrinter.print(false, false, false, false);
+                    graphPrinter.print(false, false, false);
                     Runtime.getRuntime().exec(
                             String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
                                             graphPrinter.getGraphFileName().replace(".gv", ".png"))
@@ -28,7 +29,7 @@ public class Carnot
 
                     if(buildInfo.getOptimize())
                     {
-                        graphPrinter.print(true, false, false, false);
+                        graphPrinter.print(true, false, false);
                         Runtime.getRuntime().exec(
                                 String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
                                                 graphPrinter.getGraphFileName().replace(".gv", ".png"))
@@ -37,7 +38,7 @@ public class Carnot
                         if(buildInfo.getEliminateDeadCode())
                         {
                             IntermediateCodeGenerator.optimizer.eliminateDeadCode(cfg);
-                            graphPrinter.print(true, true, false, false);
+                            graphPrinter.print(true, true, false);
                             Runtime.getRuntime().exec(
                                     String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
                                                     graphPrinter.getGraphFileName().replace(".gv", ".png"))
@@ -50,23 +51,27 @@ public class Carnot
                         InterferenceGraph iGraph = new InterferenceGraph(cfg);
                         iGraph.construct();
                         RegisterAllocator rAllocator = new RegisterAllocator(iGraph, buildInfo.getRegsize());
-                        Boolean success = rAllocator.allocate(cfg);
-                        if(success)
-                        {
-                            graphPrinter.print(false, false, true, false);
-                            Runtime.getRuntime().exec(
-                                    String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
-                                                    graphPrinter.getGraphFileName().replace(".gv", ".png"))
-                            );
+                        rAllocator.allocate(cfg);
 
-                            if(buildInfo.getGenerateMachineCode())
-                            {
-                                graphPrinter.print(false, false, false, true);
-                            }
-                        }
-                        else 
+                        graphPrinter.print(false, false, true);
+                        Runtime.getRuntime().exec(
+                                String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
+                                                graphPrinter.getGraphFileName().replace(".gv", ".png"))
+                        );
+
+                        if(buildInfo.getGenerateMachineCode())
                         {
-                            throw new Exception("Register allocation failed during graph coloring.");
+                            MachineCodeGenerator mCodeGenerator = new MachineCodeGenerator(cfg);
+                            mCodeGenerator.generate();
+                            MCPrinter mcPrinter = new MCPrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
+                                                                            buildInfo.getProgram(), buildInfo.getOutputpath());
+                            mcPrinter.print();
+
+                            if(buildInfo.getExecute())
+                            {
+                                DLX.load(mCodeGenerator.getCode());
+                                DLX.execute();
+                            }
                         }
                     }
                 }
@@ -87,7 +92,7 @@ public class Carnot
         }
         else
         {
-            buildFile = "carnot/build.config";
+            buildFile = "carnot/carnot.xml";
         }
 
         BuildConfigLoader loader = new BuildConfigLoader(buildFile);
@@ -113,6 +118,7 @@ public class Carnot
             buildInfo.setProgram(prefix + buildInfo.getProgram());
             buildInfo.setOutputpath(prefix + buildInfo.getOutputpath());
         }
+        // Bad way to handle this.
         else
         {
             buildInfo.setProgram(System.getProperty("user.dir") + "/" + buildInfo.getProgram());

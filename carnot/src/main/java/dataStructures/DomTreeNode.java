@@ -54,7 +54,7 @@ public class DomTreeNode
         if(instructions.containsKey(instruction.opcode))
         {
             ArrayList<Instruction> is = instructions.get(instruction.opcode);
-            is.removeIf(i -> i.id == instruction.id);
+            is.removeIf(i -> i.id.equals(instruction.id));
         }
     }
 

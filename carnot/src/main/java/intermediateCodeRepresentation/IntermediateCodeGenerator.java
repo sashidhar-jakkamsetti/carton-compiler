@@ -7,6 +7,7 @@ import dataStructures.Operator.*;
 import dataStructures.Results.*;
 import exceptions.IllegalVariableException;
 import optimization.Optimizer;
+import utility.Constants;
 
 public class IntermediateCodeGenerator
 {
@@ -26,13 +27,13 @@ public class IntermediateCodeGenerator
 
     public void reset()
     {
-        pc = 0;
+        pc = Constants.INSTRUCTION_START_COUNTER;
         optimizer.reset();
     }
 
     private IntermediateCodeGenerator()
     {
-        pc = 0;
+        pc = Constants.INSTRUCTION_START_COUNTER;
         optimizer = Optimizer.getInstance();
     }
 

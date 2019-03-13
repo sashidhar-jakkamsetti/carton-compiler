@@ -6,5 +6,6 @@
     <regsize>8</regsize>
     <allocateRegister>true</allocateRegister>
     <generateMachineCode>false</generateMachineCode>
+    <execute>false</execute>
     <outputpath>graphs/</outputpath>
 </buildinfo>

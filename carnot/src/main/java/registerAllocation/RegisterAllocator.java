@@ -6,46 +6,68 @@ import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
 import dataStructures.Instructions.Instruction.DeleteMode;
+import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.InstructionResult;
 import intermediateCodeRepresentation.*;
+import utility.Constants;
 
 public class RegisterAllocator
 {
     private HashMap<Integer, LiveRange> iGraph;
-    private HashMap<Integer, PhiInstruction> phiWeb;
+    private ArrayList<PhiInstruction> phiWeb;
 
-    private Integer regSize = 8;
-    private Integer trueRegSize = 8;
-    private Integer spillAddress;
+    private Integer regSize;
+    private Integer trueRegSize;
     private Integer clusterCounter;
 
     private HashMap<Integer, ArrayList<LiveRange>> clusters;
-    private HashMap<Integer, ArrayList<Integer>> id2cluster;
+    private HashMap<Integer, Integer> id2cluster;
 
 
     public RegisterAllocator(InterferenceGraph iGraph, Integer actualRegsize)
     {
         this.iGraph = iGraph.getIGraph();
-        this.phiWeb = iGraph.getPhiMap();
+        this.phiWeb = iGraph.getPhis();
+        regSize = Constants.REGISTER_SIZE;
+        trueRegSize = Constants.REGISTER_SIZE;
         if(actualRegsize > 0)
         {
-            this.trueRegSize = actualRegsize;
-            this.regSize = actualRegsize;
+            regSize = actualRegsize;
+            trueRegSize = actualRegsize;
         }
-        spillAddress = 100;
-        clusterCounter = 1000;
+        clusterCounter = Constants.CLUSTER_OFFSET;
         clusters = new HashMap<Integer, ArrayList<LiveRange>>();
-        id2cluster = new HashMap<Integer, ArrayList<Integer>>();
+        id2cluster = new HashMap<Integer, Integer>();
     }
 
-    public Boolean allocate(ControlFlowGraph cfg)
+    public void allocate(ControlFlowGraph cfg) throws Exception
     {
         groupClusters();
         color();
         adjustSpillAddress();
         ungroupClusters();
+        
         if(checkColoring())
         {
+            // setting the color.
+            for (IBlock block : cfg.getAllBlocks())
+            {
+                for (Instruction instruction : block.getInstructions()) 
+                {
+                    if(instruction.deleteMode == DeleteMode._NotDeleted)
+                    {
+                        instruction.setColoredInstruction(iGraph);
+                        if(instruction.opcode == OperatorCode.move)
+                        {
+                            if(instruction.coloredI.operandX.equals(instruction.coloredI.operandY))
+                            {
+                                instruction.deleteMode = DeleteMode.CP;
+                            }
+                        }
+                    }
+                }
+            }
+            // correcting the target block.
             for (IBlock block : cfg.getAllBlocks())
             {
                 for (Instruction instruction : block.getInstructions()) 
@@ -56,9 +78,12 @@ public class RegisterAllocator
                     }
                 }
             }
-            return true;
+            cfg.iGraph = iGraph;
         }
-        return false;
+        else
+        {
+            throw new Exception("Register allocation failed during graph coloring.");
+        }
     }
 
     private void color()
@@ -82,7 +107,7 @@ public class RegisterAllocator
         Integer availableColor = getAvailableColor(live, regSize);
         if(availableColor == -1)
         {
-            live.color = getAvailableColor(live, regSize++);
+            live.color = getAvailableColor(live, ++regSize);
         }
         else
         {
@@ -97,7 +122,7 @@ public class RegisterAllocator
         {
             if(live.alive && live.color > trueRegSize)
             {
-                live.color += spillAddress - trueRegSize;
+                live.color += Constants.SPILL_REGISTER_OFFSET - trueRegSize;
             }
         }
     }
@@ -138,7 +163,7 @@ public class RegisterAllocator
 
         for (Integer neighbor : live.neighbors) 
         {
-            if(iGraph.get(neighbor).alive)
+            if(iGraph.containsKey(neighbor) && iGraph.get(neighbor).alive)
             {
                 available[iGraph.get(neighbor).color] = false;
             }
@@ -157,25 +182,109 @@ public class RegisterAllocator
 
     private void groupClusters()
     {
-        for (Integer phiId : phiWeb.keySet()) 
+        for (PhiInstruction phi : phiWeb) 
         {
-            clusterCounter += 1;
-            PhiInstruction phi = phiWeb.get(phiId);
-            addToCluster(phiId, clusterCounter);
-
-            if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+            if(id2cluster.containsKey(phi.id))
             {
-                if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), clusterCounter))
+                if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
                 {
-                    addToCluster(phi.akaI.operandX.getIid(), clusterCounter);
+                    if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.id)))
+                    {
+                        addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.id));
+                    }
+                }
+    
+                if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                {
+                    if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.id)))
+                    {
+                        addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.id));
+                    }
                 }
             }
-
-            if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+            else if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult 
+                        && id2cluster.containsKey(phi.akaI.operandX.getIid()))
             {
-                if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), clusterCounter))
+                if(!isInterferingWithCluster(phi.id, id2cluster.get(phi.akaI.operandX.getIid())))
                 {
-                    addToCluster(phi.akaI.operandY.getIid(), clusterCounter);
+                    addToCluster(phi.id, id2cluster.get(phi.akaI.operandX.getIid()));
+                    if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid()));
+                        }
+                    }
+                }
+                else
+                {
+                    clusterCounter += 1;
+                    addToCluster(phi.id, clusterCounter);
+
+                    if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), clusterCounter))
+                        {
+                            addToCluster(phi.akaI.operandY.getIid(), clusterCounter);
+                        }
+                        else if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid()));
+                        }
+                    }
+                }
+            }
+            else if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult 
+                        && id2cluster.containsKey(phi.akaI.operandY.getIid()))
+            {
+                if(!isInterferingWithCluster(phi.id, id2cluster.get(phi.akaI.operandY.getIid())))
+                {
+                    addToCluster(phi.id, id2cluster.get(phi.akaI.operandY.getIid()));
+                    if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid()));
+                        }
+                    }
+                }
+                else
+                {
+                    clusterCounter += 1;
+                    addToCluster(phi.id, clusterCounter);
+
+                    if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+                    {
+                        if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), clusterCounter))
+                        {
+                            addToCluster(phi.akaI.operandX.getIid(), clusterCounter);
+                        }
+                        else if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid())))
+                        {
+                            addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid()));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                clusterCounter += 1;
+                addToCluster(phi.id, clusterCounter);
+
+                if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
+                {
+                    if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), clusterCounter))
+                    {
+                        addToCluster(phi.akaI.operandX.getIid(), clusterCounter);
+                    }
+                }
+    
+                if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
+                {
+                    if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), clusterCounter))
+                    {
+                        addToCluster(phi.akaI.operandY.getIid(), clusterCounter);
+                    }
                 }
             }
         }
@@ -205,45 +314,48 @@ public class RegisterAllocator
     {
         for (Integer clusterNo : clusters.keySet()) 
         {
-            Integer clusterColor = iGraph.get(clusterNo).color;
-            remove(clusterNo);
-            for (LiveRange individual : clusters.get(clusterNo)) 
+            if(iGraph.containsKey(clusterNo))
             {
-                individual.color = clusterColor;
-                addLiveRange(individual);
-            }
+                Integer clusterColor = iGraph.get(clusterNo).color;
+                remove(clusterNo);
+                for (LiveRange individual : clusters.get(clusterNo)) 
+                {
+                    individual.color = clusterColor;
+                    addLiveRange(individual);
+                }
+            }   
         }
     }
 
     private Boolean isInterferingWithCluster(Integer id, Integer clusterNo)
     {
-        for (LiveRange elementLiveRange : clusters.get(clusterNo)) 
+        if(clusters.containsKey(clusterNo))
         {
-            if(elementLiveRange.neighbors.contains(id))
+            for (LiveRange elementLiveRange : clusters.get(clusterNo)) 
             {
-                return true;
+                if(elementLiveRange.neighbors.contains(id))
+                {
+                    return true;
+                }
             }
+            return false;
         }
-
-        return false;
+        return true;
     }
 
     private void addToCluster(Integer id, Integer clusterNo)
     {
-        if(iGraph.containsKey(id))
+        if(iGraph.containsKey(id) && !id2cluster.containsKey(id))
         {
             if(!clusters.containsKey(clusterNo))
             {
                 clusters.put(clusterNo, new ArrayList<LiveRange>());
             }
 
-            if(!id2cluster.containsKey(id))
-            {
-                id2cluster.put(id, new ArrayList<Integer>());
-            }
-
-            clusters.get(clusterNo).add(iGraph.get(id).clone());
-            id2cluster.get(id).add(clusterNo);
+            LiveRange live = iGraph.get(id).clone();
+            live.alive = false;
+            clusters.get(clusterNo).add(live);
+            id2cluster.put(id, clusterNo);
         }
     }
 
@@ -284,28 +396,54 @@ public class RegisterAllocator
     private Boolean checkColoring()
     {
         Integer coloredCount = 0;
+        Integer wrongCount = 0;
+        Integer usedRegs = 0;
         for (Integer id : iGraph.keySet()) 
         {
             if(iGraph.get(id).color > 0)
             {
+                if(iGraph.get(id).color > usedRegs)
+                {
+                    usedRegs = iGraph.get(id).color;
+                }
                 coloredCount++;
                 for (Integer neighbor : iGraph.get(id).neighbors)
                 {
-                    if(iGraph.get(id).color == iGraph.get(neighbor).color)
+                    if(!id.equals(neighbor) && iGraph.containsKey(id) && iGraph.containsKey(neighbor) 
+                            && iGraph.get(id).color == iGraph.get(neighbor).color)
                     {
+                        wrongCount++;
                         System.out.println(String.format("Coloring gone wrong for node: %s", id.toString()));
-                        return false;
                     }
                 }
             }
+        }
+
+        if(usedRegs > trueRegSize)
+        {
+            Integer spilledCount = usedRegs - Constants.SPILL_REGISTER_OFFSET;
+            System.out.println("Used registers: " + trueRegSize.toString() + "/" 
+                                    + trueRegSize.toString() + ", spilled " + spilledCount.toString());
+        }
+        else
+        {
+            System.out.println("Used registers: " + usedRegs.toString());
+        }
+
+        if(wrongCount > 0)
+        {
+            System.out.println(wrongCount.toString() + " nodes have wrong colors.");
+            return false;
         }
 
         if(coloredCount == iGraph.keySet().size())
         {
             return true;
         }
-
-        System.out.println("All nodes are NOT colored.");
-        return false;
+        else
+        {
+            System.out.println("All nodes are NOT colored.");
+            return false; 
+        }
     }
 }

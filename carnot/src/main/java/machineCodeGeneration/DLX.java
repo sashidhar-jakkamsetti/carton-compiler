@@ -373,7 +373,7 @@ public class DLX {
 		}
 	}
 	
-	static String disassemble(int instructionWord) {
+	public static String disassemble(int instructionWord) {
 		
 		disassem(instructionWord);
 		String line = mnemo[op] + "  ";
@@ -436,7 +436,7 @@ public class DLX {
 			}
 	}
 	
-	static int assemble(int op) {
+	public static int assemble(int op) {
 		if (op != WRL) {
 			System.out.println("DLX.assemble: the only instruction without arguments is WRL!");
 			bug(1);
@@ -444,7 +444,7 @@ public class DLX {
 	    return F1(op,0,0,0);
 	}
 	
-	static int assemble(int op, int arg1) {
+	public static int assemble(int op, int arg1) {
 		switch (op) {
 			
 			// F1 Format
@@ -471,7 +471,7 @@ public class DLX {
 		}
 	}
 	
-	static int assemble(int op, int arg1, int arg2) {
+	public static int assemble(int op, int arg1, int arg2) {
 		switch (op) {
 			
 			// F1 Format
@@ -495,7 +495,7 @@ public class DLX {
 		}
 	}
 	
-	static int assemble(int op, int arg1, int arg2, int arg3) {
+	public static int assemble(int op, int arg1, int arg2, int arg3) {
 		switch (op) {
 			
 			// F1 Format

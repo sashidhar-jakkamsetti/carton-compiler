@@ -5,6 +5,7 @@ import dataStructures.Results.*;
 import java.util.*;
 
 import dataStructures.*;
+import dataStructures.Blocks.*;
 import dataStructures.Operator.OperatorCode;
 
 public class Instruction 
@@ -128,10 +129,24 @@ public class Instruction
                 }
                 else if(akaI.operandY instanceof BranchResult)
                 {
-                    ArrayList<Instruction> targetInstructions = (ArrayList<Instruction>)((BranchResult)akaI.operandY).targetBlock.getInstructions();
-                    if(targetInstructions.size() > 0)
+                    // buggy.
+                    Boolean isSet = false;
+                    IBlock nBlock = ((BranchResult)akaI.operandY).targetBlock;
+                    while(!isSet && nBlock != null)
                     {
-                        coloredI.operandY = new InstructionResult(targetInstructions.get(0).id);
+                        ArrayList<Instruction> targetInstructions = 
+                                        (ArrayList<Instruction>)nBlock.getInstructions();
+                        for (int i = 0; i < targetInstructions.size(); i++) 
+                        {
+                            Instruction instruction = targetInstructions.get(i);
+                            if(instruction.deleteMode == DeleteMode._NotDeleted)
+                            {
+                                isSet = true;
+                                coloredI.operandY = new InstructionResult(instruction.id);
+                                break;
+                            }
+                        }
+                        nBlock = nBlock.getChild();
                     }
                 }
             }

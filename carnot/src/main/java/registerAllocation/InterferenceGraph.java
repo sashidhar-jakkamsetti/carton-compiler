@@ -55,7 +55,7 @@ public class InterferenceGraph
             for(Integer i = phis.size() - 1; i >= 0; i--)
             {
                 Integer id = phis.get(i).akaI.id;
-                copyLiveSetThen.removeIf(ins -> ins == id);
+                copyLiveSetThen.removeIf(ins -> ins.equals(id));
                 if(!iGraph.containsKey(id))
                 {
                     LiveRange dummy = new LiveRange(id);
@@ -81,7 +81,7 @@ public class InterferenceGraph
             for(Integer i = phis.size() - 1; i >= 0; i--)
             {
                 Integer id = phis.get(i).akaI.id;
-                copyLiveSetElse.removeIf(ins -> ins == id);
+                copyLiveSetElse.removeIf(ins -> ins.equals(id));
                 if(!iGraph.containsKey(id))
                 {
                     LiveRange dummy = new LiveRange(id);
@@ -142,7 +142,7 @@ public class InterferenceGraph
                 for(Integer i = phis.size() - 1; i >= 0; i--)
                 {
                     Integer id = phis.get(i).akaI.id;
-                    copyLiveSetLoop.removeIf(ins -> ins == id);
+                    copyLiveSetLoop.removeIf(ins -> ins.equals(id));
                     if(!iGraph.containsKey(id))
                     {
                         LiveRange dummy = new LiveRange(id);
@@ -172,7 +172,7 @@ public class InterferenceGraph
             for(Integer i = phis.size() - 1; i >= 0; i--)
             {
                 Integer id = phis.get(i).akaI.id;
-                liveSet.removeIf(ins -> ins == id);
+                liveSet.removeIf(ins -> ins.equals(id));
                 if(!iGraph.containsKey(id))
                 {
                     LiveRange dummy = new LiveRange(id);
@@ -204,7 +204,7 @@ public class InterferenceGraph
     {
         if(instruction.deleteMode == DeleteMode._NotDeleted)
         {
-            liveSet.removeIf( i -> i == instruction.akaI.id);
+            liveSet.removeIf( i -> i.equals(instruction.akaI.id));
 
             // Moves of formal parameters or phi resolution or return instruction.
             if(instruction.opcode == OperatorCode.move)
@@ -214,7 +214,7 @@ public class InterferenceGraph
                 // valid for phi instruction or return instruction or use of formal parameters.
                 if(instruction.akaI.operandY != null && instruction.akaI.operandY instanceof InstructionResult)
                 {
-                    liveSet.removeIf( i -> i == instruction.akaI.operandY.getIid());
+                    liveSet.removeIf( i -> i.equals(instruction.akaI.operandY.getIid()));
                 }
             }
             else
@@ -274,9 +274,9 @@ public class InterferenceGraph
         }
     }
 
-    public HashMap<Integer, PhiInstruction> getPhiMap()
+    public ArrayList<PhiInstruction> getPhis()
     {
-        return phiEliminator.getPhiMap();
+        return phiEliminator.getPhis();
     }
 
     public HashMap<Integer, LiveRange> getIGraph()

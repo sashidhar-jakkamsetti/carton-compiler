@@ -28,7 +28,7 @@ public class GraphViz
         return graphFileName;
     }
 
-    public void print(Boolean optimized, Boolean dce, Boolean colored, Boolean mCode)
+    public void print(Boolean optimized, Boolean dce, Boolean colored)
     {
         try 
         {
@@ -50,10 +50,6 @@ public class GraphViz
             {
                 graphFileName = outputpath + filesuffix + ".colored.gv";
             }
-            else if(mCode)
-            {
-                graphFileName = outputpath + filesuffix + ".dlx";
-            }
             else 
             {
                 graphFileName = outputpath + filesuffix + ".cgf.gv";
@@ -68,10 +64,10 @@ public class GraphViz
             blockStack.clear();
             alreadyPrintedBlocks = new boolean[cfg.getAllBlocks().size()];
 
-            addFunction(cfg.head, "main", optimized, dce, colored, mCode, out);
+            addFunction(cfg.head, "main", optimized, dce, colored, out);
             for (Function function : cfg.functions) 
             {
-                addFunction(function.head, function.name, optimized, dce, colored, mCode, out);
+                addFunction(function.head, function.name, optimized, dce, colored, out);
             }
 
             out.write("}");
@@ -85,7 +81,7 @@ public class GraphViz
     }
 
     private void addFunction(IBlock head, String funcName, Boolean optimized, 
-                                Boolean dce, Boolean colored, Boolean mCode, FileWriter out) throws IOException
+                                Boolean dce, Boolean colored, FileWriter out) throws IOException
     {
         blockStack.push(head);
         alreadyPrintedBlocks[head.getId()] = true;
@@ -173,18 +169,13 @@ public class GraphViz
                     edges.add(addEdge(cBlock, cBlock.getChild()));
                 }
             }
-            out.write(cBlock.toString(optimized, dce, colored, mCode));
+            out.write(cBlock.toString(optimized, dce, colored));
             out.write("\"];\n");
         }
-
-        if(!mCode)
+        for(String edge : edges)
         {
-            for(String edge : edges)
-            {
-                out.write(edge + ";\n");
-            }
+            out.write(edge + ";\n");
         }
-        
         out.write("}\n");
     }
 

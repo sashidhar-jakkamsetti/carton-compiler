@@ -7,6 +7,7 @@ import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.*;
 import intermediateCodeRepresentation.ControlFlowGraph;
+import utility.Constants;
 
 public class Optimizer
 {
@@ -18,14 +19,14 @@ public class Optimizer
     private Optimizer()
     {
         cpMap = new HashMap<Integer, IResult>();
-        instructionUseCount = new int[10000];
+        instructionUseCount = new int[Constants.NUMBER_OF_INSTRUCTIONS_CAP];
         endInstrId = 0;
     }
 
     public void reset()
     {
         cpMap.clear();
-        instructionUseCount = new int[10000];
+        instructionUseCount = new int[Constants.NUMBER_OF_INSTRUCTIONS_CAP];
         endInstrId = 0;
     }
 

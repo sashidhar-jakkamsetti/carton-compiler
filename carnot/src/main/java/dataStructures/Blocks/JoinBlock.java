@@ -53,7 +53,7 @@ public class JoinBlock extends Block implements IBlock
             return instruction;
         }
 
-        Optional<PhiInstruction> filteredInstruction = phiManager.phis.values().stream().filter(phi -> phi.id == programCounter).findFirst();
+        Optional<PhiInstruction> filteredInstruction = phiManager.phis.values().stream().filter(phi -> phi.id.equals(programCounter)).findFirst();
         if(filteredInstruction.isPresent())
         {
             return filteredInstruction.get();
@@ -75,7 +75,7 @@ public class JoinBlock extends Block implements IBlock
         return maturePhiMap;
     }
 
-    public List<PhiInstruction> getPhis()
+    public ArrayList<PhiInstruction> getPhis()
     {
         if(phiManager != null && phiManager.phis != null && phiManager.phis.values().size() > 0)
         {
@@ -85,18 +85,18 @@ public class JoinBlock extends Block implements IBlock
     }
 
     @Override
-    public String toString(Boolean optimized, Boolean dce, Boolean colored, Boolean mCode)
+    public String toString(Boolean optimized, Boolean dce, Boolean colored)
     {
         StringBuilder sb = new StringBuilder();
-        if(colored || mCode)
+        if(colored)
         {
-            sb.append(super.toString(optimized, dce, colored, mCode));
+            sb.append(super.toString(optimized, dce, colored));
         }
         else
         {
             ArrayList<Instruction> phiInstructions = new ArrayList(phiManager.phis.values());
-            sb.append(super.toStringUtil(phiInstructions, optimized, dce, colored, mCode));
-            sb.append(super.toString(optimized, dce, colored, mCode));
+            sb.append(super.toStringUtil(phiInstructions, optimized, dce, colored));
+            sb.append(super.toString(optimized, dce, colored));
         }
         
         return sb.toString();
