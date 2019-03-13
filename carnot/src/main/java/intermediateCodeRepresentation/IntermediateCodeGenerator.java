@@ -99,6 +99,30 @@ public class IntermediateCodeGenerator
         }
     }
 
+    public void insertInstructionAtLast(IBlock block, OperatorCode opCode, IResult x, IResult y)
+    {
+        if(block != null && opCode == OperatorCode.move)
+        {
+            Instruction instruction = new Instruction(pc++, opCode, y, x);
+            instruction.setAkaInstruction(y, x);
+            if(block.getInstructions().size() > 0)
+            {
+                if(Operator.branchOpCodes.contains(block.getInstructions().get((block.getInstructions().size() - 1)).opcode))
+                {
+                    block.addInstruction(instruction, block.getInstructions().size() - 1);
+                }
+                else
+                {
+                    block.addInstruction(instruction);
+                }
+            }
+            else
+            {
+                block.addInstruction(instruction);
+            }
+        }
+    }
+
     public void loadArrayElement(IBlock block, VariableManager vManager, IResult vResult, Boolean optimize) 
     {
         ArrayVar array = (ArrayVar)((VariableResult)vResult).variable;

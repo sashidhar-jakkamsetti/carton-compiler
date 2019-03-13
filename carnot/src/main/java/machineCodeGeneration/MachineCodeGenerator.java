@@ -1,5 +1,6 @@
 package machineCodeGeneration;
 
+import dataStructures.LiveRange;
 import dataStructures.Blocks.IBlock;
 import dataStructures.Instructions.*;
 import dataStructures.Results.*;
@@ -11,11 +12,12 @@ import machineCodeGeneration.DLX;
 public class MachineCodeGenerator 
 {
     private RegisterAllocator registerAllocator;
+    private HashMap<Integer, LiveRange> iGraph;
     private static ArrayList<Integer> program;
 
-    public MachineCodeGenerator()
+    public MachineCodeGenerator(InterferenceGraph iGraph)
     {
-        registerAllocator = RegisterAllocator.getInstance();
+        this.iGraph = iGraph.getIGraph();
     }
 
     private void load(IResult result)
@@ -25,108 +27,98 @@ public class MachineCodeGenerator
 
     public void compute(Instruction instruction)
     {
+        // After getting the instruction, I have to check the instruction id against the interference graph
+        // and see which register it has been allocated to.
+        // Also, I have to check whether the register allocated is a spilled register
+        // (if the register no. is >100 then that is spilled)
         OperatorCode opcode = instruction.opcode;
+        // I have to check whether the values actually exist or not.
         if(opcode == OperatorCode.add)
         {
-            if(instruction.operandY instanceof ConstantResult)
-            {
-                program.add(DLX.assemble(DLX.ADDI, ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((ConstantResult)instruction.operandY).constant));
-            }
-            else
-            {
-                program.add(DLX.assemble(DLX.ADD , ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandY).register));
-            }
+            Integer mnemo = (instruction.operandY instanceof ConstantResult)
+                            ? DLX.ADDI
+                            : DLX.ADD;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            Integer regC = (instruction.operandY instanceof ConstantResult)
+                           ? ((ConstantResult)instruction.operandY).constant
+                           : ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(mnemo, regA, regB, regC));
         }
         else if(opcode == OperatorCode.sub)
         {
-            if(instruction.operandY instanceof ConstantResult)
-            {
-                program.add(DLX.assemble(DLX.SUBI, ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((ConstantResult)instruction.operandY).constant));
-            }
-            else
-            {
-                program.add(DLX.assemble(DLX.SUB , ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandY).register));
-            }
+            Integer mnemo = (instruction.operandY instanceof ConstantResult)
+                            ? DLX.SUBI
+                            : DLX.SUB;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            Integer regC = (instruction.operandY instanceof ConstantResult)
+                           ? ((ConstantResult)instruction.operandY).constant
+                           : ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(mnemo, regA, regB, regC));
         }
         else if(opcode == OperatorCode.mul)
         {
-            if(instruction.operandY instanceof ConstantResult)
-            {
-                program.add(DLX.assemble(DLX.MULI, ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((ConstantResult)instruction.operandY).constant));
-            }
-            else
-            {
-                program.add(DLX.assemble(DLX.MUL , ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandY).register));
-            }
+            Integer mnemo = (instruction.operandY instanceof ConstantResult)
+                            ? DLX.MULI
+                            : DLX.MUL;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            Integer regC = (instruction.operandY instanceof ConstantResult)
+                           ? ((ConstantResult)instruction.operandY).constant
+                           : ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(mnemo, regA, regB, regC));
         }
         else if(opcode == OperatorCode.div)
         {
-            if(instruction.operandY instanceof ConstantResult)
-            {
-                program.add(DLX.assemble(DLX.DIVI, ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((ConstantResult)instruction.operandY).constant));
-            }
-            else
-            {
-                program.add(DLX.assemble(DLX.DIV , ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandY).register));
-            }
+            Integer mnemo = (instruction.operandY instanceof ConstantResult)
+                            ? DLX.DIVI
+                            : DLX.DIV;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            Integer regC = (instruction.operandY instanceof ConstantResult)
+                           ? ((ConstantResult)instruction.operandY).constant
+                           : ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(mnemo, regA, regB, regC));
         }
         else if(opcode == OperatorCode.cmp)
         {
-            if(instruction.operandY instanceof ConstantResult)
-            {
-                program.add(DLX.assemble(DLX.CMPI, ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((ConstantResult)instruction.operandY).constant));
-            }
-            else
-            {
-                program.add(DLX.assemble(DLX.CMP , ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandY).register));
-            }
+            Integer mnemo = (instruction.operandY instanceof ConstantResult)
+                            ? DLX.CMPI
+                            : DLX.CMP;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            Integer regC = (instruction.operandY instanceof ConstantResult)
+                           ? ((ConstantResult)instruction.operandY).constant
+                           : ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(mnemo, regA, regB, regC));
         }
         else if(opcode == OperatorCode.adda)
         {
-            program.add(DLX.assemble(DLX.LDW, ((RegisterResult)instruction.operandX).register,
-                                              ((RegisterResult)instruction.operandX).register,
-                                              ((ConstantResult)instruction.operandY).constant));
+            Integer mnemo = DLX.LDW;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            Integer regC = (instruction.operandY instanceof ConstantResult)
+                           ? ((ConstantResult)instruction.operandY).constant
+                           : ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(mnemo, regA, regB, regC));
         }
         else if(opcode == OperatorCode.load)
         {
-            program.add(DLX.assemble(DLX.LDW, ((RegisterResult)instruction.operandX).register,
-                                              ((RegisterResult)instruction.operandX).register,
-                                              0));
+            Integer mnemo = DLX.LDW;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(mnemo, regA, regB));
         }
         else if(opcode == OperatorCode.store)
         {
-            if(instruction.operandY instanceof ConstantResult)
-            {
-                program.add(DLX.assemble(DLX.STX, ((RegisterResult)instruction.operandX).register,
-                                                  ((RegisterResult)instruction.operandX).register,
-                                                  ((ConstantResult)instruction.operandY).constant));
-            }
-            else
-            {
-                program.add(DLX.assemble(DLX.STW , ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandX).register,
-                                                   ((RegisterResult)instruction.operandY).register));
-            }
+            Integer mnemo = (instruction.operandY instanceof ConstantResult) ? DLX.STX : DLX.STW;
+            Integer regA = iGraph.get(instruction.id).color;
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            Integer regC = (instruction.operandY instanceof ConstantResult)
+                           ? ((ConstantResult)instruction.operandY).constant
+                           : ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(mnemo, regA, regB, regC));
         }
         else if(opcode == OperatorCode.move)
         {
@@ -136,61 +128,57 @@ public class MachineCodeGenerator
             }
             else // Normal move instruction
             {
-                if(instruction.operandY instanceof ConstantResult)
-                {
-                    program.add(DLX.assemble(DLX.ADDI, ((RegisterResult)instruction.operandX).register,
-                                                       ((ConstantResult)instruction.operandY).constant,
-                                                       0));
-                }
-                else
-                {
-                    program.add(DLX.assemble(DLX.ADD , ((RegisterResult)instruction.operandX).register,
-                                                       ((RegisterResult)instruction.operandY).register,
-                                                       0));
-                }
+                Integer mnemo = (instruction.operandY instanceof ConstantResult)
+                                ? DLX.ADDI
+                                : DLX.ADD;
+                Integer regB = ((RegisterResult)instruction.operandX).register;
+                Integer regC = (instruction.operandY instanceof ConstantResult)
+                               ? ((ConstantResult)instruction.operandY).constant
+                               : ((RegisterResult)instruction.operandY).register;
+                program.add(DLX.assemble(mnemo, regB, regC, 0));
             }
         }
         else if(opcode == OperatorCode.beq)
         {
             IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
             Integer c = targetBlock.getInstructions().get(0).id;
-            program.add(DLX.assemble(DLX.BEQ, ((RegisterResult)instruction.operandX).register,
-                                              c));
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(DLX.BEQ, regB, c));
         }
         else if(opcode == OperatorCode.bne)
         {
             IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
             Integer c = targetBlock.getInstructions().get(0).id;
-            program.add(DLX.assemble(DLX.BNE, ((RegisterResult)instruction.operandX).register,
-                                              c));
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(DLX.BNE, regB, c));
         }
         else if(opcode == OperatorCode.blt)
         {
             IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
             Integer c = targetBlock.getInstructions().get(0).id;
-            program.add(DLX.assemble(DLX.BLT, ((RegisterResult)instruction.operandX).register,
-                                              c));
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(DLX.BLT, regB, c));
         }
         else if(opcode == OperatorCode.bge)
         {
             IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
             Integer c = targetBlock.getInstructions().get(0).id;
-            program.add(DLX.assemble(DLX.BGE, ((RegisterResult)instruction.operandX).register,
-                                              c));
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(DLX.BGE, regB, c));
         }
         else if(opcode == OperatorCode.ble)
         {
             IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
             Integer c = targetBlock.getInstructions().get(0).id;
-            program.add(DLX.assemble(DLX.BLE, ((RegisterResult)instruction.operandX).register,
-                                              c));
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(DLX.BLE, regB, c));
         }
         else if(opcode == OperatorCode.bgt)
         {
             IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
             Integer c = targetBlock.getInstructions().get(0).id;
-            program.add(DLX.assemble(DLX.BGT, ((RegisterResult)instruction.operandX).register,
-                                              c));
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(DLX.BGT, regB, c));
         }
         else if(opcode == OperatorCode.bra)
         {
@@ -203,16 +191,19 @@ public class MachineCodeGenerator
         }
         else if(opcode == OperatorCode.read)
         {
-            program.add(DLX.assemble(DLX.RDI, ((RegisterResult)instruction.operandX).register));
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            program.add(DLX.assemble(DLX.RDI, regB));
         }
         else if(opcode == OperatorCode.write)
         {
-            program.add(DLX.assemble(DLX.WRD, ((RegisterResult)instruction.operandY).register));
+            Integer regA = ((RegisterResult)instruction.operandY).register;
+            program.add(DLX.assemble(DLX.WRD, regA));
         }
         else if(opcode == OperatorCode.writeNL)
         {
             program.add(DLX.assemble(DLX.WRL));
         }
+
     }
 
     public static ArrayList<Integer> getProgram()

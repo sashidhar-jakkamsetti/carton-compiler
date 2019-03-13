@@ -28,7 +28,7 @@ public class GraphViz
         return graphFileName;
     }
 
-    public void print(Boolean optimized, Boolean dce)
+    public void print(Boolean optimized, Boolean dce, Boolean colored, Boolean mCode)
     {
         try 
         {
@@ -46,6 +46,14 @@ public class GraphViz
                     graphFileName = outputpath + filesuffix + ".optimized.gv";
                 }
             }
+            else if(colored)
+            {
+                graphFileName = outputpath + filesuffix + ".colored.gv";
+            }
+            else if(mCode)
+            {
+                graphFileName = outputpath + filesuffix + ".dlx";
+            }
             else 
             {
                 graphFileName = outputpath + filesuffix + ".cgf.gv";
@@ -60,10 +68,10 @@ public class GraphViz
             blockStack.clear();
             alreadyPrintedBlocks = new boolean[cfg.getAllBlocks().size()];
 
-            addFunction(cfg.head, "main", optimized, dce, out);
+            addFunction(cfg.head, "main", optimized, dce, colored, mCode, out);
             for (Function function : cfg.functions) 
             {
-                addFunction(function.head, function.name, optimized, dce, out);
+                addFunction(function.head, function.name, optimized, dce, colored, mCode, out);
             }
 
             out.write("}");
@@ -76,7 +84,8 @@ public class GraphViz
         }
     }
 
-    private void addFunction(IBlock head, String funcName, Boolean optimized, Boolean dce, FileWriter out) throws IOException
+    private void addFunction(IBlock head, String funcName, Boolean optimized, 
+                                Boolean dce, Boolean colored, Boolean mCode, FileWriter out) throws IOException
     {
         blockStack.push(head);
         alreadyPrintedBlocks[head.getId()] = true;
@@ -164,13 +173,18 @@ public class GraphViz
                     edges.add(addEdge(cBlock, cBlock.getChild()));
                 }
             }
-            out.write(cBlock.toString(optimized, dce));
+            out.write(cBlock.toString(optimized, dce, colored, mCode));
             out.write("\"];\n");
         }
-        for(String edge : edges)
+
+        if(!mCode)
         {
-            out.write(edge + ";\n");
+            for(String edge : edges)
+            {
+                out.write(edge + ";\n");
+            }
         }
+        
         out.write("}\n");
     }
 

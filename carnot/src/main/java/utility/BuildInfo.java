@@ -10,8 +10,8 @@ public class BuildInfo
     boolean abstractControlFlowGraph;
     boolean optimize;
     boolean eliminateDeadCode;
+    int regsize;
     boolean allocateRegister;
-    boolean scheduleInstruction;
     boolean generateMachineCode;
     String outputpath;
 
@@ -81,17 +81,6 @@ public class BuildInfo
         this.generateMachineCode = generateMachineCode;
     }
 
-    public boolean getScheduleInstruction() 
-    {
-        return scheduleInstruction;
-    }
-
-    @XmlElement
-    public void setScheduleInstruction(boolean scheduleInstruction) 
-    {
-        this.scheduleInstruction = scheduleInstruction;
-    }
-
     public String getOutputpath() 
     {
         return outputpath;
@@ -103,4 +92,14 @@ public class BuildInfo
         this.outputpath = outputpath;
     }
 
+    public int getRegsize()
+    {
+        return regsize;
+    }
+
+    @XmlElement
+    public void setRegsize(int regsize)
+    {
+        this.regsize = regsize;
+    }
 }

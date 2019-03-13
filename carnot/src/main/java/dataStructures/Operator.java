@@ -39,6 +39,17 @@ public class Operator
         }
     };
 
+    public static final HashSet<OperatorCode> arthimeticOpCodes = new HashSet<OperatorCode>()
+    {
+        {
+            add(OperatorCode.add);
+            add(OperatorCode.sub);
+            add(OperatorCode.mul);
+            add(OperatorCode.div);
+            add(OperatorCode.cmp);
+        }
+    };
+
     public static final HashMap<TokenType, OperatorCode> branchingOperator = new HashMap<TokenType, OperatorCode>()
     {
         {
@@ -52,6 +63,19 @@ public class Operator
             put(TokenType.thenToken, OperatorCode.bra);
             put(TokenType.doToken, OperatorCode.bra);
             put(TokenType.callToken, OperatorCode.bra);
+        }
+    };
+
+    public static final HashSet<OperatorCode> branchOpCodes = new HashSet<OperatorCode>()
+    {
+        {
+            add(OperatorCode.bne);
+            add(OperatorCode.beq);
+            add(OperatorCode.bge);
+            add(OperatorCode.bgt);
+            add(OperatorCode.ble);
+            add(OperatorCode.blt);
+            add(OperatorCode.bra);
         }
     };
 
