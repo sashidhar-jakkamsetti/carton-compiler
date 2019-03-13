@@ -102,7 +102,7 @@ public class DomTreeNode
                     {
                         if(instructions.get(OperatorCode.load).get(idx).operandY.equals(instruction.operandY))
                         {
-                            return instructions.get(instruction.opcode).get(idx);
+                            return instructions.get(instruction.opcode).get(idx).clone();
                         }
                     }
                 }
@@ -117,7 +117,7 @@ public class DomTreeNode
             {
                 if(instructions.get(instruction.opcode).get(idx).equals(instruction))
                 {
-                    return instructions.get(instruction.opcode).get(idx);
+                    return instructions.get(instruction.opcode).get(idx).clone();
                 }
             }
         }

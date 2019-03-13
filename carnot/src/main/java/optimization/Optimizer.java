@@ -139,7 +139,7 @@ public class Optimizer
     
             if(cSubexpression != null)
             {
-                instruction.setAkaInstruction(cSubexpression);
+                instruction.setAkaInstruction(cSubexpression.clone());
                 instructionUseCount[cSubexpression.id] += 1;
                 cpMap.put(instruction.id, new InstructionResult(cSubexpression.id));
                 instruction.deleteMode = DeleteMode.CSE;
@@ -158,7 +158,6 @@ public class Optimizer
                     }
                 }
                 // Adda issue.
-                /*
                 else if(instruction.opcode == OperatorCode.store)
                 {
                     Integer addaId = instruction.operandX.getIid();
@@ -167,6 +166,8 @@ public class Optimizer
                         Instruction addaInstruction = block.getInstruction(addaId);
                         addaInstruction.deleteMode = DeleteMode._NotDeleted;
                         addaInstruction.akaI.id = addaInstruction.id;
+                        block.addSubexpression(addaInstruction.akaI);
+                        cpMap.remove(addaId);
                         instruction.akaI.operandX = instruction.operandX;
                     }
                 }
@@ -178,10 +179,11 @@ public class Optimizer
                         Instruction addaInstruction = block.getInstruction(addaId);
                         addaInstruction.deleteMode = DeleteMode._NotDeleted;
                         addaInstruction.akaI.id = addaInstruction.id;
+                        block.addSubexpression(addaInstruction.akaI);
+                        cpMap.remove(addaId);
                         instruction.akaI.operandY = instruction.operandY;
                     }
                 }
-                */
 
                 if(instruction.opcode == OperatorCode.store)
                 {

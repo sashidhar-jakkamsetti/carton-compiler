@@ -22,6 +22,7 @@ public class Parser
     private VariableManager vManager;
     private static IntermediateCodeGenerator iCodeGenerator;
     private static String cfileName;
+    private Integer killCounter;
 
     public static Parser getInstance(String fileName)
     {
@@ -58,6 +59,7 @@ public class Parser
         iCodeGenerator.reset();
         vManager = cfg.mVariableManager;
         next();
+        killCounter = 0;
         cfg.done = computation(true);
         return cfg;
     }
@@ -325,7 +327,7 @@ public class Parser
                             {
                                 iCodeGenerator.storeArrayElement(cBlock, vManager, lhsResult, rhsResult, optimize);
                                 Instruction newKill = new Instruction(0);
-                                newKill.setExternal(0, OperatorCode.store, lhsResult, null);
+                                newKill.setExternal(killCounter++, OperatorCode.store, lhsResult, null);
                                 kill.add(newKill);
                                 lhsResult = lhsResult.toInstruction();
                                 lhsResult.set(iCodeGenerator.getPC() - 1);
@@ -344,7 +346,7 @@ public class Parser
                             {
                                 iCodeGenerator.storeArrayElement(cBlock, function.vManager, lhsResult, rhsResult, optimize);
                                 Instruction newKill = new Instruction(0);
-                                newKill.setExternal(0, OperatorCode.store, lhsResult, null);
+                                newKill.setExternal(killCounter++, OperatorCode.store, lhsResult, null);
                                 kill.add(newKill);
                                 lhsResult = lhsResult.toInstruction();
                                 lhsResult.set(iCodeGenerator.getPC() - 1);
@@ -529,6 +531,8 @@ public class Parser
                 iBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
             }
 
+            ArrayList<Instruction> snapShotKill = new ArrayList<Instruction>(kill);
+
             if(inputSym.isSameType(TokenType.thenToken))
             {
                 BranchResult bResult2 = new BranchResult();
@@ -549,7 +553,16 @@ public class Parser
                 tBlock.setChild(jBlock);
                 jBlock.setThenBlock(tBlock);
 
-                if(kill.stream().anyMatch(k -> k.id.equals(0)))
+                ArrayList<Instruction> newKillsThen = new ArrayList<Instruction>();
+                for (Instruction i : kill) 
+                {
+                    if(!snapShotKill.stream().anyMatch(k -> k.id.equals(i.id)))
+                    {
+                        newKillsThen.add(i);
+                    }
+                }
+
+                if(newKillsThen.size() > 0)
                 {
                     jBlock.addKill(kill);
                 }
@@ -585,7 +598,16 @@ public class Parser
                     eBlock.setChild(jBlock);
                     jBlock.setElseBlock(eBlock);
 
-                    if(kill.stream().anyMatch(k -> k.id.equals(0)))
+                    ArrayList<Instruction> newKillsElse = new ArrayList<Instruction>();
+                    for (Instruction i : kill) 
+                    {
+                        if(!snapShotKill.stream().anyMatch(k -> k.id.equals(i.id)))
+                        {
+                            newKillsElse.add(i);
+                        }
+                    }
+    
+                    if(newKillsElse.size() > 0)
                     {
                         jBlock.addKill(kill);
                     }
@@ -670,6 +692,8 @@ public class Parser
                 wBlock.freezeSsa(vManager.getSsaMap(), function.vManager.getSsaMap());
             }
 
+            ArrayList<Instruction> snapShotKill = new ArrayList<Instruction>(kill);
+
             if(inputSym.isSameType(TokenType.doToken))
             {
                 BranchResult bResult2 = new BranchResult();
@@ -690,7 +714,16 @@ public class Parser
                     lBlock.setChild(wBlock);
                     wBlock.setChild(lBlock); // Bad name!
 
-                    if(kill.stream().anyMatch(k -> k.id.equals(0)))
+                    ArrayList<Instruction> newKills = new ArrayList<Instruction>();
+                    for (Instruction i : kill) 
+                    {
+                        if(!snapShotKill.stream().anyMatch(k -> k.id.equals(i.id)))
+                        {
+                            newKills.add(i);
+                        }
+                    }
+    
+                    if(newKills.size() > 0)
                     {
                         wBlock.addKill(kill);
                     }
