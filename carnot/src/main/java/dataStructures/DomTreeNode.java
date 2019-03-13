@@ -30,32 +30,17 @@ public class DomTreeNode
         parent = node;
     }
 
-    /*
-    public Boolean anyKill()
-    {
-        return instructions.containsKey(OperatorCode.load) 
-                && instructions.get(OperatorCode.load).stream().anyMatch(i -> i.opcode.equals(OperatorCode.store));
-    }
-    */
-
-    public void addKill(Instruction kill)
+    public void addKill(ArrayList<Instruction> kill)
     {
         if(!instructions.containsKey(OperatorCode.load))
         {
             instructions.put(OperatorCode.load, new ArrayList<Instruction>());
         }
-        instructions.get(OperatorCode.load).add(0, kill.clone());
+        for (Instruction k : kill) 
+        {
+            instructions.get(OperatorCode.load).add(0, k.clone());
+        }
     }
-
-    /*
-    public void addKill()
-    {
-        Instruction kill = new Instruction(-1);
-        kill.opcode = OperatorCode.store;
-
-        addKill(kill);
-    }
-    */
 
     public void add(Instruction instruction)
     {

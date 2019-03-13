@@ -296,7 +296,7 @@ public class Parser
         return (BranchResult)bResult.clone();
     }
 
-    private void assignment(IBlock cBlock, Function function, Boolean optimize, Instruction kill)
+    private void assignment(IBlock cBlock, Function function, Boolean optimize, ArrayList<Instruction> kill)
     {
         if(inputSym.isSameType(TokenType.letToken))
         {
@@ -324,7 +324,9 @@ public class Parser
                             if(((VariableResult)lhsResult).isArray)
                             {
                                 iCodeGenerator.storeArrayElement(cBlock, vManager, lhsResult, rhsResult, optimize);
-                                kill.setExternal(0, OperatorCode.store, lhsResult, null);
+                                Instruction newKill = new Instruction(0);
+                                newKill.setExternal(0, OperatorCode.store, lhsResult, null);
+                                kill.add(newKill);
                                 lhsResult = lhsResult.toInstruction();
                                 lhsResult.set(iCodeGenerator.getPC() - 1);
                             }
@@ -341,7 +343,9 @@ public class Parser
                             if(((VariableResult)lhsResult).isArray)
                             {
                                 iCodeGenerator.storeArrayElement(cBlock, function.vManager, lhsResult, rhsResult, optimize);
-                                kill.setExternal(0, OperatorCode.store, lhsResult, null);
+                                Instruction newKill = new Instruction(0);
+                                newKill.setExternal(0, OperatorCode.store, lhsResult, null);
+                                kill.add(newKill);
                                 lhsResult = lhsResult.toInstruction();
                                 lhsResult.set(iCodeGenerator.getPC() - 1);
                             }
@@ -497,7 +501,7 @@ public class Parser
         return null;
     }
 
-    private IBlock ifStatement(IBlock cBlock, Function function, Boolean optimize, Instruction kill)
+    private IBlock ifStatement(IBlock cBlock, Function function, Boolean optimize, ArrayList<Instruction> kill)
     {
         JoinBlock jBlock = null;
         if(inputSym.isSameType(TokenType.ifToken))
@@ -545,7 +549,7 @@ public class Parser
                 tBlock.setChild(jBlock);
                 jBlock.setThenBlock(tBlock);
 
-                if(kill.id == 0)
+                if(kill.stream().anyMatch(k -> k.id.equals(0)))
                 {
                     jBlock.addKill(kill);
                 }
@@ -581,7 +585,7 @@ public class Parser
                     eBlock.setChild(jBlock);
                     jBlock.setElseBlock(eBlock);
 
-                    if(kill.id == 0)
+                    if(kill.stream().anyMatch(k -> k.id.equals(0)))
                     {
                         jBlock.addKill(kill);
                     }
@@ -636,7 +640,7 @@ public class Parser
         return jBlock;
     }
 
-    private IBlock whileStatement(IBlock cBlock, Function function, Boolean optimizeOut, Instruction kill)
+    private IBlock whileStatement(IBlock cBlock, Function function, Boolean optimizeOut, ArrayList<Instruction> kill)
     {
         IBlock fBlock = null;
         Boolean optimizeIn = false;
@@ -686,7 +690,7 @@ public class Parser
                     lBlock.setChild(wBlock);
                     wBlock.setChild(lBlock); // Bad name!
 
-                    if(kill.id == 0)
+                    if(kill.stream().anyMatch(k -> k.id.equals(0)))
                     {
                         wBlock.addKill(kill);
                     }
@@ -774,7 +778,7 @@ public class Parser
         return rResult;
     }
 
-    private IBlock statement(IBlock cBlock, Function function, Boolean optimize, Instruction kill)
+    private IBlock statement(IBlock cBlock, Function function, Boolean optimize, ArrayList<Instruction> kill)
     {
         IBlock block = null;
         if(inputSym.isSameType(TokenType.letToken))
@@ -808,7 +812,7 @@ public class Parser
         return block;
     }
 
-    private IBlock statSequence(IBlock cBlock, Function function, Boolean optimize, Instruction kill)
+    private IBlock statSequence(IBlock cBlock, Function function, Boolean optimize, ArrayList<Instruction> kill)
     {
         IBlock block = cBlock;
         do
@@ -1049,7 +1053,8 @@ public class Parser
         if(inputSym.isSameType(TokenType.beginToken))
         {
             next();
-            function.tail = (Block)statSequence(function.head, function, optimize, new Instruction(-1));
+            ArrayList<Instruction> kill = new ArrayList<Instruction>();
+            function.tail = (Block)statSequence(function.head, function, optimize, kill);
             if(inputSym.isSameType(TokenType.endToken))
             {
                 next();
@@ -1085,7 +1090,8 @@ public class Parser
             if(inputSym.isSameType(TokenType.beginToken))
             {
                 next();
-                cfg.tail = (Block)statSequence(cfg.head, null, optimize, new Instruction(-1));
+                ArrayList<Instruction> kill = new ArrayList<Instruction>();
+                cfg.tail = (Block)statSequence(cfg.head, null, optimize, kill);
                 if(cfg.tail == null)
                 {
                     return false;

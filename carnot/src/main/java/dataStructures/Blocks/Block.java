@@ -164,68 +164,10 @@ public class Block implements IBlock
         return localSsa;
     }
 
-    public void addKill(Instruction kill)
+    public void addKill(ArrayList<Instruction> kill)
     {
         dTreeNode.addKill(kill);
     }
-
-    /*
-    public Boolean searchKill(IBlock stopBlock)
-    {
-        if (id != stopBlock.getId())
-        {
-            if(dTreeNode.anyKill())
-            {
-                return true;
-            }
-
-            Boolean result = false;
-            if(this instanceof JoinBlock)
-            {
-                JoinBlock jBlock = (JoinBlock)this;
-                if(jBlock.getThenBlock() != null)
-                {
-                    result = result || jBlock.getThenBlock().searchKill(stopBlock);
-                    if(result)
-                    {
-                        return true;
-                    }
-                }
-                if(jBlock.getElseBlock() != null)
-                {
-                    result = result || jBlock.getElseBlock().searchKill(stopBlock);
-                }
-            }
-            else if (this instanceof WhileBlock)
-            {
-                WhileBlock wBlock = (WhileBlock)this;
-                if(wBlock.getChild() != null)
-                {
-                    result = result || wBlock.getChild().searchKill(stopBlock);
-                    if(result)
-                    {
-                        return true;
-                    }
-                }
-                if(wBlock.getParent() != null)
-                {
-                    result = result || wBlock.getParent().searchKill(stopBlock);
-                }
-            }
-            else
-            {
-                if(parent != null)
-                {
-                    result = result || parent.searchKill(stopBlock);
-                }
-            }
-    
-            return result;
-        }
-
-        return false;
-    }
-    */
 
     public Instruction searchCommonSubexpression(Instruction instruction)
     {
@@ -235,30 +177,6 @@ public class Block implements IBlock
         {
             if(cSubexpression.id == -1)
             {
-                /*
-                // If its load search in Non-Dominating blocks too.
-                if(instruction.opcode == OperatorCode.load)
-                {
-                    if(this instanceof JoinBlock)
-                    {
-                        if(searchKill(parent))
-                        {
-                            dTreeNode.addKill();
-                            return null;
-                        }
-                    }
-                    else if(this instanceof WhileBlock)
-                    {
-                        if(getChild() != null && getChild().searchKill(this))
-                        {
-                            dTreeNode.addKill();
-                            return null;
-                        }
-                    }
-                    
-                }
-                */
-
                 if(parent != null)
                 {
                     return parent.searchCommonSubexpression(instruction);

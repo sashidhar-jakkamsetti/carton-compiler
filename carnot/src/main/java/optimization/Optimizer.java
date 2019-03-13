@@ -157,28 +157,31 @@ public class Optimizer
                         cpMap.put(instruction.id, instruction.operandX);
                     }
                 }
-                // else if(instruction.opcode == OperatorCode.store)
-                // {
-                //     Integer addaId = instruction.operandX.getIid();
-                //     if(cpMap.containsKey(addaId))
-                //     {
-                //         Instruction addaInstruction = block.getInstruction(addaId);
-                //         addaInstruction.deleteMode = DeleteMode._NotDeleted;
-                //         addaInstruction.akaI.id = addaInstruction.id;
-                //         instruction.akaI.operandX = instruction.operandX;
-                //     }
-                // }
-                // else if(instruction.opcode == OperatorCode.load)
-                // {
-                //     Integer addaId = instruction.operandY.getIid();
-                //     if(cpMap.containsKey(addaId))
-                //     {
-                //         Instruction addaInstruction = block.getInstruction(addaId);
-                //         addaInstruction.deleteMode = DeleteMode._NotDeleted;
-                //         addaInstruction.akaI.id = addaInstruction.id;
-                //         instruction.akaI.operandY = instruction.operandY;
-                //     }
-                // }
+                // Adda issue.
+                /*
+                else if(instruction.opcode == OperatorCode.store)
+                {
+                    Integer addaId = instruction.operandX.getIid();
+                    if(cpMap.containsKey(addaId))
+                    {
+                        Instruction addaInstruction = block.getInstruction(addaId);
+                        addaInstruction.deleteMode = DeleteMode._NotDeleted;
+                        addaInstruction.akaI.id = addaInstruction.id;
+                        instruction.akaI.operandX = instruction.operandX;
+                    }
+                }
+                else if(instruction.opcode == OperatorCode.load)
+                {
+                    Integer addaId = instruction.operandY.getIid();
+                    if(cpMap.containsKey(addaId))
+                    {
+                        Instruction addaInstruction = block.getInstruction(addaId);
+                        addaInstruction.deleteMode = DeleteMode._NotDeleted;
+                        addaInstruction.akaI.id = addaInstruction.id;
+                        instruction.akaI.operandY = instruction.operandY;
+                    }
+                }
+                */
 
                 if(instruction.opcode == OperatorCode.store)
                 {
