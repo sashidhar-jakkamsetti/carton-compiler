@@ -564,7 +564,7 @@ public class Parser
 
                 if(newKillsThen.size() > 0)
                 {
-                    jBlock.addKill(kill);
+                    jBlock.addKill(newKillsThen);
                 }
                 
                 if(function == null)
@@ -609,7 +609,7 @@ public class Parser
     
                     if(newKillsElse.size() > 0)
                     {
-                        jBlock.addKill(kill);
+                        jBlock.addKill(newKillsElse);
                     }
                     
                     if(function == null)
@@ -725,7 +725,7 @@ public class Parser
     
                     if(newKills.size() > 0)
                     {
-                        wBlock.addKill(kill);
+                        wBlock.addKill(newKills);
                     }
             
                     if(function == null)
