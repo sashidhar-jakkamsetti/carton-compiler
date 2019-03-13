@@ -143,6 +143,7 @@ public class Instruction
                             {
                                 isSet = true;
                                 coloredI.operandY = new InstructionResult(instruction.id);
+                                break;
                             }
                         }
                         nBlock = nBlock.getChild();

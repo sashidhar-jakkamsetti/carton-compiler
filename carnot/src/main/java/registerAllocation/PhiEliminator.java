@@ -11,12 +11,14 @@ import intermediateCodeRepresentation.*;
 public class PhiEliminator
 {
     private HashMap<Integer, PhiInstruction> phiMap;
+    private ArrayList<PhiInstruction> phis;
     private IntermediateCodeGenerator iCodeGenerator;
 
     public PhiEliminator()
     {
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
         phiMap = new HashMap<Integer, PhiInstruction>();
+        phis = new ArrayList<PhiInstruction>();
     }
 
     public void eliminate(IBlock block)
@@ -27,6 +29,7 @@ public class PhiEliminator
             HashMap<Integer, PhiInstruction> cPhiMap = jBlock.getPhiMap();
             if(!isExists(cPhiMap))
             {
+                phis.addAll(jBlock.getPhis());
                 phiMap.putAll(cPhiMap);
                 for (PhiInstruction i : cPhiMap.values()) 
                 {
@@ -59,6 +62,7 @@ public class PhiEliminator
             HashMap<Integer, PhiInstruction> cPhiMap = wBlock.getPhiMap();
             if(!isExists(cPhiMap))
             {
+                phis.addAll(wBlock.getPhis());
                 phiMap.putAll(cPhiMap);
                 for (PhiInstruction i : cPhiMap.values()) 
                 {
@@ -76,8 +80,8 @@ public class PhiEliminator
         return phiMap.keySet().containsAll(cPhiMap.keySet());
     }
 
-    public HashMap<Integer, PhiInstruction> getPhiMap()
+    public ArrayList<PhiInstruction> getPhis()
     {
-        return phiMap;
+        return phis;
     }
 }

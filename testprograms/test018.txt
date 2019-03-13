@@ -1,9 +1,12 @@
 // Copy propagation test
 // Adapted from Muchnick, p.360
+// sashi: Included spilling. Change in lines 6,8,9,28,29,38,39.
 main
 procedure foo();
-var a, b, c, d, e, f, g, h;
+var a, b, c, d, e, f, g, h, l, m;
 {
+	let l <- 10;
+	let m <- 20;
 	let c <- a + b;
 	let d <- c;
 	let e <- d * d;
@@ -21,6 +24,9 @@ var a, b, c, d, e, f, g, h;
 	fi;
 	
 	let b <- g * a;
+
+	let l <- b + l;
+	let m <- l + m;
 	
 	call OutputNum(a);
 	call OutputNum(b);
@@ -28,7 +34,9 @@ var a, b, c, d, e, f, g, h;
 	call OutputNum(d);
 	call OutputNum(f);
 	call OutputNum(g);
-	call OutputNum(h)
+	call OutputNum(h);
+	call OutputNum(l);
+	call OutputNum(m)
 };
 
 {

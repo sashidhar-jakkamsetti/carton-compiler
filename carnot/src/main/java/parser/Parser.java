@@ -9,6 +9,7 @@ import dataStructures.Results.*;
 import dataStructures.Token.TokenType;
 import exceptions.*;
 import intermediateCodeRepresentation.*;
+import utility.Constants;
 
 public class Parser 
 {
@@ -927,8 +928,8 @@ public class Parser
             next();
             while(inputSym.isSameType(TokenType.ident))
             {
-                // Formal parameters are given -1 as the version number.
-                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), -1);
+                Variable v = new Variable(inputSym.value, scanner.identifier2Address.get(inputSym.value), 
+                                            Constants.FORMAL_PARAMETER_VERSION);
                 VariableResult vResult = new VariableResult();
                 vResult.set(v);
                 try

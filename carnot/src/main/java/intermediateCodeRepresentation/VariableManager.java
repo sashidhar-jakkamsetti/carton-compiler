@@ -4,6 +4,7 @@ import java.util.*;
 
 import dataStructures.ArrayVar;
 import exceptions.*;
+import utility.Constants;
 
 @SuppressWarnings("serial")
 public class VariableManager
@@ -21,7 +22,7 @@ public class VariableManager
         ssaMap = new HashMap<Integer, Integer>();
         defUseChain = new HashMap<Integer, HashMap<Integer, ArrayList<Integer>>>();
         arrays = new HashMap<Integer, ArrayVar>();
-        arrayAddress = 1000; // Random
+        arrayAddress = Constants.ARRAY_ADDRESS_OFFSET;
     }
 
     public void addVariable(Integer variable) throws IllegalVariableException

@@ -53,7 +53,7 @@ public class JoinBlock extends Block implements IBlock
             return instruction;
         }
 
-        Optional<PhiInstruction> filteredInstruction = phiManager.phis.values().stream().filter(phi -> phi.id == programCounter).findFirst();
+        Optional<PhiInstruction> filteredInstruction = phiManager.phis.values().stream().filter(phi -> phi.id.equals(programCounter)).findFirst();
         if(filteredInstruction.isPresent())
         {
             return filteredInstruction.get();
@@ -75,7 +75,7 @@ public class JoinBlock extends Block implements IBlock
         return maturePhiMap;
     }
 
-    public List<PhiInstruction> getPhis()
+    public ArrayList<PhiInstruction> getPhis()
     {
         if(phiManager != null && phiManager.phis != null && phiManager.phis.values().size() > 0)
         {

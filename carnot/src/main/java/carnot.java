@@ -3,11 +3,11 @@ import java.util.*;
 
 import intermediateCodeRepresentation.*;
 import machineCodeGeneration.*;
-import parser.Parser;
+import parser.*;
 import registerAllocation.*;
 import utility.*;
 
-public class Carnot 
+public class carnot 
 {
     public static boolean run(BuildInfo buildInfo) throws Exception
     {
@@ -51,33 +51,27 @@ public class Carnot
                         InterferenceGraph iGraph = new InterferenceGraph(cfg);
                         iGraph.construct();
                         RegisterAllocator rAllocator = new RegisterAllocator(iGraph, buildInfo.getRegsize());
-                        Boolean success = rAllocator.allocate(cfg);
-                        if(success)
-                        {
-                            graphPrinter.print(false, false, true);
-                            Runtime.getRuntime().exec(
-                                    String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
-                                                    graphPrinter.getGraphFileName().replace(".gv", ".png"))
-                            );
+                        rAllocator.allocate(cfg);
 
-                            if(buildInfo.getGenerateMachineCode())
-                            {
-                                MachineCodeGenerator mCodeGenerator = new MachineCodeGenerator(cfg);
-                                mCodeGenerator.generate();
-                                MCPrinter mcPrinter = new MCPrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
+                        graphPrinter.print(false, false, true);
+                        Runtime.getRuntime().exec(
+                                String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
+                                                graphPrinter.getGraphFileName().replace(".gv", ".png"))
+                        );
+
+                        if(buildInfo.getGenerateMachineCode())
+                        {
+                            MachineCodeGenerator mCodeGenerator = new MachineCodeGenerator(cfg);
+                            mCodeGenerator.generate();
+                            MCPrinter mcPrinter = new MCPrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
                                                                             buildInfo.getProgram(), buildInfo.getOutputpath());
-                                mcPrinter.print();
+                            mcPrinter.print();
 
-                                if(buildInfo.getExecute())
-                                {
-                                    DLX.load(mCodeGenerator.getCode());
-                                    DLX.execute();
-                                }
+                            if(buildInfo.getExecute())
+                            {
+                                DLX.load(mCodeGenerator.getCode());
+                                DLX.execute();
                             }
-                        }
-                        else 
-                        {
-                            throw new Exception("Register allocation failed during graph coloring.");
                         }
                     }
                 }
@@ -98,7 +92,7 @@ public class Carnot
         }
         else
         {
-            buildFile = "carnot/build.config";
+            buildFile = "carnot/carnot.xml";
         }
 
         BuildConfigLoader loader = new BuildConfigLoader(buildFile);
@@ -124,6 +118,7 @@ public class Carnot
             buildInfo.setProgram(prefix + buildInfo.getProgram());
             buildInfo.setOutputpath(prefix + buildInfo.getOutputpath());
         }
+        // Bad way to handle this.
         else
         {
             buildInfo.setProgram(System.getProperty("user.dir") + "/" + buildInfo.getProgram());

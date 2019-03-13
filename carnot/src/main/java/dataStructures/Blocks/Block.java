@@ -84,7 +84,7 @@ public class Block implements IBlock
     @Override
     public Instruction getInstruction(Integer programCounter)
     {
-        Optional<Instruction> filteredInstruction = instructions.stream().filter(instruction -> instruction.id == programCounter).findFirst();
+        Optional<Instruction> filteredInstruction = instructions.stream().filter(instruction -> instruction.id.equals(programCounter)).findFirst();
         if(filteredInstruction.isPresent())
         {
             return filteredInstruction.get();

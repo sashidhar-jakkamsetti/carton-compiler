@@ -9,15 +9,15 @@ import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.InstructionResult;
 import intermediateCodeRepresentation.*;
+import utility.Constants;
 
 public class RegisterAllocator
 {
     private HashMap<Integer, LiveRange> iGraph;
-    private HashMap<Integer, PhiInstruction> phiWeb;
+    private ArrayList<PhiInstruction> phiWeb;
 
-    private Integer regSize = 8;
-    private Integer trueRegSize = 8;
-    private Integer spillAddress;
+    private Integer regSize;
+    private Integer trueRegSize;
     private Integer clusterCounter;
 
     private HashMap<Integer, ArrayList<LiveRange>> clusters;
@@ -27,26 +27,29 @@ public class RegisterAllocator
     public RegisterAllocator(InterferenceGraph iGraph, Integer actualRegsize)
     {
         this.iGraph = iGraph.getIGraph();
-        this.phiWeb = iGraph.getPhiMap();
+        this.phiWeb = iGraph.getPhis();
+        regSize = Constants.REGISTER_SIZE;
+        trueRegSize = Constants.REGISTER_SIZE;
         if(actualRegsize > 0)
         {
-            this.trueRegSize = actualRegsize;
-            this.regSize = actualRegsize;
+            regSize = actualRegsize;
+            trueRegSize = actualRegsize;
         }
-        spillAddress = 100;
-        clusterCounter = 1000;
+        clusterCounter = Constants.CLUSTER_OFFSET;
         clusters = new HashMap<Integer, ArrayList<LiveRange>>();
         id2cluster = new HashMap<Integer, Integer>();
     }
 
-    public Boolean allocate(ControlFlowGraph cfg)
+    public void allocate(ControlFlowGraph cfg) throws Exception
     {
         groupClusters();
         color();
         adjustSpillAddress();
         ungroupClusters();
+        
         if(checkColoring())
         {
+            // setting the color.
             for (IBlock block : cfg.getAllBlocks())
             {
                 for (Instruction instruction : block.getInstructions()) 
@@ -64,10 +67,23 @@ public class RegisterAllocator
                     }
                 }
             }
+            // correcting the target block.
+            for (IBlock block : cfg.getAllBlocks())
+            {
+                for (Instruction instruction : block.getInstructions()) 
+                {
+                    if(instruction.deleteMode == DeleteMode._NotDeleted)
+                    {
+                        instruction.setColoredInstruction(iGraph);
+                    }
+                }
+            }
             cfg.iGraph = iGraph;
-            return true;
         }
-        return false;
+        else
+        {
+            throw new Exception("Register allocation failed during graph coloring.");
+        }
     }
 
     private void color()
@@ -106,7 +122,7 @@ public class RegisterAllocator
         {
             if(live.alive && live.color > trueRegSize)
             {
-                live.color += spillAddress - trueRegSize;
+                live.color += Constants.SPILL_REGISTER_OFFSET - trueRegSize;
             }
         }
     }
@@ -166,33 +182,32 @@ public class RegisterAllocator
 
     private void groupClusters()
     {
-        for (Integer phiId : phiWeb.keySet()) 
+        for (PhiInstruction phi : phiWeb) 
         {
-            PhiInstruction phi = phiWeb.get(phiId);
-            if(id2cluster.containsKey(phiId))
+            if(id2cluster.containsKey(phi.id))
             {
                 if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
                 {
-                    if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phiId)))
+                    if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.id)))
                     {
-                        addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phiId));
+                        addToCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.id));
                     }
                 }
     
                 if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
                 {
-                    if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phiId)))
+                    if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.id)))
                     {
-                        addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phiId));
+                        addToCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.id));
                     }
                 }
             }
             else if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult 
                         && id2cluster.containsKey(phi.akaI.operandX.getIid()))
             {
-                if(!isInterferingWithCluster(phiId, id2cluster.get(phi.akaI.operandX.getIid())))
+                if(!isInterferingWithCluster(phi.id, id2cluster.get(phi.akaI.operandX.getIid())))
                 {
-                    addToCluster(phiId, id2cluster.get(phi.akaI.operandX.getIid()));
+                    addToCluster(phi.id, id2cluster.get(phi.akaI.operandX.getIid()));
                     if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
                     {
                         if(!isInterferingWithCluster(phi.akaI.operandY.getIid(), id2cluster.get(phi.akaI.operandX.getIid())))
@@ -204,7 +219,7 @@ public class RegisterAllocator
                 else
                 {
                     clusterCounter += 1;
-                    addToCluster(phiId, clusterCounter);
+                    addToCluster(phi.id, clusterCounter);
 
                     if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult)
                     {
@@ -222,9 +237,9 @@ public class RegisterAllocator
             else if(phi.akaI.operandY != null && phi.akaI.operandY instanceof InstructionResult 
                         && id2cluster.containsKey(phi.akaI.operandY.getIid()))
             {
-                if(!isInterferingWithCluster(phiId, id2cluster.get(phi.akaI.operandY.getIid())))
+                if(!isInterferingWithCluster(phi.id, id2cluster.get(phi.akaI.operandY.getIid())))
                 {
-                    addToCluster(phiId, id2cluster.get(phi.akaI.operandY.getIid()));
+                    addToCluster(phi.id, id2cluster.get(phi.akaI.operandY.getIid()));
                     if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
                     {
                         if(!isInterferingWithCluster(phi.akaI.operandX.getIid(), id2cluster.get(phi.akaI.operandY.getIid())))
@@ -236,7 +251,7 @@ public class RegisterAllocator
                 else
                 {
                     clusterCounter += 1;
-                    addToCluster(phiId, clusterCounter);
+                    addToCluster(phi.id, clusterCounter);
 
                     if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
                     {
@@ -254,7 +269,7 @@ public class RegisterAllocator
             else
             {
                 clusterCounter += 1;
-                addToCluster(phiId, clusterCounter);
+                addToCluster(phi.id, clusterCounter);
 
                 if(phi.akaI.operandX != null && phi.akaI.operandX instanceof InstructionResult)
                 {
@@ -382,10 +397,15 @@ public class RegisterAllocator
     {
         Integer coloredCount = 0;
         Integer wrongCount = 0;
+        Integer usedRegs = 0;
         for (Integer id : iGraph.keySet()) 
         {
             if(iGraph.get(id).color > 0)
             {
+                if(iGraph.get(id).color > usedRegs)
+                {
+                    usedRegs = iGraph.get(id).color;
+                }
                 coloredCount++;
                 for (Integer neighbor : iGraph.get(id).neighbors)
                 {
@@ -397,6 +417,17 @@ public class RegisterAllocator
                     }
                 }
             }
+        }
+
+        if(usedRegs > trueRegSize)
+        {
+            Integer spilledCount = usedRegs - Constants.SPILL_REGISTER_OFFSET;
+            System.out.println("Used registers: " + trueRegSize.toString() + "/" 
+                                    + trueRegSize.toString() + ", spilled " + spilledCount.toString());
+        }
+        else
+        {
+            System.out.println("Used registers: " + usedRegs.toString());
         }
 
         if(wrongCount > 0)

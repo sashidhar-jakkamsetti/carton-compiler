@@ -5,6 +5,7 @@ import java.util.*;
 import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
+import utility.Constants;
 
 public class ControlFlowGraph
 {
@@ -21,7 +22,7 @@ public class ControlFlowGraph
 
     public ControlFlowGraph()
     {
-        bc = 0;
+        bc = Constants.BLOCK_START_COUNTER;
         head = new Block(bc++);
         blocks = new ArrayList<Block>();
         functions = new ArrayList<Function>();
@@ -65,7 +66,7 @@ public class ControlFlowGraph
 
     public boolean isExists(Function function)
     {
-        return functions.stream().anyMatch(f -> f.address == function.address);
+        return functions.stream().anyMatch(f -> f.address.equals(function.address));
     }
 
     public void addFunction(Function function)
@@ -77,7 +78,7 @@ public class ControlFlowGraph
     {
         if(isExists(function))
         {
-            return (Function)functions.stream().filter(f -> f.address == function.address).toArray()[0];
+            return (Function)functions.stream().filter(f -> f.address.equals(function.address)).toArray()[0];
         }
 
         return null;
