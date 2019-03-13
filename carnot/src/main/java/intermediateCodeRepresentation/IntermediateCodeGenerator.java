@@ -136,7 +136,7 @@ public class IntermediateCodeGenerator
                 res = res.toInstruction();
             }
             compute(block, OperatorCode.mul, res, new ConstantResult(4), optimize);
-            compute(block, OperatorCode.add, new ConstantResult(0), vResult, optimize);  // Frame Pointer is R28
+            compute(block, OperatorCode.add, new ConstantResult(0), vResult, optimize);
             compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
             compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
 
@@ -166,7 +166,7 @@ public class IntermediateCodeGenerator
                 res = res.toInstruction();
             }
             compute(block, OperatorCode.mul, res, new ConstantResult(4), optimize);
-            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult, optimize);  // Frame Pointer is R28
+            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult, optimize);
             compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
 
             for (Integer index = 1; index < array.indexList.size(); index++)

@@ -122,8 +122,21 @@ public class Optimizer
             {
                 condenseOperandY(instruction);
             }
+
+            Instruction cSubexpression;
+            if(instruction.opcode == OperatorCode.load)
+            {
+                Instruction fabLoad = instruction.akaI.clone();
+                Instruction addaI = block.getInstruction(instruction.operandY.getIid());
+                Instruction addI = block.getInstruction(addaI.operandX.getIid());
+                fabLoad.operandX = addI.operandY;
+                cSubexpression = block.searchCommonSubexpression(fabLoad);
+            }
+            else
+            {
+                cSubexpression = block.searchCommonSubexpression(instruction.akaI);
+            }
     
-            Instruction cSubexpression = block.searchCommonSubexpression(instruction.akaI);
             if(cSubexpression != null)
             {
                 instruction.setAkaInstruction(cSubexpression);
@@ -144,7 +157,41 @@ public class Optimizer
                         cpMap.put(instruction.id, instruction.operandX);
                     }
                 }
-                block.addSubexpression(instruction.akaI);
+                // else if(instruction.opcode == OperatorCode.store)
+                // {
+                //     Integer addaId = instruction.operandX.getIid();
+                //     if(cpMap.containsKey(addaId))
+                //     {
+                //         Instruction addaInstruction = block.getInstruction(addaId);
+                //         addaInstruction.deleteMode = DeleteMode._NotDeleted;
+                //         addaInstruction.akaI.id = addaInstruction.id;
+                //         instruction.akaI.operandX = instruction.operandX;
+                //     }
+                // }
+                // else if(instruction.opcode == OperatorCode.load)
+                // {
+                //     Integer addaId = instruction.operandY.getIid();
+                //     if(cpMap.containsKey(addaId))
+                //     {
+                //         Instruction addaInstruction = block.getInstruction(addaId);
+                //         addaInstruction.deleteMode = DeleteMode._NotDeleted;
+                //         addaInstruction.akaI.id = addaInstruction.id;
+                //         instruction.akaI.operandY = instruction.operandY;
+                //     }
+                // }
+
+                if(instruction.opcode == OperatorCode.store)
+                {
+                    Instruction fabStore = new Instruction(0);
+                    Instruction addaI = block.getInstruction(instruction.operandY.getIid());
+                    Instruction addI = block.getInstruction(addaI.operandX.getIid());
+                    fabStore.setExternal(0, OperatorCode.store, addI.operandY, null);
+                    block.addSubexpression(fabStore);
+                }
+                else
+                {
+                    block.addSubexpression(instruction.akaI);
+                }
             }
         }
         // Write and branch instructions

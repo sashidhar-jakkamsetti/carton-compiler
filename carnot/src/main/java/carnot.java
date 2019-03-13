@@ -44,33 +44,33 @@ public class carnot
                                                     graphPrinter.getGraphFileName().replace(".gv", ".png"))
                             );
                         }
-                    }
 
-                    if(buildInfo.getAllocateRegister())
-                    {
-                        InterferenceGraph iGraph = new InterferenceGraph(cfg);
-                        iGraph.construct();
-                        RegisterAllocator rAllocator = new RegisterAllocator(iGraph, buildInfo.getRegsize());
-                        rAllocator.allocate(cfg);
-
-                        graphPrinter.print(false, false, true);
-                        Runtime.getRuntime().exec(
-                                String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
-                                                graphPrinter.getGraphFileName().replace(".gv", ".png"))
-                        );
-
-                        if(buildInfo.getGenerateMachineCode())
+                        if(buildInfo.getAllocateRegister())
                         {
-                            MachineCodeGenerator mCodeGenerator = new MachineCodeGenerator(cfg);
-                            mCodeGenerator.generate();
-                            MCPrinter mcPrinter = new MCPrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
-                                                                            buildInfo.getProgram(), buildInfo.getOutputpath());
-                            mcPrinter.print();
-
-                            if(buildInfo.getExecute())
+                            InterferenceGraph iGraph = new InterferenceGraph(cfg);
+                            iGraph.construct();
+                            RegisterAllocator rAllocator = new RegisterAllocator(iGraph, buildInfo.getRegsize());
+                            rAllocator.allocate(cfg);
+    
+                            graphPrinter.print(false, false, true);
+                            Runtime.getRuntime().exec(
+                                    String .format("dot -Tpng %s -o %s", graphPrinter.getGraphFileName(), 
+                                                    graphPrinter.getGraphFileName().replace(".gv", ".png"))
+                            );
+    
+                            if(buildInfo.getGenerateMachineCode())
                             {
-                                DLX.load(mCodeGenerator.getCode());
-                                DLX.execute();
+                                MachineCodeGenerator mCodeGenerator = new MachineCodeGenerator(cfg);
+                                mCodeGenerator.generate();
+                                MCPrinter mcPrinter = new MCPrinter(mCodeGenerator.getMCode(), mCodeGenerator.getMCodeLength(), 
+                                                                                buildInfo.getProgram(), buildInfo.getOutputpath());
+                                mcPrinter.print();
+    
+                                if(buildInfo.getExecute())
+                                {
+                                    DLX.load(mCodeGenerator.getCode());
+                                    DLX.execute();
+                                }
                             }
                         }
                     }
