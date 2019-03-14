@@ -31,7 +31,7 @@ public class MCPrinter
 
             for(int i = 0; i < length; i++)
             {
-                out.write(code[i].toString());
+                out.write(code[i].toString() + "\n");
             }
             out.close();
         }

@@ -11,7 +11,23 @@ public class MachineCode
 
     public MachineCode(int op)
     {
-        this(op, -1, -1, -1);
+        this(op, null, null, null);
+    }
+
+    public MachineCode(Integer op, Integer a)
+    {
+        this.op = op;
+        this.a = a;
+        this.b = null;
+        this.c = null;
+    }
+
+    public MachineCode(Integer op, Integer a, Integer b)
+    {
+        this.op = op;
+        this.a = a;
+        this.b = b;
+        this.c = null;
     }
 
     public MachineCode(Integer op, Integer a, Integer b, Integer c)
@@ -22,19 +38,22 @@ public class MachineCode
         this.c = c;
     }
 
-    // Fill this accordingly
     public int toInteger()
     {
-        if(a == -1 && b == -1 && c == -1)
+        if(a == null && b == null && c == null)
         {
             return DLX.assemble(op);
         }
-        else if(b == -1 && c == -1)
+        else if(b == null && c == null)
         {
             return DLX.assemble(op, a);
         }
+        else if(c == null)
+        {
+            return DLX.assemble(op, a, b);
+        }
 
-        return 0;
+        return DLX.assemble(op, a, b, c);
     }
 
     public String toString()
@@ -42,9 +61,9 @@ public class MachineCode
         return String.format(
             "%s    %s  %s  %s", 
             DLX.mnemo[op], 
-            a > -1? a.toString() : "",  
-            b > -1? b.toString() : "", 
-            c > -1? c.toString() : ""
+            a != null ? a.toString() : "",  
+            b != null ? b.toString() : "", 
+            c != null ? c.toString() : ""
         );
     }
 }

@@ -1,29 +1,36 @@
 package machineCodeGeneration;
 
-import java.util.HashSet;
+import java.util.List;
 
 import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.Instruction;
+import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Results.*;
 import dataStructures.Operator.*;
-import dataStructures.MachineCode.*;
 import intermediateCodeRepresentation.ControlFlowGraph;
-import registerAllocation.*;
-import java.util.*;
 import machineCodeGeneration.DLX;
+import java.util.*;
 
 public class MachineCodeGenerator 
 {
     private ControlFlowGraph cfg;
     private MachineCode[] mCode;
     private Integer mCodeCounter;
+    private Stack<IBlock> blockStack;
+    private boolean[] alreadyVisitedBlocks;
+    private HashMap<Integer, MachineCode> targetNum;
+    private Integer mCPc;
 
     public MachineCodeGenerator(ControlFlowGraph cfg)
     {
+        blockStack = new Stack<IBlock>();
+        alreadyVisitedBlocks = new boolean[cfg.getAllBlocks().size()];
         this.cfg = cfg;
         mCode = new MachineCode[DLX.MemSize];
         mCodeCounter = 0;
+        targetNum = new HashMap<Integer, MachineCode>();
+        mCPc = 0;
     }
 
     public void generate() throws Exception
@@ -31,29 +38,31 @@ public class MachineCodeGenerator
         Function main = new Function(cfg.head, cfg.tail);
         main.vManager = cfg.mVariableManager;
 
-        HashSet<MachineCode> byteCode = new HashSet<MachineCode>();
+        List<MachineCode> byteCode = new ArrayList<MachineCode>();
         generate(main, byteCode);
         byteCode.forEach(c -> mCode[mCodeCounter++] = c);
 
         for (Function f : cfg.functions) 
         {
-            byteCode = new HashSet<MachineCode>();
+            byteCode = new ArrayList<MachineCode>();
             f.vManager.setGlobalVariables(main.vManager.getVariables());
             generate(f, byteCode);
             byteCode.forEach(c -> mCode[mCodeCounter++] = c);
         }
     }
 
-    private void generate(Function function, HashSet<MachineCode> byteCode) throws Exception
+    private void generate(Function function, List<MachineCode> byteCode) throws Exception
     {
         IBlock cBlock = function.head;
-        while(cBlock != null)
+        blockStack.push(cBlock);
+        alreadyVisitedBlocks[cBlock.getId()] = true;
+        while(!blockStack.isEmpty())
         {
-            cBlock = generate(cBlock, byteCode);
+            generate(blockStack.pop(), byteCode);
         }
     }
 
-    private IBlock generate(IBlock block, HashSet<MachineCode> byteCode) throws Exception
+    private void generate(IBlock block, List<MachineCode> byteCode) throws Exception
     {
         // Different types of block might have different functionalities. Handle this case.
         // return the next block for execution. Or use stack and execute by recursivly calling this function if necessary.
@@ -61,9 +70,54 @@ public class MachineCodeGenerator
         // Global variables are restored in VariableManager. You can check by 'isGlobalVariable(v)'.
         for (Instruction i : block.getInstructions())
         {
-            compute(i, byteCode);
+            if(i.coloredI != null && i.deleteMode == DeleteMode._NotDeleted)
+            {
+                compute(i.coloredI, byteCode, mCPc);
+                mCPc++;
+            }
         }
-        return block.getChild();
+
+        if(block instanceof IfBlock)
+        {
+            IfBlock ifBlock = (IfBlock)block;
+            if(ifBlock.getJoinBlock() != null && !alreadyVisitedBlocks[ifBlock.getJoinBlock().getId()])
+            {
+                blockStack.push(ifBlock.getJoinBlock());
+                alreadyVisitedBlocks[ifBlock.getJoinBlock().getId()] = true;
+            }
+            if(ifBlock.getElseBlock() != null && !alreadyVisitedBlocks[ifBlock.getElseBlock().getId()])
+            {
+                blockStack.push(ifBlock.getElseBlock());
+                alreadyVisitedBlocks[ifBlock.getElseBlock().getId()] = true;
+            }
+            if(ifBlock.getThenBlock() != null && !alreadyVisitedBlocks[ifBlock.getThenBlock().getId()])
+            {
+                blockStack.push(ifBlock.getThenBlock());
+                alreadyVisitedBlocks[ifBlock.getThenBlock().getId()] = true;
+            }
+        }
+        else if(block instanceof WhileBlock)
+        {
+            WhileBlock wBlock = (WhileBlock)block;
+            if(wBlock.getFollowBlock() != null && !alreadyVisitedBlocks[wBlock.getFollowBlock().getId()])
+            {
+                blockStack.push(wBlock.getFollowBlock());
+                alreadyVisitedBlocks[wBlock.getFollowBlock().getId()] = true;
+            }
+            if(wBlock.getLoopBlock() != null && !alreadyVisitedBlocks[wBlock.getLoopBlock().getId()])
+            {
+                blockStack.push(wBlock.getLoopBlock());
+                alreadyVisitedBlocks[wBlock.getLoopBlock().getId()] = true;
+            }
+        }
+        else
+        {
+            if(block.getChild() != null && !alreadyVisitedBlocks[block.getChild().getId()])
+            {
+                blockStack.push(block.getChild());
+                alreadyVisitedBlocks[block.getChild().getId()] = true;
+            }
+        }
     }
 
     private void load(IResult result)
@@ -71,26 +125,50 @@ public class MachineCodeGenerator
         
     }
 
-    private void compute(Instruction instruction, HashSet<MachineCode> byteCode) throws Exception
+    private void compute(Instruction instruction, List<MachineCode> byteCode, Integer mCPc) throws Exception
     {
         // After getting the instruction, I have to check the instruction id against the interference graph
         // and see which register it has been allocated to.
         // Also, I have to check whether the register allocated is a spilled register
         // (if the register no. is >100 then that is spilled)
         OperatorCode opcode = instruction.opcode;
-        // I have to check whether the values actually exist or not.
+
+        // This is needed to update the branch target instruction id to the actual ones used in Machine Code.
+        if(targetNum.containsKey(instruction.id))
+        {
+            if(targetNum.get(instruction.id).op == DLX.BSR)
+            {
+                Integer oldMCPc = targetNum.get(instruction.id).a;
+                targetNum.get(instruction.id).a = mCPc - oldMCPc;
+            }
+            else
+            {
+                Integer oldMCPc = targetNum.get(instruction.id).b;
+                targetNum.get(instruction.id).b = mCPc - oldMCPc;
+            }
+        }
+
         if(opcode == OperatorCode.add)
         {
             Integer mnemo = (instruction.operandY instanceof ConstantResult)
                             ? DLX.ADDI
                             : DLX.ADD;
             Integer regA = cfg.iGraph.get(instruction.id).color;
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            Integer regC = (instruction.operandY instanceof ConstantResult)
-                           ? ((ConstantResult)instruction.operandY).constant
-                           : ((RegisterResult)instruction.operandY).register;
-            MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
-            byteCode.add(bC);
+            if(instruction.operandX instanceof ConstantResult)
+            {
+                Integer res = ((ConstantResult)instruction.operandX).constant + ((ConstantResult)instruction.operandY).constant;
+                MachineCode bC = new MachineCode(DLX.ADDI, regA, 0, res);
+                byteCode.add(bC);
+            }
+            else
+            {
+                Integer regB = ((RegisterResult)instruction.operandX).register;
+                Integer regC = (instruction.operandY instanceof ConstantResult)
+                               ? ((ConstantResult)instruction.operandY).constant
+                               : ((RegisterResult)instruction.operandY).register;
+                MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
+                byteCode.add(bC);
+            }
         }
         else if(opcode == OperatorCode.sub)
         {
@@ -98,12 +176,21 @@ public class MachineCodeGenerator
                             ? DLX.SUBI
                             : DLX.SUB;
             Integer regA = cfg.iGraph.get(instruction.id).color;
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            Integer regC = (instruction.operandY instanceof ConstantResult)
-                           ? ((ConstantResult)instruction.operandY).constant
-                           : ((RegisterResult)instruction.operandY).register;
-            MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
-            byteCode.add(bC);
+            if(instruction.operandX instanceof ConstantResult)
+            {
+                Integer res = ((ConstantResult)instruction.operandX).constant - ((ConstantResult)instruction.operandY).constant;
+                MachineCode bC = new MachineCode(DLX.ADDI, regA, 0, res);
+                byteCode.add(bC);
+            }
+            else
+            {
+                Integer regB = ((RegisterResult)instruction.operandX).register;
+                Integer regC = (instruction.operandY instanceof ConstantResult)
+                               ? ((ConstantResult)instruction.operandY).constant
+                               : ((RegisterResult)instruction.operandY).register;
+                MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
+                byteCode.add(bC);
+            }
         }
         else if(opcode == OperatorCode.mul)
         {
@@ -111,12 +198,21 @@ public class MachineCodeGenerator
                             ? DLX.MULI
                             : DLX.MUL;
             Integer regA = cfg.iGraph.get(instruction.id).color;
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            Integer regC = (instruction.operandY instanceof ConstantResult)
-                           ? ((ConstantResult)instruction.operandY).constant
-                           : ((RegisterResult)instruction.operandY).register;
-            MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
-            byteCode.add(bC);
+            if(instruction.operandX instanceof ConstantResult)
+            {
+                Integer res = ((ConstantResult)instruction.operandX).constant * ((ConstantResult)instruction.operandY).constant;
+                MachineCode bC = new MachineCode(DLX.ADDI, regA, 0, res);
+                byteCode.add(bC);
+            }
+            else
+            {
+                Integer regB = ((RegisterResult)instruction.operandX).register;
+                Integer regC = (instruction.operandY instanceof ConstantResult)
+                               ? ((ConstantResult)instruction.operandY).constant
+                               : ((RegisterResult)instruction.operandY).register;
+                MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
+                byteCode.add(bC);
+            }
         }
         else if(opcode == OperatorCode.div)
         {
@@ -124,12 +220,21 @@ public class MachineCodeGenerator
                             ? DLX.DIVI
                             : DLX.DIV;
             Integer regA = cfg.iGraph.get(instruction.id).color;
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            Integer regC = (instruction.operandY instanceof ConstantResult)
-                           ? ((ConstantResult)instruction.operandY).constant
-                           : ((RegisterResult)instruction.operandY).register;
-            MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
-            byteCode.add(bC);
+            if(instruction.operandX instanceof ConstantResult)
+            {
+                Integer res = ((ConstantResult)instruction.operandX).constant / ((ConstantResult)instruction.operandY).constant;
+                MachineCode bC = new MachineCode(DLX.ADDI, regA, 0, res);
+                byteCode.add(bC);
+            }
+            else
+            {
+                Integer regB = ((RegisterResult)instruction.operandX).register;
+                Integer regC = (instruction.operandY instanceof ConstantResult)
+                               ? ((ConstantResult)instruction.operandY).constant
+                               : ((RegisterResult)instruction.operandY).register;
+                MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
+                byteCode.add(bC);
+            }
         }
         else if(opcode == OperatorCode.cmp)
         {
@@ -137,12 +242,29 @@ public class MachineCodeGenerator
                             ? DLX.CMPI
                             : DLX.CMP;
             Integer regA = cfg.iGraph.get(instruction.id).color;
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            Integer regC = (instruction.operandY instanceof ConstantResult)
-                           ? ((ConstantResult)instruction.operandY).constant
-                           : ((RegisterResult)instruction.operandY).register;
-            MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
-            byteCode.add(bC);
+            if(instruction.operandX instanceof ConstantResult)
+            {
+                Integer a = ((ConstantResult)instruction.operandX).constant - ((ConstantResult)instruction.operandY).constant;
+                if(a < 0)
+                {
+                    MachineCode bC = new MachineCode(DLX.ADDI, regA, 0, -1);
+                    byteCode.add(bC);
+                }
+                else if(a > 0)
+                {
+                    MachineCode bC = new MachineCode(DLX.ADDI, regA, 0, 1);
+                    byteCode.add(bC);
+                }
+            }
+            else
+            {
+                Integer regB = ((RegisterResult)instruction.operandX).register;
+                Integer regC = (instruction.operandY instanceof ConstantResult)
+                               ? ((ConstantResult)instruction.operandY).constant
+                               : ((RegisterResult)instruction.operandY).register;
+                MachineCode bC = new MachineCode(mnemo, regA, regB, regC);
+                byteCode.add(bC);
+            }
         }
         else if(opcode == OperatorCode.adda)
         {
@@ -182,90 +304,115 @@ public class MachineCodeGenerator
             }
             else // Normal move instruction
             {
-                Integer mnemo = (instruction.operandY instanceof ConstantResult)
-                                ? DLX.ADDI
-                                : DLX.ADD;
-                Integer regB = ((RegisterResult)instruction.operandX).register;
-                Integer regC = (instruction.operandY instanceof ConstantResult)
-                               ? ((ConstantResult)instruction.operandY).constant
-                               : ((RegisterResult)instruction.operandY).register;
-                MachineCode bC = new MachineCode(mnemo, regB, regC, 0);
-                byteCode.add(bC);
+                if(instruction.operandX instanceof ConstantResult)
+                {
+                    Integer mnemo = DLX.ADDI;
+                    Integer regB = ((ConstantResult)instruction.operandX).constant;
+                    Integer regC = ((RegisterResult)instruction.operandY).register;
+                    MachineCode bC = new MachineCode(mnemo, regC, 0, regB);
+                    byteCode.add(bC);
+                }
+                else
+                {
+                    Integer mnemo = DLX.ADD;
+                    Integer regB = ((RegisterResult)instruction.operandX).register;
+                    Integer regC = ((RegisterResult)instruction.operandY).register;
+                    MachineCode bC = new MachineCode(mnemo, regC, regB, 0);
+                    byteCode.add(bC);
+                }
             }
         }
         else if(opcode == OperatorCode.beq)
         {
-            IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
-            Integer c = targetBlock.getInstructions().get(0).id;
+            Integer c = mCPc;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BEQ, regB, c);
             byteCode.add(bC);
+            // Modify c afterwards.
+            Integer target = ((InstructionResult)instruction.operandY).iid;
+            targetNum.put(target, bC);
         }
         else if(opcode == OperatorCode.bne)
         {
-            IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
-            Integer c = targetBlock.getInstructions().get(0).id;
+            Integer c = mCPc;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BNE, regB, c);
             byteCode.add(bC);
+            // Modify c afterwards.
+            Integer target = ((InstructionResult)instruction.operandY).iid;
+            targetNum.put(target, bC);
         }
         else if(opcode == OperatorCode.blt)
         {
-            IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
-            Integer c = targetBlock.getInstructions().get(0).id;
+            Integer c = mCPc;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BLT, regB, c);
             byteCode.add(bC);
+            // Modify c afterwards.
+            Integer target = ((InstructionResult)instruction.operandY).iid;
+            targetNum.put(target, bC);
         }
         else if(opcode == OperatorCode.bge)
         {
-            IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
-            Integer c = targetBlock.getInstructions().get(0).id;
+            Integer c = mCPc;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BGE, regB, c);
             byteCode.add(bC);
+            // Modify c afterwards.
+            Integer target = ((InstructionResult)instruction.operandY).iid;
+            targetNum.put(target, bC);
         }
         else if(opcode == OperatorCode.ble)
         {
-            IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
-            Integer c = targetBlock.getInstructions().get(0).id;
+            Integer c = mCPc;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BLE, regB, c);
             byteCode.add(bC);
+            // Modify c afterwards.
+            Integer target = ((InstructionResult)instruction.operandY).iid;
+            targetNum.put(target, bC);
         }
         else if(opcode == OperatorCode.bgt)
         {
-            IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
-            Integer c = targetBlock.getInstructions().get(0).id;
+            Integer c = mCPc;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BGT, regB, c);
-            byteCode.add(bC);
+            // Modify c afterwards.
+            Integer target = ((InstructionResult)instruction.operandY).iid;
+            targetNum.put(target, bC);
         }
         else if(opcode == OperatorCode.bra)
         {
             // Distinguish function call from the others
             // because we have to do the prologue and epilogue stuff
             // but, how do we do this...? since the inputSym is no longer accessible
-            IBlock targetBlock = ((BranchResult)instruction.operandY).targetBlock;
-            Integer c = targetBlock.getInstructions().get(0).id;
+            Integer c = mCPc;
             MachineCode bC = new MachineCode(DLX.BSR, c);
             byteCode.add(bC);
+            // Modify c afterwards.
+            Integer target = ((InstructionResult)instruction.operandY).iid;
+            targetNum.put(target, bC);
         }
         else if(opcode == OperatorCode.read)
         {
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            MachineCode bC = new MachineCode(DLX.RDI, regB);
+            Integer regA = cfg.iGraph.get(instruction.id).color;
+            MachineCode bC = new MachineCode(DLX.RDI, regA);
             byteCode.add(bC);
         }
         else if(opcode == OperatorCode.write)
         {
-            Integer regA = ((RegisterResult)instruction.operandY).register;
-            MachineCode bC = new MachineCode(DLX.WRD, regA);
+            Integer regB = ((RegisterResult)instruction.operandX).register;
+            MachineCode bC = new MachineCode(DLX.WRD, regB);
             byteCode.add(bC);
         }
         else if(opcode == OperatorCode.writeNL)
         {
             MachineCode bC = new MachineCode(DLX.WRL);
+            byteCode.add(bC);
+        }
+        else if(opcode == OperatorCode.end)
+        {
+            MachineCode bC = new MachineCode(DLX.RET, 0);
             byteCode.add(bC);
         }
     }
