@@ -25,4 +25,5 @@ public interface IBlock
     public Instruction searchCommonSubexpression(Instruction instruction);
     public void addSubexpression(Instruction instruction);
     public DomTreeNode getDomTreeNode();
+    public void addKill(ArrayList<Instruction> kill);
 }

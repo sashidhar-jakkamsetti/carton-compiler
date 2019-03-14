@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import dataStructures.Instructions.Instruction;
 import dataStructures.Operator.OperatorCode;
+import dataStructures.Results.VariableResult;
 
 public class DomTreeNode
 {
@@ -27,6 +28,18 @@ public class DomTreeNode
     public void setParent(DomTreeNode node)
     {
         parent = node;
+    }
+
+    public void addKill(ArrayList<Instruction> kill)
+    {
+        if(!instructions.containsKey(OperatorCode.load))
+        {
+            instructions.put(OperatorCode.load, new ArrayList<Instruction>());
+        }
+        for (Instruction k : kill) 
+        {
+            instructions.get(OperatorCode.load).add(0, k.clone());
+        }
     }
 
     public void add(Instruction instruction)
@@ -60,20 +73,51 @@ public class DomTreeNode
 
     public Instruction find(Instruction instruction)
     {
-        if(instruction.opcode != OperatorCode.store && instructions.containsKey(instruction.opcode))
+        if(instruction.opcode == OperatorCode.store)
+        {
+            return new Instruction(-2);
+        }
+
+        if(instruction.opcode == OperatorCode.load)
+        {
+            if(instructions.containsKey(OperatorCode.load))
+            {
+                for(Integer idx = instructions.get(instruction.opcode).size() - 1; idx >= 0; idx--)
+                {
+                    if(instructions.get(OperatorCode.load).get(idx).opcode == OperatorCode.store)
+                    {
+                        Instruction investigator = instructions.get(OperatorCode.load).get(idx);
+                        if(instruction.operandX instanceof VariableResult && investigator.operandX instanceof VariableResult)
+                        {
+                            VariableResult xR = (VariableResult)instruction.operandX;
+                            VariableResult yR = (VariableResult)investigator.operandX;
+    
+                            if(xR.isArray && yR.isArray && xR.variable.address == yR.variable.address)
+                            {
+                                return new Instruction(-2);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(instructions.get(OperatorCode.load).get(idx).operandY.equals(instruction.operandY))
+                        {
+                            return instructions.get(instruction.opcode).get(idx).clone();
+                        }
+                    }
+                }
+            }
+            
+            return new Instruction(-1);
+        }
+
+        if(instructions.containsKey(instruction.opcode))
         {
             for(Integer idx = instructions.get(instruction.opcode).size() - 1; idx >= 0; idx--)
             {
-                // TODO: Kill not working
-                if(instruction.opcode == OperatorCode.load 
-                        && instructions.get(instruction.opcode).get(idx).opcode == OperatorCode.store)
-                {
-                    return new Instruction(-2);
-                }
-                
                 if(instructions.get(instruction.opcode).get(idx).equals(instruction))
                 {
-                    return instructions.get(instruction.opcode).get(idx);
+                    return instructions.get(instruction.opcode).get(idx).clone();
                 }
             }
         }

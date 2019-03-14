@@ -96,6 +96,14 @@ public class Instruction
         }
     }
 
+    public void setExternal(Integer id, OperatorCode opCode, IResult x, IResult y)
+    {
+        this.id = id;
+        opcode = opCode;
+        operandX = x;
+        operandY = y;
+    }
+
     public void setColoredInstruction(HashMap<Integer, LiveRange> iGraph)
     {
         setColoredInstructionOperand(iGraph, true);
