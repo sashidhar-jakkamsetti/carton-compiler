@@ -20,7 +20,8 @@ public class MachineCodeGenerator
     private Stack<IBlock> blockStack;
     private boolean[] alreadyVisitedBlocks;
     private HashMap<Integer, MachineCode> targetNum;
-    private Integer mCPc;
+    private HashMap<Integer, Integer> PC2MCPC;
+    private Integer MCPC;
 
     public MachineCodeGenerator(ControlFlowGraph cfg)
     {
@@ -30,7 +31,8 @@ public class MachineCodeGenerator
         mCode = new MachineCode[DLX.MemSize];
         mCodeCounter = 0;
         targetNum = new HashMap<Integer, MachineCode>();
-        mCPc = 0;
+        MCPC = 0;
+        PC2MCPC = new HashMap<Integer, Integer>();
     }
 
     public void generate() throws Exception
@@ -72,8 +74,8 @@ public class MachineCodeGenerator
         {
             if(i.coloredI != null && i.deleteMode == DeleteMode._NotDeleted)
             {
-                compute(i.coloredI, byteCode, mCPc);
-                mCPc++;
+                compute(i.coloredI, byteCode, MCPC);
+                MCPC++;
             }
         }
 
@@ -125,7 +127,7 @@ public class MachineCodeGenerator
         
     }
 
-    private void compute(Instruction instruction, List<MachineCode> byteCode, Integer mCPc) throws Exception
+    private void compute(Instruction instruction, List<MachineCode> byteCode, Integer MCPC) throws Exception
     {
         // After getting the instruction, I have to check the instruction id against the interference graph
         // and see which register it has been allocated to.
@@ -133,18 +135,20 @@ public class MachineCodeGenerator
         // (if the register no. is >100 then that is spilled)
         OperatorCode opcode = instruction.opcode;
 
+        PC2MCPC.put(instruction.id, MCPC);
+
         // This is needed to update the branch target instruction id to the actual ones used in Machine Code.
         if(targetNum.containsKey(instruction.id))
         {
             if(targetNum.get(instruction.id).op == DLX.BSR)
             {
                 Integer oldMCPc = targetNum.get(instruction.id).a;
-                targetNum.get(instruction.id).a = mCPc - oldMCPc;
+                targetNum.get(instruction.id).a = MCPC - oldMCPc;
             }
             else
             {
                 Integer oldMCPc = targetNum.get(instruction.id).b;
-                targetNum.get(instruction.id).b = mCPc - oldMCPc;
+                targetNum.get(instruction.id).b = MCPC - oldMCPc;
             }
         }
 
@@ -242,7 +246,7 @@ public class MachineCodeGenerator
                             ? DLX.CMPI
                             : DLX.CMP;
             Integer regA = cfg.iGraph.get(instruction.id).color;
-            if(instruction.operandX instanceof ConstantResult)
+            if(instruction.operandX instanceof ConstantResult && instruction.operandY instanceof ConstantResult)
             {
                 Integer a = ((ConstantResult)instruction.operandX).constant - ((ConstantResult)instruction.operandY).constant;
                 if(a < 0)
@@ -258,7 +262,9 @@ public class MachineCodeGenerator
             }
             else
             {
-                Integer regB = ((RegisterResult)instruction.operandX).register;
+                Integer regB = (instruction.operandX instanceof ConstantResult)
+                               ? ((ConstantResult)instruction.operandX).constant
+                               : ((RegisterResult)instruction.operandX).register;
                 Integer regC = (instruction.operandY instanceof ConstantResult)
                                ? ((ConstantResult)instruction.operandY).constant
                                : ((RegisterResult)instruction.operandY).register;
@@ -324,7 +330,7 @@ public class MachineCodeGenerator
         }
         else if(opcode == OperatorCode.beq)
         {
-            Integer c = mCPc;
+            Integer c = MCPC;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BEQ, regB, c);
             byteCode.add(bC);
@@ -334,7 +340,7 @@ public class MachineCodeGenerator
         }
         else if(opcode == OperatorCode.bne)
         {
-            Integer c = mCPc;
+            Integer c = MCPC;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BNE, regB, c);
             byteCode.add(bC);
@@ -344,7 +350,7 @@ public class MachineCodeGenerator
         }
         else if(opcode == OperatorCode.blt)
         {
-            Integer c = mCPc;
+            Integer c = MCPC;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BLT, regB, c);
             byteCode.add(bC);
@@ -354,7 +360,7 @@ public class MachineCodeGenerator
         }
         else if(opcode == OperatorCode.bge)
         {
-            Integer c = mCPc;
+            Integer c = MCPC;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BGE, regB, c);
             byteCode.add(bC);
@@ -364,7 +370,7 @@ public class MachineCodeGenerator
         }
         else if(opcode == OperatorCode.ble)
         {
-            Integer c = mCPc;
+            Integer c = MCPC;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BLE, regB, c);
             byteCode.add(bC);
@@ -374,7 +380,7 @@ public class MachineCodeGenerator
         }
         else if(opcode == OperatorCode.bgt)
         {
-            Integer c = mCPc;
+            Integer c = MCPC;
             Integer regB = ((RegisterResult)instruction.operandX).register;
             MachineCode bC = new MachineCode(DLX.BGT, regB, c);
             // Modify c afterwards.
@@ -386,12 +392,19 @@ public class MachineCodeGenerator
             // Distinguish function call from the others
             // because we have to do the prologue and epilogue stuff
             // but, how do we do this...? since the inputSym is no longer accessible
-            Integer c = mCPc;
+            Integer c = MCPC;
             MachineCode bC = new MachineCode(DLX.BSR, c);
-            byteCode.add(bC);
             // Modify c afterwards.
             Integer target = ((InstructionResult)instruction.operandY).iid;
-            targetNum.put(target, bC);
+            if(target > instruction.id) // if statement (we have to jump forward)
+            {
+                targetNum.put(target, bC);
+            }
+            else // while statement (we have to jump backward)
+            {
+                bC = new MachineCode(DLX.BSR, PC2MCPC.get(target) - MCPC);
+            }
+            byteCode.add(bC);
         }
         else if(opcode == OperatorCode.read)
         {
