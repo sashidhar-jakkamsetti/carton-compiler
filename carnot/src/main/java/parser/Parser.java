@@ -509,11 +509,11 @@ public class Parser
         if(inputSym.isSameType(TokenType.ifToken))
         {
             next();
-            IfBlock iBlock = cfg.initializeIfBlock();
+            IfBlock iBlock = cfg.initializeIfBlock(function);
             iBlock.setParent(cBlock);
             cBlock.setChild(iBlock);
 
-            jBlock = cfg.initializeJoinBlock();
+            jBlock = cfg.initializeJoinBlock(function);
             iBlock.setJoinBlock(jBlock);
             jBlock.setParent(iBlock);
 
@@ -539,7 +539,7 @@ public class Parser
                 bResult2.condition = inputSym;
 
                 next();
-                Block tBlock = cfg.initializeBlock();
+                Block tBlock = cfg.initializeBlock(function);
                 iBlock.setThenBlock(tBlock);
                 tBlock.setParent(iBlock);
 
@@ -579,7 +579,7 @@ public class Parser
                 if(inputSym.isSameType(TokenType.elseToken))
                 {
                     next();
-                    Block eBlock = cfg.initializeBlock();
+                    Block eBlock = cfg.initializeBlock(function);
                     iBlock.setElseBlock(eBlock);
                     eBlock.setParent(iBlock);
                     iBlock.fixupBranch(bResult.fixuplocation, eBlock);
@@ -670,11 +670,11 @@ public class Parser
         if(inputSym.isSameType(TokenType.whileToken))
         {
             next();
-            WhileBlock wBlock = cfg.initializeWhileBlock();
+            WhileBlock wBlock = cfg.initializeWhileBlock(function);
             wBlock.setParent(cBlock);
             cBlock.setChild(wBlock);
 
-            IBlock lBlock = cfg.initializeBlock();
+            IBlock lBlock = cfg.initializeBlock(function);
             wBlock.setLoopBlock(lBlock);
             lBlock.setParent(wBlock);
 
@@ -749,7 +749,7 @@ public class Parser
 
                     wBlock.updatePhiVarOccurances(optimizeOut);
                     wBlock.optimizeWhilePhis(optimizeOut);
-                    fBlock = cfg.initializeBlock();
+                    fBlock = cfg.initializeBlock(function);
                     fBlock.setParent(wBlock);
                     wBlock.setFollowBlock(fBlock);
                     wBlock.fixupBranch(bResult.fixuplocation, fBlock);
@@ -1043,7 +1043,7 @@ public class Parser
                     error(new IncorrectSyntaxException("Function already exists."));
                     return;
                 }
-                function.head = (Block)cfg.initializeBlock();
+                function.head = (Block)cfg.initializeBlock(function);
                 cfg.addFunction(function);
 
                 next();

@@ -13,6 +13,7 @@ public class Function
 
     public Block head;
     public Block tail;
+    public Integer lastMCode;
     public VariableManager vManager;
     public InstructionResult returnInstruction;
     private ArrayList<IResult> parameters;

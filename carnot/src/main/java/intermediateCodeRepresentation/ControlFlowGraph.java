@@ -23,7 +23,7 @@ public class ControlFlowGraph
     public ControlFlowGraph()
     {
         bc = Constants.BLOCK_START_COUNTER;
-        head = new Block(bc++);
+        head = new Block(bc++, null);
         blocks = new ArrayList<Block>();
         functions = new ArrayList<Function>();
         iGraph = new HashMap<Integer, LiveRange>();
@@ -32,33 +32,33 @@ public class ControlFlowGraph
         blocks.add(head);
     }
 
-    public Block initializeBlock()
+    public Block initializeBlock(Function function)
     {
-        Block block = new Block(bc++);
+        Block block = new Block(bc++, function);
         blocks.add(block);
 
         return block;
     }
 
-    public IfBlock initializeIfBlock()
+    public IfBlock initializeIfBlock(Function function)
     {
-        IfBlock block = new IfBlock(bc++);
+        IfBlock block = new IfBlock(bc++, function);
         blocks.add(block);
 
         return block;
     }
 
-    public JoinBlock initializeJoinBlock()
+    public JoinBlock initializeJoinBlock(Function function)
     {
-        JoinBlock block = new JoinBlock(bc++);
+        JoinBlock block = new JoinBlock(bc++, function);
         blocks.add(block);
 
         return block;
     }
 
-    public WhileBlock initializeWhileBlock()
+    public WhileBlock initializeWhileBlock(Function function)
     {
-        WhileBlock block = new WhileBlock(bc++);
+        WhileBlock block = new WhileBlock(bc++, function);
         blocks.add(block);
 
         return block;

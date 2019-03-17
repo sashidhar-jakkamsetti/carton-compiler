@@ -1,6 +1,7 @@
 package dataStructures.Blocks;
 
 import dataStructures.Results.*;
+import dataStructures.Function;
 import dataStructures.Instructions.*;
 
 public class IfBlock extends Block implements IBlock
@@ -9,9 +10,9 @@ public class IfBlock extends Block implements IBlock
     private Block elseBlock;
     private JoinBlock joinBlock;
 
-    public IfBlock(Integer id)
+    public IfBlock(Integer id, Function function)
     {
-        super(id);
+        super(id, function);
         thenBlock = null;
         elseBlock = null;
         joinBlock = null;

@@ -16,9 +16,9 @@ public class JoinBlock extends Block implements IBlock
 
     private PhiManager phiManager;
 
-    public JoinBlock(Integer id)
+    public JoinBlock(Integer id, Function function)
     {
-        super(id);
+        super(id, function);
         thenBlock = null;
         elseBlock = null;
         phiManager = new PhiManager();

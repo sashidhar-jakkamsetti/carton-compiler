@@ -3,7 +3,6 @@ package dataStructures.Blocks;
 import dataStructures.*;
 import dataStructures.Instructions.*;
 import dataStructures.Instructions.Instruction.DeleteMode;
-import dataStructures.Operator.OperatorCode;
 
 import java.util.*;
 
@@ -16,10 +15,12 @@ public class Block implements IBlock
     protected HashMap<Integer, Integer> globalSsa;
     protected HashMap<Integer, Integer> localSsa;
     protected DomTreeNode dTreeNode;
+    public Function belongsTo;
 
-    public Block(Integer id)
+    public Block(Integer id, Function function)
     {
         this.id = id;
+        this.belongsTo = function;
         instructions = new ArrayList<Instruction>();
         parent = null;
         child = null;

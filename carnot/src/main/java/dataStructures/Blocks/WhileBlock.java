@@ -14,9 +14,9 @@ public class WhileBlock extends Block implements IBlock
 
     private PhiManager phiManager;
 
-    public WhileBlock(Integer id)
+    public WhileBlock(Integer id, Function function)
     {
-        super(id);
+        super(id, function);
         loopBlock = null;
         followBlock = null;
         phiManager = new PhiManager();

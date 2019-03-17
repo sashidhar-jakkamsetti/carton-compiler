@@ -10,7 +10,6 @@ import utility.Constants;
 public class VariableManager
 {
     private HashSet<Integer> variables;
-    private HashSet<Integer> globalVariables;
     private HashMap<Integer, ArrayVar> arrays;
     private HashMap<Integer, Integer> ssaMap;
     private HashMap<Integer, HashMap<Integer, ArrayList<Integer>>> defUseChain;
@@ -105,16 +104,6 @@ public class VariableManager
     public void copySsaTo(HashMap<Integer, Integer> copy)
     {
         copy.putAll(ssaMap);
-    }
-
-    public void setGlobalVariables(HashSet<Integer> gVariables)
-    {
-        globalVariables = gVariables;
-    }
-
-    public Boolean isGlobalVariable(Integer variable)
-    {
-        return globalVariables.contains(variable);
     }
 
     public void updateDefUseChain(Integer variable, Integer defInstruction, Integer useInstruction)

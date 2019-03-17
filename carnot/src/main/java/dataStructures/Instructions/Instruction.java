@@ -137,20 +137,16 @@ public class Instruction
                 }
                 else if(akaI.operandY instanceof BranchResult)
                 {
-                    // buggy.
                     Boolean isSet = false;
                     IBlock nBlock = ((BranchResult)akaI.operandY).targetBlock;
                     while(!isSet && nBlock != null)
                     {
-                        ArrayList<Instruction> targetInstructions = 
-                                        (ArrayList<Instruction>)nBlock.getInstructions();
-                        for (int i = 0; i < targetInstructions.size(); i++) 
+                        for (Instruction first : nBlock.getInstructions()) 
                         {
-                            Instruction instruction = targetInstructions.get(i);
-                            if(instruction.deleteMode == DeleteMode._NotDeleted)
+                            if(first.deleteMode == DeleteMode._NotDeleted)
                             {
                                 isSet = true;
-                                coloredI.operandY = new InstructionResult(instruction.id);
+                                coloredI.operandY = new InstructionResult(first.id);
                                 break;
                             }
                         }
