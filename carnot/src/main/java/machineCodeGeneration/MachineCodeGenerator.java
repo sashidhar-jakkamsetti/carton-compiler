@@ -49,6 +49,8 @@ public class MachineCodeGenerator
     {
         // Set stack pointer
         mCode[mCodeCounter++] = new MachineCode(pc++, DLX.ADDI, Constants.R_STACK_POINTER, Constants.R0, 0);
+        // Set global variable pointer
+        mCode[mCodeCounter++] = new MachineCode(pc++, DLX.ADDI, Constants.R_GLOBAL_POINTER, Constants.R0, Constants.GLOBAL_VARIABLE_ADDRESS_OFFSET);
 
         Function main = new Function(cfg.head, cfg.tail);
         main.vManager = cfg.mVariableManager;
@@ -213,18 +215,11 @@ public class MachineCodeGenerator
         }
         else if(instruction.opcode == OperatorCode.load)
         {
-            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 1, false, bC);
-            bC.add(new MachineCode(pc++, DLX.LDW, regA, regB, 0));
+            bC.addAll(computeLoad(instruction, regA));
         }
         else if(instruction.opcode == OperatorCode.store)
         {
-            Integer opcode = (instruction.operandY instanceof ConstantResult)? DLX.STX : DLX.STW;
-            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
-            Integer regC = (instruction.operandY instanceof ConstantResult)? 
-                                ((ConstantResult)instruction.operandY).constant : 
-                                checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
-            
-            bC.add(new MachineCode(pc++, opcode, regA, regB, regC));
+            bC.addAll(computeStore(instruction));
         }
         else if(instruction.opcode == OperatorCode.move)
         {
@@ -279,7 +274,60 @@ public class MachineCodeGenerator
         return bC;
     }
 
-    // Handle: global variables.
+    private ArrayList<MachineCode> computeLoad(Instruction instruction, int regA) throws Exception
+    {
+        ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
+
+        if(instruction.operandY instanceof VariableResult && ((VariableResult)instruction.operandY).variable.version == Constants.GLOBAL_VARIABLE_VERSION)
+        {
+            Variable v = ((VariableResult)instruction.operandY).variable;
+            bC.add(new MachineCode(pc++, DLX.LDW, regA, Constants.R_GLOBAL_POINTER, -v.address));
+        }
+        else if(instruction.operandY instanceof RegisterResult)
+        {
+            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 1, false, bC);
+            bC.add(new MachineCode(pc++, DLX.LDW, regA, regB, 0));
+        }
+        
+        return bC;
+    }
+
+    private ArrayList<MachineCode> computeStore(Instruction instruction) throws Exception
+    {
+        ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
+
+        if(instruction.operandX instanceof VariableResult && ((VariableResult)instruction.operandX).variable.version == Constants.GLOBAL_VARIABLE_VERSION)
+        {
+            Variable v = ((VariableResult)instruction.operandX).variable;
+            if(instruction.operandY instanceof ConstantResult)
+            {
+                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandY).constant));
+                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, Constants.R_GLOBAL_POINTER, -v.address));
+            }
+            else
+            {
+                Integer regA = checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
+                bC.add(new MachineCode(pc++, DLX.STW, regA, Constants.R_GLOBAL_POINTER, -v.address));
+            }
+        }
+        else if(instruction.operandX instanceof RegisterResult)
+        {
+            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
+            if(instruction.operandY instanceof ConstantResult)
+            {
+                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandY).constant));
+                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, regB, 0));
+            }
+            else
+            {
+                Integer regA = checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
+                bC.add(new MachineCode(pc++, DLX.STW, regA, regB, 0));
+            }
+        }
+        
+        return bC;
+    }
+
     private ArrayList<MachineCode> computeMove(Instruction instruction) throws Exception
     {
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();

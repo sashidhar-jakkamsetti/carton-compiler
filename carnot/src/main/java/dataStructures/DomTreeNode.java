@@ -6,6 +6,7 @@ import java.util.HashMap;
 import dataStructures.Instructions.Instruction;
 import dataStructures.Operator.OperatorCode;
 import dataStructures.Results.VariableResult;
+import utility.Constants;
 
 public class DomTreeNode
 {
@@ -102,7 +103,11 @@ public class DomTreeNode
                     {
                         if(instructions.get(OperatorCode.load).get(idx).operandY.equals(instruction.operandY))
                         {
-                            return instructions.get(instruction.opcode).get(idx).clone();
+                            if(instruction.operandY instanceof VariableResult 
+                                    && ((VariableResult)instruction.operandY).variable.version != Constants.GLOBAL_VARIABLE_VERSION)
+                            {
+                                return instructions.get(instruction.opcode).get(idx).clone();
+                            }
                         }
                     }
                 }
