@@ -1,6 +1,6 @@
 package machineCodeGeneration;
 
-import java.util.List;
+import java.util.*;
 
 import dataStructures.*;
 import dataStructures.Blocks.*;
@@ -10,7 +10,7 @@ import dataStructures.Results.*;
 import dataStructures.Operator.*;
 import intermediateCodeRepresentation.ControlFlowGraph;
 import machineCodeGeneration.DLX;
-import java.util.*;
+import utility.Constants;
 
 public class MachineCodeGenerator 
 {
@@ -20,27 +20,36 @@ public class MachineCodeGenerator
     private HashMap<Integer, IResult> fixBranch;
     private HashMap<Integer, Integer> id2pc;
     private Integer pc;
+    private Integer regSize;
 
     private HashSet<Integer> returnIds;
-    private HashSet<Integer> braFuncIds;
+    private HashMap<Integer, Integer> funcFirst;
+    private HashMap<Integer, Integer> params2Func;
 
-    public MachineCodeGenerator(ControlFlowGraph cfg)
+    private Boolean pushedLocals;
+
+    public MachineCodeGenerator(ControlFlowGraph cfg, Integer regSize)
     {
         this.cfg = cfg;
         mCode = new MachineCode[DLX.MemSize];
         mCodeCounter = 0;
         fixBranch = new HashMap<Integer, IResult>();
         pc = 0;
+        this.regSize = regSize;
         id2pc = new HashMap<Integer, Integer>();
 
-        returnIds = new HashSet<Integer>();
-        storeAllReturns();
-        braFuncIds = new HashSet<Integer>();
-        storeAllFuncJumps();
+        returnIds = cfg.getAllReturns();
+        funcFirst = cfg.getAllFuncFirsts();
+        params2Func = cfg.getParams2Func();
+
+        pushedLocals = false;
     }
 
     public void generate() throws Exception
     {
+        // Set stack pointer
+        mCode[mCodeCounter++] = new MachineCode(pc++, DLX.ADDI, Constants.R_STACK_POINTER, Constants.R0, 0);
+
         Function main = new Function(cfg.head, cfg.tail);
         main.vManager = cfg.mVariableManager;
 
@@ -60,11 +69,24 @@ public class MachineCodeGenerator
     private void generate(Function function, ArrayList<MachineCode> byteCode) throws Exception
     {
         IBlock cBlock = function.head;
+
+        // Set frame pointer
+        byteCode.add(new MachineCode(pc++, DLX.ADDI, Constants.R_FRAME_POINTER, Constants.R_STACK_POINTER, 0));
+
         while(cBlock != null)
         {
             cBlock = generate(cBlock, byteCode);
         }
         function.lastMCode = pc;
+
+        // Epilog
+        epilog(byteCode);
+
+        // Cleanup formals
+        popFormals(byteCode, function);
+
+        // Return to the caller
+        byteCode.add(new MachineCode(pc++, DLX.RET, Constants.R_RETURN_ADDRESS));
     }
 
     private IBlock generate(IBlock block, ArrayList<MachineCode> byteCode) throws Exception
@@ -152,163 +174,268 @@ public class MachineCodeGenerator
         {
             if(i.coloredI != null && i.deleteMode == DeleteMode._NotDeleted)
             {
-                byteCode.addAll(compute(i.coloredI));
                 id2pc.put(i.id, pc);
-                pc++;
+                byteCode.addAll(compute(i.coloredI));
             }
         }
     }
 
+    // Handle: spill regs
     private ArrayList<MachineCode> compute(Instruction instruction) throws Exception
     {
-        Integer regA = 0;
+        int regA = 0;
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
         if(cfg.iGraph.containsKey(instruction.id))
         {
-            regA = cfg.iGraph.get(instruction.id).color;
+            regA = proxyRegister(cfg.iGraph.get(instruction.id).color, 0, true, bC);
         }
 
         if(instruction.opcode == OperatorCode.add || instruction.opcode == OperatorCode.adda)
         {
-            bC.add(computeArthimetic(instruction, DLX.ADD, regA));
+            bC.addAll(computeArthimetic(instruction, DLX.ADD, regA));
         }
         else if(instruction.opcode == OperatorCode.sub)
         {
-            bC.add(computeArthimetic(instruction, DLX.SUB, regA));
+            bC.addAll(computeArthimetic(instruction, DLX.SUB, regA));
         }
         else if(instruction.opcode == OperatorCode.mul)
         {
-            bC.add(computeArthimetic(instruction, DLX.MUL, regA));
+            bC.addAll(computeArthimetic(instruction, DLX.MUL, regA));
         }
         else if(instruction.opcode == OperatorCode.div)
         {
-            bC.add(computeArthimetic(instruction, DLX.DIV, regA));
+            bC.addAll(computeArthimetic(instruction, DLX.DIV, regA));
         }
         else if(instruction.opcode == OperatorCode.cmp)
         {
-            bC.add(computeArthimetic(instruction, DLX.CMP, regA));
+            bC.addAll(computeArthimetic(instruction, DLX.CMP, regA));
         }
         else if(instruction.opcode == OperatorCode.load)
         {
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            bC.add(new MachineCode(pc, DLX.LDW, regA, regB, 0));
+            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 1, false, bC);
+            bC.add(new MachineCode(pc++, DLX.LDW, regA, regB, 0));
         }
         else if(instruction.opcode == OperatorCode.store)
         {
             Integer opcode = (instruction.operandY instanceof ConstantResult)? DLX.STX : DLX.STW;
-            Integer regB = ((RegisterResult)instruction.operandX).register;
+            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
             Integer regC = (instruction.operandY instanceof ConstantResult)? 
                                 ((ConstantResult)instruction.operandY).constant : 
-                                    ((RegisterResult)instruction.operandY).register;
-            bC.add(new MachineCode(pc, opcode, regA, regB, regC));
+                                proxyRegister(((RegisterResult)instruction.operandY).register, 2, false, bC);
+            
+            bC.add(new MachineCode(pc++, opcode, regA, regB, regC));
         }
         else if(instruction.opcode == OperatorCode.move)
         {
-            bC.addAll(computeMove(instruction, regA));
+            bC.addAll(computeMove(instruction));
         }
         else if(instruction.opcode == OperatorCode.beq)
         {
-            bC.add(computeBranch(instruction, DLX.BEQ, regA));
+            bC.addAll(computeBranch(instruction, DLX.BEQ));
         }
         else if(instruction.opcode == OperatorCode.bne)
         {
-            bC.add(computeBranch(instruction, DLX.BNE, regA));
+            bC.addAll(computeBranch(instruction, DLX.BNE));
         }
         else if(instruction.opcode == OperatorCode.blt)
         {
-            bC.add(computeBranch(instruction, DLX.BLT, regA));
+            bC.addAll(computeBranch(instruction, DLX.BLT));
         }
         else if(instruction.opcode == OperatorCode.bge)
         {
-            bC.add(computeBranch(instruction, DLX.BGE, regA));
+            bC.addAll(computeBranch(instruction, DLX.BGE));
         }
         else if(instruction.opcode == OperatorCode.ble)
         {
-            bC.add(computeBranch(instruction, DLX.BLE, regA));
+            bC.addAll(computeBranch(instruction, DLX.BLE));
         }
         else if(instruction.opcode == OperatorCode.bgt)
         {
-            bC.add(computeBranch(instruction, DLX.BGT, regA));
+            bC.addAll(computeBranch(instruction, DLX.BGT));
         }
         else if(instruction.opcode == OperatorCode.bra)
         {
-            bC.addAll(computeForward(instruction, regA));
+            bC.addAll(computeForward(instruction));
         }
         else if(instruction.opcode == OperatorCode.read)
         {
-            bC.add(new MachineCode(pc, DLX.RDI, regA));
+            bC.add(new MachineCode(pc++, DLX.RDI, regA));
         }
         else if(instruction.opcode == OperatorCode.write)
         {
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            bC.add(new MachineCode(pc, DLX.WRD, regB));
+            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+            bC.add(new MachineCode(pc++, DLX.WRD, regB));
         }
         else if(instruction.opcode == OperatorCode.writeNL)
         {
-            bC.add(new MachineCode(pc, DLX.WRL));
+            bC.add(new MachineCode(pc++, DLX.WRL));
         }
         else if(instruction.opcode == OperatorCode.end)
         {
-            bC.add(new MachineCode(pc, DLX.RET, 0));
+            bC.add(new MachineCode(pc++, DLX.RET, 0));
         }
 
         return bC;
     }
 
-    private ArrayList<MachineCode> computeMove(Instruction instruction, Integer regA)
+    // Handle: global variables.
+    private ArrayList<MachineCode> computeMove(Instruction instruction) throws Exception
     {
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
-        if(instruction.id == instruction.operandY.getIid())
-        {
 
-        }
-        else
+        // Register moves
+        if(instruction.operandY instanceof RegisterResult && instruction.operandX instanceof RegisterResult)
         {
+            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 0, true, bC);
+            int regC = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
+            bC.add(new MachineCode(pc++, DLX.ADD, regB, Constants.R0, regC));
+        }
+        else if(instruction.operandY instanceof RegisterResult && instruction.operandX instanceof ConstantResult)
+        {
+            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 0, true, bC);
+            Integer c = ((ConstantResult)instruction.operandX).constant;
+            bC.add(new MachineCode(pc++, DLX.ADDI, regB, Constants.R0, c));
+        }
+
+        // Return instruction
+        if(instruction.operandY instanceof InstructionResult && returnIds.contains(instruction.operandY.getIid()))
+        {
+            Function function = cfg.getFunction(funcFirst.get(instruction.operandY.getIid()));
+
+            // Epilog
+            epilog(bC);
+
+            // Cleanup formals
+            popFormals(bC, function);
+
+            // Place return result
+            if(function.returnInstruction != null && function.returnInstruction.getIid() > 0 
+                        && instruction.operandX instanceof RegisterResult)
+            {
+                int returnReg = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+                bC.add(new MachineCode(pc++, DLX.PSH, returnReg, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+            }
+
+            // Return to the caller
+            bC.add(new MachineCode(pc++, DLX.RET, Constants.R_RETURN_ADDRESS));
+        }
+
+        if(instruction.operandY instanceof VariableResult 
+                && ((VariableResult)instruction.operandY).variable.version == Constants.FORMAL_PARAMETER_VERSION)
+        {
+            // Store locals
+            if(!pushedLocals)
+            {
+                pushLocals(bC);
+                pushedLocals = true;
+            }
+
+            // Push formal
             if(instruction.operandX instanceof ConstantResult)
             {
-                Integer mnemo = DLX.ADDI;
-                Integer b = ((ConstantResult)instruction.operandX).constant;
-                Integer regC = ((RegisterResult)instruction.operandY).register;
-                bC .add(new MachineCode(pc, mnemo, regC, 0, b));
+                Integer a = ((ConstantResult)instruction.operandX).constant;
+                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, a));
+                bC.add(new MachineCode(pc++, DLX.PSH, Constants.R_TEMP, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+            }
+            else if(instruction.operandX instanceof RegisterResult)
+            {
+                int regA = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+                bC.add(new MachineCode(pc++, DLX.PSH, regA, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+            }
+        }
+        else if(instruction.operandX instanceof VariableResult 
+                    && ((VariableResult)instruction.operandX).variable.version == Constants.FORMAL_PARAMETER_VERSION)
+        {
+            // Load formal
+            Variable v = ((VariableResult)instruction.operandX).variable;
+            if(params2Func.containsKey(v.address))
+            {
+                Function function = cfg.getFunction(params2Func.get(v.address));
+                for(Integer pos = 0; pos < function.getParameters().size(); pos++)
+                {
+                    if(function.getParameter(pos) instanceof VariableResult)
+                    {
+                        Variable v1 = ((VariableResult)function.getParameter(pos)).variable;
+                        if(v1.address == v.address)
+                        {
+                            Integer paramLoc = 2 * Constants.BYTE_SIZE + function.getParameters().size() - 1 - pos;
+                            if(instruction.operandY instanceof RegisterResult)
+                            {
+                                int regA = proxyRegister(((RegisterResult)instruction.operandY).register, 0, true, bC);
+                                bC.add(new MachineCode(pc++, DLX.LDW, regA, Constants.R_STACK_POINTER, paramLoc));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return bC;
+    }
+
+    private ArrayList<MachineCode> computeForward(Instruction instruction) throws Exception
+    {
+        ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
+
+        // Function call
+        if(instruction.operandY instanceof InstructionResult && funcFirst.containsKey(instruction.operandY.getIid()))
+        {
+            Function function = cfg.getFunction(funcFirst.get(instruction.operandY.getIid()));
+
+            // Store locals
+            if(function.getParameters().size() == 0)
+            {
+                pushLocals(bC);
             }
             else
             {
-                Integer mnemo = DLX.ADD;
-                Integer regB = ((RegisterResult)instruction.operandX).register;
-                Integer regC = ((RegisterResult)instruction.operandY).register;
-                bC .add(new MachineCode(pc, mnemo, regC, regB, 0));
+                pushedLocals = false;
             }
+
+            // Prolog
+            prolog(bC);
+            fixBranch.put(pc, instruction.operandY);
+
+            // Jump to the callee
+            bC.add(new MachineCode(pc++, DLX.JSR, pc));
+
+            // Pickup return result
+            if(function.returnInstruction != null && function.returnInstruction.getIid() > 0)
+            {
+                if(cfg.iGraph.containsKey(function.returnInstruction.getIid()))
+                {
+                    int returnReg = proxyRegister(cfg.iGraph.get(function.returnInstruction.getIid()).color, 0, true, bC);
+                    if(returnReg > 0)
+                    {
+                        bC.add(new MachineCode(pc++, DLX.POP, returnReg, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+                    }
+                }
+            }
+
+            // Load locals
+            popLocals(bC);
+        }
+        else
+        {
+            fixBranch.put(pc, instruction.operandY);
+            bC.add(new MachineCode(pc++, DLX.JSR, pc));
         }
 
         return bC;
     }
 
-    private ArrayList<MachineCode> computeForward(Instruction instruction, Integer regA)
+    private ArrayList<MachineCode> computeBranch(Instruction instruction, Integer opcode) throws Exception
     {
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
-        //bC = new MachineCode(pc, DLX.BSR, pc);
-        Integer target = ((InstructionResult)instruction.operandY).iid;
-        if(target > instruction.id) // if statement (we have to jump forward)
-        {
-            fixBranch.put(pc, ((InstructionResult)instruction.operandY));
-        }
-        else // while statement (we have to jump backward)
-        {
-            //bC = new MachineCode(pc, DLX.BSR, id2pc.get(target) - pc);
-        }
-
+        int regA = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+        fixBranch.put(pc, instruction.operandY);
+        bC.add(new MachineCode(pc++, opcode, regA, pc));
         return bC;
     }
 
-    private MachineCode computeBranch(Instruction instruction, Integer opcode, Integer regA)
+    private ArrayList<MachineCode> computeArthimetic(Instruction instruction, Integer opcode, int regA) throws Exception
     {
-        Integer regB = ((RegisterResult)instruction.operandX).register;
-        fixBranch.put(pc, instruction.operandY);
-        return new MachineCode(pc, opcode, regB, pc);
-    }
-
-    private MachineCode computeArthimetic(Instruction instruction, Integer opcode, Integer regA) 
-    {
+        ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
         if(instruction.operandX instanceof ConstantResult && instruction.operandY instanceof ConstantResult)
         {
             Integer res = ((ConstantResult)instruction.operandX).constant 
@@ -328,26 +455,89 @@ public class MachineCodeGenerator
                 res = ((ConstantResult)instruction.operandX).constant 
                         / ((ConstantResult)instruction.operandY).constant;
             }
-            return new MachineCode(pc, DLX.ADDI, regA, 0, res);
+            bC.add(new MachineCode(pc++, DLX.ADDI, regA, 0, res));
         }
         else if(instruction.operandX instanceof ConstantResult)
         {
-            Integer regB = ((RegisterResult)instruction.operandY).register;
+            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 1, false, bC);
             Integer c = ((ConstantResult)instruction.operandX).constant;
-            return new MachineCode(pc, opcode + 16, regA, regB, c);
+            bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
         }
         else if(instruction.operandX instanceof ConstantResult)
         {
-            Integer regB = ((RegisterResult)instruction.operandX).register;
+            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
             Integer c = ((ConstantResult)instruction.operandY).constant;
-            return new MachineCode(pc, opcode + 16, regA, regB, c);
+            bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
         }
         else
         {
-            Integer regB = ((RegisterResult)instruction.operandX).register;
-            Integer regC = ((RegisterResult)instruction.operandY).register;
-            return new MachineCode(pc, opcode + 16, regA, regB, regC);
+            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
+            int regC = proxyRegister(((RegisterResult)instruction.operandY).register, 2, false, bC);
+            bC.add(new MachineCode(pc++, opcode + 16, regA, regB, regC));
         }
+
+        return bC;
+    }
+
+    private void prolog(ArrayList<MachineCode> byteCode)
+    {
+        byteCode.add(new MachineCode(pc++, DLX.ADDI, Constants.R_RETURN_ADDRESS, Constants.R0, (pc + 4)));
+        byteCode.add(new MachineCode(pc++, DLX.PSH, Constants.R_RETURN_ADDRESS, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+        byteCode.add(new MachineCode(pc++, DLX.PSH, Constants.R_FRAME_POINTER, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+        byteCode.add(new MachineCode(pc++, DLX.ADD, Constants.R_FRAME_POINTER, Constants.R0, Constants.R_STACK_POINTER));
+    }
+
+    private void epilog(ArrayList<MachineCode> byteCode)
+    {
+        byteCode.add(new MachineCode(pc++, DLX.ADD, Constants.R_STACK_POINTER, Constants.R0, Constants.R_FRAME_POINTER));
+        byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_FRAME_POINTER, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+        byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_RETURN_ADDRESS, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+    }
+
+    private void pushLocals(ArrayList<MachineCode> byteCode)
+    {
+        for (Integer reg = 1; reg <= regSize; reg++)
+        {
+            byteCode.add(new MachineCode(pc++, DLX.PSH, reg, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+        }
+    }
+
+    private void popLocals(ArrayList<MachineCode> byteCode)
+    {
+        for (Integer reg = regSize; reg >= 1; reg--)
+        {
+            byteCode.add(new MachineCode(pc++, DLX.POP, reg, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+        }
+    }
+
+    private void popFormals(ArrayList<MachineCode> byteCode, Function function)
+    {
+        for (Integer param = function.getParameters().size(); param >= 0; param--)
+        {
+            byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_TEMP, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+        }
+    }
+
+    private int proxyRegister(int reg, Integer proxyNum, Boolean def, ArrayList<MachineCode> bC)
+    {
+        if(def)
+        {
+            if(reg > Constants.SPILL_REGISTER_OFFSET)
+            {
+                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_PROXY_OFFSET + proxyNum, Constants.R0, reg));
+                return Constants.R_PROXY_OFFSET + proxyNum;
+            }
+        }
+        else
+        {
+            if(reg > Constants.SPILL_REGISTER_OFFSET)
+            {
+                bC.add(new MachineCode(pc++, DLX.LDW, Constants.R_PROXY_OFFSET + proxyNum, Constants.R0, reg));
+                return Constants.R_PROXY_OFFSET + proxyNum;
+            }
+        }
+
+        return reg;
     }
 
     private void fixBranch()
@@ -356,48 +546,30 @@ public class MachineCodeGenerator
         {
             if(fixBranch.get(id) instanceof InstructionResult)
             {
-                mCode[id].c = fixBranch.get(id).getIid();
+                if(id2pc.containsKey(fixBranch.get(id).getIid()))
+                {
+                    mCode[id].c = id2pc.get(fixBranch.get(id).getIid());
+                    if(funcFirst.containsKey(fixBranch.get(id).getIid()))
+                    {
+                        // To compensate for setting frame pointer of the function.
+                        mCode[id].c -= 1;
+                    }
+                }
             }
             else if(fixBranch.get(id) instanceof BranchResult)
             {
                 BranchResult bResult = (BranchResult)fixBranch.get(id);
                 if(((Block)bResult.targetBlock).belongsTo != null)
                 {
-                    mCode[id].c = ((Block)bResult.targetBlock).belongsTo.lastMCode;
-                }
-            }
-        }
-    }
-
-    private void storeAllReturns()
-    {
-        for (Function f : cfg.functions)
-        {
-            if(f.returnInstruction != null)
-            {
-                returnIds.add(f.returnInstruction.getIid());
-            }
-        }
-    }
-
-    private void storeAllFuncJumps()
-    {
-        for (Function f : cfg.functions)
-        {
-            Boolean isSet = false;
-            IBlock nBlock = f.head;
-            while(!isSet && nBlock != null)
-            {
-                for (Instruction first : nBlock.getInstructions()) 
-                {
-                    if(first.deleteMode == DeleteMode._NotDeleted)
+                    if(((Block)bResult.targetBlock).belongsTo.lastMCode != -1)
                     {
-                        isSet = true;
-                        braFuncIds.add(first.id);
-                        break;
+                        mCode[id].c = ((Block)bResult.targetBlock).belongsTo.lastMCode;
+                    }
+                    else 
+                    {
+                        mCode[id].c = id + 1;
                     }
                 }
-                nBlock = nBlock.getChild();
             }
         }
     }

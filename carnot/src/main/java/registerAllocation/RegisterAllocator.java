@@ -18,6 +18,7 @@ public class RegisterAllocator
 
     private Integer regSize;
     private Integer trueRegSize;
+    private Integer usedRegs;
     private Integer clusterCounter;
 
     private HashMap<Integer, ArrayList<LiveRange>> clusters;
@@ -35,6 +36,7 @@ public class RegisterAllocator
             regSize = actualRegsize;
             trueRegSize = actualRegsize;
         }
+        usedRegs = 0;
         clusterCounter = Constants.CLUSTER_OFFSET;
         clusters = new HashMap<Integer, ArrayList<LiveRange>>();
         id2cluster = new HashMap<Integer, Integer>();
@@ -49,6 +51,7 @@ public class RegisterAllocator
         
         if(checkColoring())
         {
+            HashSet<Integer> returnIds = cfg.getAllReturns();
             // setting the color.
             for (IBlock block : cfg.getAllBlocks())
             {
@@ -56,7 +59,7 @@ public class RegisterAllocator
                 {
                     if(instruction.deleteMode == DeleteMode._NotDeleted)
                     {
-                        instruction.setColoredInstruction(iGraph);
+                        instruction.setColoredInstruction(iGraph, returnIds);
                         if(instruction.opcode == OperatorCode.move)
                         {
                             if(instruction.coloredI.operandX.equals(instruction.coloredI.operandY))
@@ -74,7 +77,7 @@ public class RegisterAllocator
                 {
                     if(instruction.deleteMode == DeleteMode._NotDeleted)
                     {
-                        instruction.setColoredInstruction(iGraph);
+                        instruction.setColoredInstruction(iGraph, returnIds);
                     }
                 }
             }
@@ -397,7 +400,6 @@ public class RegisterAllocator
     {
         Integer coloredCount = 0;
         Integer wrongCount = 0;
-        Integer usedRegs = 0;
         for (Integer id : iGraph.keySet()) 
         {
             if(iGraph.get(id).color > 0)
@@ -445,5 +447,10 @@ public class RegisterAllocator
             System.out.println("All nodes are NOT colored.");
             return false; 
         }
+    }
+
+    public Integer getRegSize()
+    {
+        return usedRegs > trueRegSize ? trueRegSize : usedRegs;
     }
 }

@@ -22,6 +22,8 @@ public class Function
     {
         this.head = head;
         this.tail = tail;
+        lastMCode = -1;
+        address = -1;
     }
 
     public Function(String name, Integer address)
@@ -29,6 +31,8 @@ public class Function
         this.name = name;
         this.address = address;
         head = null;
+        tail = null;
+        lastMCode = -1;
         vManager = new VariableManager();
         returnInstruction = null;
         parameters = new ArrayList<IResult>();
@@ -42,5 +46,10 @@ public class Function
     public IResult getParameter(Integer index)
     {
         return parameters.get(index);
+    }
+
+    public ArrayList<IResult> getParameters()
+    {
+        return parameters;
     }
 }

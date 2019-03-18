@@ -1,6 +1,7 @@
 package dataStructures.Instructions;
 
 import dataStructures.Results.*;
+import utility.Constants;
 
 import java.util.*;
 
@@ -70,7 +71,8 @@ public class Instruction
         if(r != null)
         {
             // Arrays and formal parameters are not condensed to intruction results. What about global variables?
-            if(r instanceof VariableResult && !((VariableResult)r).isArray && ((VariableResult)r).variable.version != -1)
+            if(r instanceof VariableResult && !((VariableResult)r).isArray 
+                        && ((VariableResult)r).variable.version != Constants.FORMAL_PARAMETER_VERSION)
             {
                 Variable v = ((VariableResult)r).variable;
                 if(bOperandX)
@@ -104,13 +106,13 @@ public class Instruction
         operandY = y;
     }
 
-    public void setColoredInstruction(HashMap<Integer, LiveRange> iGraph)
+    public void setColoredInstruction(HashMap<Integer, LiveRange> iGraph, HashSet<Integer> returnIds)
     {
-        setColoredInstructionOperand(iGraph, true);
-        setColoredInstructionOperand(iGraph, false);
+        setColoredInstructionOperand(iGraph, returnIds, true);
+        setColoredInstructionOperand(iGraph, returnIds, false);
     }
 
-    public void setColoredInstructionOperand(HashMap<Integer, LiveRange> iGraph, Boolean bOperandX)
+    public void setColoredInstructionOperand(HashMap<Integer, LiveRange> iGraph, HashSet<Integer> returnIds, Boolean bOperandX)
     {
         if(akaI != null)
         {
@@ -130,9 +132,14 @@ public class Instruction
                 coloredI.operandY = akaI.operandY;
                 if(akaI.operandY instanceof InstructionResult)
                 {
-                    if(iGraph.containsKey(akaI.operandY.getIid()))
+                    if(iGraph.containsKey(akaI.operandY.getIid()) && !returnIds.contains(akaI.operandY.getIid()))
                     {
                         coloredI.operandY = new RegisterResult(iGraph.get(akaI.operandY.getIid()).color);
+                    }
+                    else if(!iGraph.containsKey(akaI.operandY.getIid()) 
+                            && akaI.operandX instanceof VariableResult && !returnIds.contains(akaI.operandY.getIid()))
+                    {
+                        deleteMode = DeleteMode.CP;
                     }
                 }
                 else if(akaI.operandY instanceof BranchResult)

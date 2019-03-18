@@ -66,12 +66,12 @@ public class Optimizer
 
             if(instruction.operandY instanceof VariableResult)
             {
-                // Don't disturb initialization of formal parameters. But condense them.
+                // Don't disturb initialization of formal parameters or usage. But condense them.
                 if(instruction.akaI.operandY instanceof VariableResult 
-                            && ((VariableResult)instruction.akaI.operandY).variable.version == -1)
+                            && ((VariableResult)instruction.akaI.operandY).variable.version == -Constants.FORMAL_PARAMETER_VERSION)
                 {
                     if(instruction.akaI.operandX instanceof VariableResult 
-                                && ((VariableResult)instruction.akaI.operandY).variable.version == -1)
+                                && ((VariableResult)instruction.akaI.operandY).variable.version == -Constants.FORMAL_PARAMETER_VERSION)
                     {
                         instruction.deleteMode = DeleteMode.CP;
                     }
@@ -83,6 +83,11 @@ public class Optimizer
                     }
                     return;
                 }
+                else if(instruction.akaI.operandX instanceof VariableResult 
+                            && ((VariableResult)instruction.akaI.operandX).variable.version == Constants.FORMAL_PARAMETER_VERSION)
+                {
+                    return;
+                }   
 
                 if(instruction.operandX instanceof ConstantResult)
                 {

@@ -385,7 +385,7 @@ public class Parser
                         IResult pResult = expression(cBlock, function, optimize);
                         if(pResult != null)
                         {
-                            iCodeGenerator.compute(cBlock, OperatorCode.move, callFunction.getParameter(idx++), pResult, optimize);
+                            iCodeGenerator.compute(cBlock, OperatorCode.move, callFunction.getParameter(idx++).clone(), pResult, optimize);
                         }
                     }while(inputSym.isSameType(TokenType.commaToken));
                     
@@ -989,7 +989,7 @@ public class Parser
                 vResult.set(v);
                 try
                 {
-                    iCodeGenerator.declareVariable(function.head, function.vManager, vResult, false, optimize);
+                    iCodeGenerator.declareVariable(function.head, function.vManager, vResult, true, optimize);
                 }
                 catch(Exception e)
                 {

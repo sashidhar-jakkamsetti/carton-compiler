@@ -5,6 +5,9 @@ import java.util.*;
 import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
+import dataStructures.Instructions.Instruction.DeleteMode;
+import dataStructures.Results.IResult;
+import dataStructures.Results.VariableResult;
 import utility.Constants;
 
 public class ControlFlowGraph
@@ -69,6 +72,11 @@ public class ControlFlowGraph
         return functions.stream().anyMatch(f -> f.address.equals(function.address));
     }
 
+    public boolean isExists(Integer function)
+    {
+        return functions.stream().anyMatch(f -> f.address.equals(function));
+    }
+
     public void addFunction(Function function)
     {
         functions.add(function);
@@ -79,6 +87,16 @@ public class ControlFlowGraph
         if(isExists(function))
         {
             return (Function)functions.stream().filter(f -> f.address.equals(function.address)).toArray()[0];
+        }
+
+        return null;
+    }
+
+    public Function getFunction(Integer function)
+    {
+        if(isExists(function))
+        {
+            return (Function)functions.stream().filter(f -> f.address.equals(function)).toArray()[0];
         }
 
         return null;
@@ -102,5 +120,62 @@ public class ControlFlowGraph
         }
         
         return rInstruction;
+    }
+
+    public HashSet<Integer> getAllReturns()
+    {
+        HashSet<Integer> returnIds = new HashSet<Integer>();
+        for (Function f : functions)
+        {
+            if(f.returnInstruction != null)
+            {
+                returnIds.add(f.returnInstruction.getIid());
+            }
+        }
+        return returnIds;
+    }
+
+    public HashMap<Integer, Integer> getAllFuncFirsts()
+    {
+        HashMap<Integer, Integer> funcFirst = new HashMap<Integer, Integer>();
+        for (Function f : functions) 
+        {
+            if(f.address > -1)
+            {
+                Boolean isSet = false;
+                IBlock nBlock = f.head;
+                while(!isSet && nBlock != null)
+                {
+                    for (Instruction first : nBlock.getInstructions()) 
+                    {
+                        if(first.deleteMode == DeleteMode._NotDeleted)
+                        {
+                            isSet = true;
+                            funcFirst.put(first.id, f.address);
+                            break;
+                        }
+                    }
+                    nBlock = nBlock.getChild();
+                }
+            }   
+        }
+        return funcFirst;
+    }
+
+    public HashMap<Integer, Integer> getParams2Func()
+    {
+        HashMap<Integer, Integer> params2Func = new HashMap<Integer, Integer>();
+        for (Function f : functions) 
+        {
+            for(IResult result : f.getParameters())
+            {
+                if(result instanceof VariableResult)
+                {
+                    Variable v = ((VariableResult)result).variable;
+                    params2Func.put(v.address, f.address);
+                }
+            }
+        }
+        return params2Func;
     }
 }

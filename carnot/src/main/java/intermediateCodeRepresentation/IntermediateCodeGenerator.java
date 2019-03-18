@@ -204,7 +204,14 @@ public class IntermediateCodeGenerator
             else 
             {
                 vManager.addVariable(vResult.variable.address);
-                if(put)
+                if(vResult.variable.version == Constants.FORMAL_PARAMETER_VERSION)
+                {
+                    VariableResult newVResult = (VariableResult)vResult.clone();
+                    newVResult.variable.version = pc;
+                    vManager.updateSsaMap(vResult.variable.address, pc);
+                    compute(block, OperatorCode.move, vResult, newVResult, optimize);
+                }
+                else if(put)
                 {
                     compute(block, OperatorCode.move, vResult, new ConstantResult(), optimize);
                 }
