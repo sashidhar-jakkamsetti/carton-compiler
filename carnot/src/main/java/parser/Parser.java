@@ -145,9 +145,11 @@ public class Parser
                     Variable v = ((VariableResult)result).variable;
                     if(vManager.isVariable(v.address))
                     {
-                        Integer designatorVersion = vManager.getSsaVersion(v.address);
-                        v.version = designatorVersion;
-                        vManager.updateDefUseChain(v.address, designatorVersion, iCodeGenerator.getPC());
+                        v.version = vManager.getSsaVersion(v.address);
+                        if(function != null)
+                        {
+                            function.tamperedGlobals.put(v.address, result.clone());
+                        }
 
                         if(((VariableResult)result).isArray)
                         {
@@ -158,9 +160,7 @@ public class Parser
                     }
                     else if(function != null && function.vManager.isVariable(v.address))
                     {
-                        Integer designatorVersion = function.vManager.getSsaVersion(v.address);
-                        v.version = designatorVersion;
-                        function.vManager.updateDefUseChain(v.address, designatorVersion, iCodeGenerator.getPC());
+                        v.version = function.vManager.getSsaVersion(v.address);
 
                         if(((VariableResult)result).isArray)
                         {
@@ -337,7 +337,11 @@ public class Parser
                                 v.version = iCodeGenerator.getPC();
                                 iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult, optimize);
                                 vManager.updateSsaMap(v.address, v.version);
-                                vManager.updateDefUseChain(v.address, v.version, v.version);
+
+                                if(function != null)
+                                {
+                                    function.tamperedGlobals.put(v.address, lhsResult.clone());
+                                }
                             }
                         }
                         else if(function != null && function.vManager.isVariable(v.address))
@@ -356,7 +360,6 @@ public class Parser
                                 v.version = iCodeGenerator.getPC();
                                 iCodeGenerator.compute(cBlock, opToken, lhsResult, rhsResult, optimize);
                                 function.vManager.updateSsaMap(v.address, v.version);
-                                function.vManager.updateDefUseChain(v.address, v.version, v.version);
                             }
                         }
                     }
@@ -375,6 +378,30 @@ public class Parser
             if(cfg.isExists(callFunction))
             {
                 callFunction = cfg.getFunction(callFunction);
+                HashMap<Integer, IResult> overlappingGlobals = new HashMap<Integer, IResult>();
+                if(function != null) 
+                {
+                    for (Integer gVar : function.tamperedGlobals.keySet()) 
+                    {
+                        if(callFunction.tamperedGlobals.containsKey(gVar))
+                        {
+                            overlappingGlobals.put(gVar, function.tamperedGlobals.get(gVar));
+                        }
+                    }
+                    iCodeGenerator.storeGlobals(cBlock, overlappingGlobals, scanner.address2Identifier, optimize);
+                }
+                else
+                {
+                    for (Integer var : callFunction.tamperedGlobals.keySet()) 
+                    {
+                        VariableResult vResult = new VariableResult();
+                        Variable v = new Variable(scanner.address2Identifier.get(var), var, vManager.getSsaVersion(var));
+                        vResult.set(v);
+                        overlappingGlobals.put(var, vResult);
+                    }
+                    iCodeGenerator.storeGlobals(cBlock, overlappingGlobals, scanner.address2Identifier, optimize);
+                }
+
                 next();
                 if(inputSym.isSameType(TokenType.openparenToken))
                 {
@@ -406,6 +433,10 @@ public class Parser
                 bResult.condition = opToken;
                 
                 iCodeGenerator.compute(cBlock, opToken, bResult, optimize);
+                
+                iCodeGenerator.setOptimizerReturnIds(cfg.getAllReturns());
+
+                iCodeGenerator.loadGlobalsFuncCall(cBlock, overlappingGlobals, vManager, scanner.address2Identifier, optimize);
                 if(callFunction.returnInstruction != null)
                 {
                     return callFunction.returnInstruction.clone();
@@ -712,7 +743,7 @@ public class Parser
                     bResult2.set(wBlock);
                     iCodeGenerator.compute(lBlock, bResult2.condition, bResult2, optimizeIn);
                     lBlock.setChild(wBlock);
-                    wBlock.setChild(lBlock); // Bad name!
+                    wBlock.setChild(lBlock);
 
                     ArrayList<Instruction> newKills = new ArrayList<Instruction>();
                     for (Instruction i : kill) 
@@ -785,6 +816,11 @@ public class Parser
             rResult = expression(cBlock, function, optimize);
             if(rResult != null)
             {
+                if(function != null)
+                {
+                    iCodeGenerator.storeGlobals(cBlock, function.tamperedGlobals, scanner.address2Identifier, optimize);
+                }
+
                 InstructionResult iResult = new InstructionResult(iCodeGenerator.getPC());
                 if(function.returnInstruction == null || function.returnInstruction.iid == -1)
                 {
@@ -1083,6 +1119,8 @@ public class Parser
             varDecl(function, optimize);
         }
 
+        iCodeGenerator.loadGlobalsInit(function.head, function, vManager, scanner.address2Identifier, optimize);
+
         if(inputSym.isSameType(TokenType.beginToken))
         {
             next();
@@ -1091,6 +1129,8 @@ public class Parser
             if(inputSym.isSameType(TokenType.endToken))
             {
                 next();
+                iCodeGenerator.storeGlobals(function.tail, function.tamperedGlobals, scanner.address2Identifier, optimize);
+                iCodeGenerator.cleanGlobals(function.head, function);
             }
             else 
             {

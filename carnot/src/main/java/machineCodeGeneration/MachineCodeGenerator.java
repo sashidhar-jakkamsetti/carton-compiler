@@ -546,7 +546,11 @@ public class MachineCodeGenerator
 
     private int getProxyRegister(int proxyNum)
     {
-        return Constants.R_PROXY_OFFSET + proxyNum;
+        if(proxyNum < 3)
+        {
+            return Constants.R_PROXY_OFFSET - proxyNum;
+        }
+        return Constants.R_PROXY_OFFSET;
     }
 
     private void storeProxyRegister(int reg, Integer proxyNum, ArrayList<MachineCode> bC)

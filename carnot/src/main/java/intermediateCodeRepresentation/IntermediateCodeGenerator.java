@@ -1,8 +1,11 @@
 package intermediateCodeRepresentation;
 
+import java.util.*;
+
 import dataStructures.*;
 import dataStructures.Blocks.*;
 import dataStructures.Instructions.*;
+import dataStructures.Instructions.Instruction.DeleteMode;
 import dataStructures.Operator.*;
 import dataStructures.Results.*;
 import exceptions.IllegalVariableException;
@@ -45,6 +48,11 @@ public class IntermediateCodeGenerator
     public void incrementPC()
     {
         pc++;
+    }
+
+    public void setOptimizerReturnIds(HashSet<Integer> returnIds)
+    {
+        optimizer.setReturnIds(returnIds);
     }
 
     public void compute(IBlock block, Token opToken, BranchResult y, Boolean optimize)
@@ -194,7 +202,6 @@ public class IntermediateCodeGenerator
         else
         {
             vManager.updateSsaMap(vResult.variable.address, vResult.variable.version);
-            vManager.updateDefUseChain(vResult.variable.address, vResult.variable.version, vResult.variable.version);
     
             if(vResult.variable instanceof ArrayVar)
             {
@@ -215,6 +222,58 @@ public class IntermediateCodeGenerator
                 {
                     compute(block, OperatorCode.move, vResult, new ConstantResult(), optimize);
                 }
+            }
+        }
+    }
+
+    public void loadGlobalsInit(IBlock block, Function function, VariableManager vManager, HashMap<Integer, String> ad2id, Boolean optimize)
+    {
+        for (Integer ad : vManager.getVariables()) 
+        {
+            Variable v = new Variable(ad2id.get(ad), ad);
+            vManager.updateSsaMap(ad, pc);
+            v.version = Constants.GLOBAL_VARIABLE_VERSION;
+            VariableResult vResult = new VariableResult();
+            vResult.set(v);
+            iCodeGenerator.compute(block, OperatorCode.load, null, vResult, optimize);
+            function.globalLog.put(ad, pc - 1);
+        }
+    }
+
+    public void loadGlobalsFuncCall(IBlock block, HashMap<Integer, IResult> tamperedGlobals,
+                                        VariableManager vManager, HashMap<Integer, String> ad2id, Boolean optimize)
+    {
+        for (Integer ad : tamperedGlobals.keySet()) 
+        {
+            Variable v = new Variable(ad2id.get(ad), ad);
+            v.version = Constants.GLOBAL_VARIABLE_VERSION;
+            vManager.updateSsaMap(ad, pc);
+            VariableResult vResult = new VariableResult();
+            vResult.set(v);
+            iCodeGenerator.compute(block, OperatorCode.load, null, vResult, optimize);
+        }
+    }
+
+    public void storeGlobals(IBlock block, HashMap<Integer, IResult> tamperedGlobals, HashMap<Integer, String> ad2id, Boolean optimize)
+    {
+        for (Integer ad : tamperedGlobals.keySet())
+        {
+            Variable v = new Variable(ad2id.get(ad), ad);
+            v.version = Constants.GLOBAL_VARIABLE_VERSION;
+            VariableResult vResult = new VariableResult();
+            vResult.set(v);
+            iCodeGenerator.compute(block, OperatorCode.store, tamperedGlobals.get(ad), vResult, optimize);
+        }
+    }
+
+    public void cleanGlobals(IBlock block, Function function)
+    {
+        for (Integer ad : function.globalLog.keySet()) 
+        {
+            if(!function.tamperedGlobals.containsKey(ad))
+            {
+                Instruction instruction = block.getInstruction(function.globalLog.get(ad));
+                instruction.deleteMode = DeleteMode.CP;
             }
         }
     }

@@ -15,6 +15,7 @@ public class Optimizer
     private static int[] instructionUseCount;
     private static Integer endInstrId;
     private static Optimizer optimizer;
+    private HashSet<Integer> returnIds;
     
     private Optimizer()
     {
@@ -38,6 +39,11 @@ public class Optimizer
         }
 
         return optimizer;
+    }
+
+    public void setReturnIds(HashSet<Integer> returnIds)
+    {
+        this.returnIds = returnIds;
     }
 
     public void optimize(IBlock block, Instruction instruction)
@@ -116,16 +122,22 @@ public class Optimizer
                 instruction.opcode == OperatorCode.adda || instruction.opcode == OperatorCode.load ||
                 instruction.opcode == OperatorCode.store || instruction.opcode == OperatorCode.phi)
         {
+            Boolean isReturnResult = false;
             if(instruction.akaI.operandX != null 
                     && instruction.akaI.operandX instanceof InstructionResult)
             {
-                condenseOperandX(instruction);
+                isReturnResult = condenseOperandX(instruction);
             }
     
             if(instruction.akaI.operandY != null 
                     && instruction.akaI.operandY instanceof InstructionResult)
             {
-                condenseOperandY(instruction);
+                isReturnResult = condenseOperandY(instruction);
+            }
+
+            if(isReturnResult)
+            {
+                block.addSubexpression(instruction.akaI);
             }
 
             Instruction cSubexpression;
@@ -151,7 +163,6 @@ public class Optimizer
             }
             else
             {
-                // Phis can also be condensed.
                 if(instruction.opcode == OperatorCode.phi)
                 {
                     if(instruction.akaI.operandX instanceof InstructionResult 
@@ -216,32 +227,38 @@ public class Optimizer
         }
     }
 
-    private void condenseOperandX(Instruction instruction)
+    private Boolean condenseOperandX(Instruction instruction)
     {
         instructionUseCount[instruction.akaI.operandX.getIid()] += 1;
         if(cpMap.containsKey(instruction.akaI.operandX.getIid()))
         {
             instructionUseCount[instruction.akaI.operandX.getIid()] -= 1;
             instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
-            if(instruction.akaI.operandX instanceof InstructionResult)
-            {
-                instructionUseCount[instruction.akaI.operandX.getIid()] += 1;
-            }
+            instructionUseCount[instruction.akaI.operandX.getIid()] += 1;
         }
+
+        if(returnIds.contains(instruction.akaI.operandX.getIid()))
+        {
+            return true;
+        }
+        return false;
     }
 
-    private void condenseOperandY(Instruction instruction)
+    private Boolean condenseOperandY(Instruction instruction)
     {
         instructionUseCount[instruction.akaI.operandY.getIid()] += 1;
         if(cpMap.containsKey(instruction.akaI.operandY.getIid()))
         {
             instructionUseCount[instruction.akaI.operandY.getIid()] -= 1;
             instruction.akaI.operandY = cpMap.get(instruction.akaI.operandY.getIid());
-            if(instruction.akaI.operandY instanceof InstructionResult)
-            {
-                instructionUseCount[instruction.akaI.operandY.getIid()] += 1;
-            }
+            instructionUseCount[instruction.akaI.operandY.getIid()] += 1;
         }
+
+        if(returnIds.contains(instruction.akaI.operandY.getIid()))
+        {
+            return true;
+        }
+        return false;
     }
 
     public void eliminateDeadCode(ControlFlowGraph cfg)

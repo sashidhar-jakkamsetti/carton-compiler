@@ -110,18 +110,6 @@ public class JoinBlock extends Block implements IBlock
         {
             localVManager.setSsaMap(localSsa);
         }
-        
-        for (Integer key : phiManager.phis.keySet()) 
-        {
-            if(globalVManager.isVariable(key))
-            {
-                globalVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
-            }  
-            else if(localVManager != null && localVManager.isVariable(key))
-            {
-                localVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
-            }  
-        }
     }
 
     public void createPhis(HashMap<Integer, String> address2identifier, IntermediateCodeGenerator iCodeGenerator, Boolean optimize)

@@ -12,14 +12,12 @@ public class VariableManager
     private HashSet<Integer> variables;
     private HashMap<Integer, ArrayVar> arrays;
     private HashMap<Integer, Integer> ssaMap;
-    private HashMap<Integer, HashMap<Integer, ArrayList<Integer>>> defUseChain;
     private Integer arrayAddress;
 
     public VariableManager()
     {
         variables = new HashSet<Integer>();
         ssaMap = new HashMap<Integer, Integer>();
-        defUseChain = new HashMap<Integer, HashMap<Integer, ArrayList<Integer>>>();
         arrays = new HashMap<Integer, ArrayVar>();
         arrayAddress = Constants.ARRAY_ADDRESS_OFFSET;
     }
@@ -104,39 +102,5 @@ public class VariableManager
     public void copySsaTo(HashMap<Integer, Integer> copy)
     {
         copy.putAll(ssaMap);
-    }
-
-    public void updateDefUseChain(Integer variable, Integer defInstruction, Integer useInstruction)
-    {
-        if(defUseChain.containsKey(variable))
-        {
-            if(defUseChain.get(variable).containsKey(defInstruction))
-            {
-                defUseChain.get(variable).get(defInstruction).add(useInstruction);
-            }
-            else 
-            {
-                defUseChain.get(variable).put(
-                    defInstruction, new ArrayList<Integer>() 
-                        {{
-                            add(useInstruction);
-                        }}
-                    );
-            }
-        }
-        else
-        {
-            defUseChain.put(
-                variable, new HashMap<Integer, ArrayList<Integer>>() 
-                    {{
-                        put(
-                            defInstruction, new ArrayList<Integer>() 
-                            {{
-                                add(useInstruction);
-                            }}
-                        );
-                    }}
-                );
-        }
     }
 }

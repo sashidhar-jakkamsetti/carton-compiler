@@ -20,6 +20,7 @@ public class ControlFlowGraph
 
     public List<Function> functions;
     public HashMap<Integer, LiveRange> iGraph;
+    private HashSet<Integer> returnIds;
 
     private Integer bc;
 
@@ -31,6 +32,7 @@ public class ControlFlowGraph
         functions = new ArrayList<Function>();
         iGraph = new HashMap<Integer, LiveRange>();
         mVariableManager = new VariableManager();
+        returnIds = new HashSet<Integer>();
         done = false;
         blocks.add(head);
     }
@@ -124,10 +126,9 @@ public class ControlFlowGraph
 
     public HashSet<Integer> getAllReturns()
     {
-        HashSet<Integer> returnIds = new HashSet<Integer>();
         for (Function f : functions)
         {
-            if(f.returnInstruction != null)
+            if(f.returnInstruction != null && !returnIds.contains(f.returnInstruction.getIid()))
             {
                 returnIds.add(f.returnInstruction.getIid());
             }

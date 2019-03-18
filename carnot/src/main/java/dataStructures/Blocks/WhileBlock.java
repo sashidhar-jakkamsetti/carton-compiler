@@ -9,6 +9,7 @@ import java.util.*;
 
 public class WhileBlock extends Block implements IBlock
 {
+    // child is loop back block of whileBlock
     private Block loopBlock;
     private Block followBlock;
 
@@ -109,18 +110,6 @@ public class WhileBlock extends Block implements IBlock
         if(localVManager != null && localSsa.size() > 0)
         {
             localVManager.setSsaMap(localSsa);
-        }
-        
-        for (Integer key : phiManager.phis.keySet()) 
-        {
-            if(globalVManager.isVariable(key))
-            {
-                globalVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
-            }  
-            else if(localVManager != null && localVManager.isVariable(key))
-            {
-                localVManager.updateDefUseChain(key, phiManager.phis.get(key).id, phiManager.phis.get(key).id);
-            }  
         }
     }
 

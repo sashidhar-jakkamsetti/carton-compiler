@@ -15,6 +15,8 @@ public class Function
     public Block tail;
     public Integer lastMCode;
     public VariableManager vManager;
+    public HashMap<Integer, IResult> tamperedGlobals;
+    public HashMap<Integer, Integer> globalLog;
     public InstructionResult returnInstruction;
     private ArrayList<IResult> parameters;
 
@@ -34,6 +36,8 @@ public class Function
         tail = null;
         lastMCode = -1;
         vManager = new VariableManager();
+        tamperedGlobals = new HashMap<Integer, IResult>();
+        globalLog = new HashMap<Integer, Integer>();
         returnInstruction = null;
         parameters = new ArrayList<IResult>();
     }
