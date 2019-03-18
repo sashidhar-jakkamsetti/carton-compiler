@@ -187,7 +187,8 @@ public class MachineCodeGenerator
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
         if(cfg.iGraph.containsKey(instruction.id))
         {
-            regA = proxyRegister(cfg.iGraph.get(instruction.id).color, 0, true, bC);
+            regA = checkSpill(cfg.iGraph.get(instruction.id).color, 0, true, bC);
+            storeProxyRegister(regA, 0, bC);
         }
 
         if(instruction.opcode == OperatorCode.add || instruction.opcode == OperatorCode.adda)
@@ -212,16 +213,16 @@ public class MachineCodeGenerator
         }
         else if(instruction.opcode == OperatorCode.load)
         {
-            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 1, false, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 1, false, bC);
             bC.add(new MachineCode(pc++, DLX.LDW, regA, regB, 0));
         }
         else if(instruction.opcode == OperatorCode.store)
         {
             Integer opcode = (instruction.operandY instanceof ConstantResult)? DLX.STX : DLX.STW;
-            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
             Integer regC = (instruction.operandY instanceof ConstantResult)? 
                                 ((ConstantResult)instruction.operandY).constant : 
-                                proxyRegister(((RegisterResult)instruction.operandY).register, 2, false, bC);
+                                checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
             
             bC.add(new MachineCode(pc++, opcode, regA, regB, regC));
         }
@@ -263,7 +264,7 @@ public class MachineCodeGenerator
         }
         else if(instruction.opcode == OperatorCode.write)
         {
-            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
             bC.add(new MachineCode(pc++, DLX.WRD, regB));
         }
         else if(instruction.opcode == OperatorCode.writeNL)
@@ -286,13 +287,15 @@ public class MachineCodeGenerator
         // Register moves
         if(instruction.operandY instanceof RegisterResult && instruction.operandX instanceof RegisterResult)
         {
-            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 0, true, bC);
-            int regC = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 0, true, bC);
+            storeProxyRegister(regB, 0, bC);
+            int regC = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
             bC.add(new MachineCode(pc++, DLX.ADD, regB, Constants.R0, regC));
         }
         else if(instruction.operandY instanceof RegisterResult && instruction.operandX instanceof ConstantResult)
         {
-            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 0, true, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 0, true, bC);
+            storeProxyRegister(regB, 0, bC);
             Integer c = ((ConstantResult)instruction.operandX).constant;
             bC.add(new MachineCode(pc++, DLX.ADDI, regB, Constants.R0, c));
         }
@@ -312,7 +315,7 @@ public class MachineCodeGenerator
             if(function.returnInstruction != null && function.returnInstruction.getIid() > 0 
                         && instruction.operandX instanceof RegisterResult)
             {
-                int returnReg = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+                int returnReg = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
                 bC.add(new MachineCode(pc++, DLX.PSH, returnReg, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
             }
 
@@ -339,7 +342,7 @@ public class MachineCodeGenerator
             }
             else if(instruction.operandX instanceof RegisterResult)
             {
-                int regA = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+                int regA = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
                 bC.add(new MachineCode(pc++, DLX.PSH, regA, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
             }
         }
@@ -361,8 +364,9 @@ public class MachineCodeGenerator
                             Integer paramLoc = 2 * Constants.BYTE_SIZE + function.getParameters().size() - 1 - pos;
                             if(instruction.operandY instanceof RegisterResult)
                             {
-                                int regA = proxyRegister(((RegisterResult)instruction.operandY).register, 0, true, bC);
+                                int regA = checkSpill(((RegisterResult)instruction.operandY).register, 0, true, bC);
                                 bC.add(new MachineCode(pc++, DLX.LDW, regA, Constants.R_STACK_POINTER, paramLoc));
+                                storeProxyRegister(regA, 0, bC);
                             }
                         }
                     }
@@ -404,10 +408,11 @@ public class MachineCodeGenerator
             {
                 if(cfg.iGraph.containsKey(function.returnInstruction.getIid()))
                 {
-                    int returnReg = proxyRegister(cfg.iGraph.get(function.returnInstruction.getIid()).color, 0, true, bC);
+                    int returnReg = checkSpill(cfg.iGraph.get(function.returnInstruction.getIid()).color, 0, true, bC);
                     if(returnReg > 0)
                     {
                         bC.add(new MachineCode(pc++, DLX.POP, returnReg, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+                        storeProxyRegister(returnReg, 0, bC);
                     }
                 }
             }
@@ -427,7 +432,7 @@ public class MachineCodeGenerator
     private ArrayList<MachineCode> computeBranch(Instruction instruction, Integer opcode) throws Exception
     {
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
-        int regA = proxyRegister(((RegisterResult)instruction.operandX).register, 0, false, bC);
+        int regA = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
         fixBranch.put(pc, instruction.operandY);
         bC.add(new MachineCode(pc++, opcode, regA, pc));
         return bC;
@@ -459,20 +464,20 @@ public class MachineCodeGenerator
         }
         else if(instruction.operandX instanceof ConstantResult)
         {
-            int regB = proxyRegister(((RegisterResult)instruction.operandY).register, 1, false, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 1, false, bC);
             Integer c = ((ConstantResult)instruction.operandX).constant;
             bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
         }
         else if(instruction.operandX instanceof ConstantResult)
         {
-            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
             Integer c = ((ConstantResult)instruction.operandY).constant;
             bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
         }
         else
         {
-            int regB = proxyRegister(((RegisterResult)instruction.operandX).register, 1, false, bC);
-            int regC = proxyRegister(((RegisterResult)instruction.operandY).register, 2, false, bC);
+            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
+            int regC = checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
             bC.add(new MachineCode(pc++, opcode + 16, regA, regB, regC));
         }
 
@@ -518,26 +523,38 @@ public class MachineCodeGenerator
         }
     }
 
-    private int proxyRegister(int reg, Integer proxyNum, Boolean def, ArrayList<MachineCode> bC)
+    private int checkSpill(int reg, Integer proxyNum, Boolean def, ArrayList<MachineCode> bC)
     {
         if(def)
         {
             if(reg > Constants.SPILL_REGISTER_OFFSET)
             {
-                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_PROXY_OFFSET + proxyNum, Constants.R0, reg));
-                return Constants.R_PROXY_OFFSET + proxyNum;
+                return getProxyRegister(proxyNum);
             }
         }
         else
         {
             if(reg > Constants.SPILL_REGISTER_OFFSET)
             {
-                bC.add(new MachineCode(pc++, DLX.LDW, Constants.R_PROXY_OFFSET + proxyNum, Constants.R0, reg));
-                return Constants.R_PROXY_OFFSET + proxyNum;
+                bC.add(new MachineCode(pc++, DLX.LDW, getProxyRegister(proxyNum), Constants.R0, reg));
+                return getProxyRegister(proxyNum);
             }
         }
 
         return reg;
+    }
+
+    private int getProxyRegister(int proxyNum)
+    {
+        return Constants.R_PROXY_OFFSET + proxyNum;
+    }
+
+    private void storeProxyRegister(int reg, Integer proxyNum, ArrayList<MachineCode> bC)
+    {
+        if(reg > Constants.SPILL_REGISTER_OFFSET)
+        {
+            bC.add(new MachineCode(pc++, DLX.STW, getProxyRegister(proxyNum), Constants.R0, reg));
+        }
     }
 
     private void fixBranch()
