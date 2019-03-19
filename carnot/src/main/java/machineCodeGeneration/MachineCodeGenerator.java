@@ -129,9 +129,9 @@ public class MachineCodeGenerator
 
             if(tBlock == iBlock.getJoinBlock())
             {
-                if(iBlock.getChild() != null)
+                if(iBlock.getJoinBlock() != null)
                 {
-                    return generate(iBlock.getChild(), byteCode);
+                    return generate(iBlock.getJoinBlock(), byteCode);
                 }
                 return null;
             }

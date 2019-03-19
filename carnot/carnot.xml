@@ -1,5 +1,5 @@
 <buildinfo>
-    <program>testprograms/public/</program>
+    <program>testprograms/public/test018.txt</program>
     <abstractControlFlowGraph>true</abstractControlFlowGraph>
     <optimize>true</optimize>
     <eliminateDeadCode>false</eliminateDeadCode>
