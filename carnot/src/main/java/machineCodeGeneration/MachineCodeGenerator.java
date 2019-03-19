@@ -554,9 +554,19 @@ public class MachineCodeGenerator
         }
         else if(instruction.operandX instanceof ConstantResult)
         {
-            int regB = checkSpill(((RegisterResult)opYSub).register, 1, false, bC);
-            Integer c = ((ConstantResult)instruction.operandX).constant;
-            bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
+            if(opcode == DLX.CMP || opcode == DLX.SUB)
+            {
+                int regB = checkSpill(((RegisterResult)opYSub).register, 1, false, bC);
+                Integer c = ((ConstantResult)instruction.operandX).constant;
+                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, c));
+                bC.add(new MachineCode(pc++, opcode + 16, regA, Constants.R_TEMP, regB));
+            }
+            else
+            {
+                int regB = checkSpill(((RegisterResult)opYSub).register, 1, false, bC);
+                Integer c = ((ConstantResult)instruction.operandX).constant;
+                bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
+            }
         }
         else if(opYSub instanceof ConstantResult)
         {
@@ -670,11 +680,12 @@ public class MachineCodeGenerator
                     {
                         if(mCode[id].op == DLX.BSR)
                         {
-                            mCode[id].c =  -1 * (id - (id2pc.get(fixBranch.get(id).getIid())));
+                            mCode[id].c =  (id2pc.get(fixBranch.get(id).getIid())) - id;
+                            //mCode[id].c =  -1 * (id - (id2pc.get(fixBranch.get(id).getIid())));
                         }
                         else
                         {
-                            mCode[id].c =  id - (id2pc.get(fixBranch.get(id).getIid()));
+                            mCode[id].c =  (id2pc.get(fixBranch.get(id).getIid())) - id;
                         }
                     }
                 }

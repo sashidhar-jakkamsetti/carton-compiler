@@ -207,8 +207,8 @@ public class DLX {
 					break;
 				case RDI:
 					System.out.print("?: ");
-					String line = (new BufferedReader(new InputStreamReader(System.in))).readLine();
-					R[a] = Integer.parseInt(line);
+					//String line = (new BufferedReader(new InputStreamReader(System.in))).readLine();
+					R[a] = Integer.parseInt("4");
 					break;
 				case WRD:
 					System.out.print(R[b] + "  ");
