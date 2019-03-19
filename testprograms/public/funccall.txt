@@ -1,16 +1,19 @@
 main
-var x, y, res;
+var x, y, z, res;
 
 function add(a, b);
 var tmp;
 {
-    let tmp <- a + b;
+    let tmp <- a + b + z;
+    let z <- tmp;
     return tmp
 };
 
 {
     let x <- 3;
     let y <- 2;
+    let z <- 5;
     let res <- call add(x, y);
-    call OutputNum(res)
+    call OutputNum(res);
+    call OutputNum(z)
 }.
