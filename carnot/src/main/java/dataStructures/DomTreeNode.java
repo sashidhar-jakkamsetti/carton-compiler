@@ -103,8 +103,8 @@ public class DomTreeNode
                     {
                         if(instructions.get(OperatorCode.load).get(idx).operandY.equals(instruction.operandY))
                         {
-                            if(instruction.operandY instanceof VariableResult 
-                                    && ((VariableResult)instruction.operandY).variable.version != Constants.GLOBAL_VARIABLE_VERSION)
+                            if(!(instruction.operandY instanceof VariableResult 
+                                    && ((VariableResult)instruction.operandY).variable.version != Constants.GLOBAL_VARIABLE_VERSION))
                             {
                                 return instructions.get(instruction.opcode).get(idx).clone();
                             }

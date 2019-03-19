@@ -34,7 +34,8 @@ var size,temp,i;
         let        input[4] <- 34;
         let        input[5] <- 11;
         
-        let        maxnumber <- call max(input[1],input[2],input[3],input[4])
+        let        maxnumber <- call max(input[1],input[2],input[3],input[4]);
+        call OutputNum(maxnumber)
         
 }
 .

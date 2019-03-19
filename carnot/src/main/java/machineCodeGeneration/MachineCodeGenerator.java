@@ -21,6 +21,8 @@ public class MachineCodeGenerator
     private HashMap<Integer, Integer> id2pc;
     private Integer pc;
     private Integer regSize;
+    private Boolean spilled;
+    private Integer spilledReg;
 
     private HashMap<Integer, Integer> returnIds;
     private HashMap<Integer, Integer> funcFirst;
@@ -36,6 +38,8 @@ public class MachineCodeGenerator
         fixBranch = new HashMap<Integer, IResult>();
         pc = 0;
         this.regSize = regSize;
+        spilled = false;
+        spilledReg = 100;
         id2pc = new HashMap<Integer, Integer>();
 
         returnIds = cfg.getAllReturns();
@@ -196,32 +200,37 @@ public class MachineCodeGenerator
         if(cfg.iGraph.containsKey(instruction.id))
         {
             regA = checkSpill(cfg.iGraph.get(instruction.id).color, 0, true, bC);
-            storeProxyRegister(regA, 0, bC);
         }
 
         if((instruction.opcode == OperatorCode.add || instruction.opcode == OperatorCode.adda) && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.ADD, regA));
+            storeProxyRegister(regA, 0, bC);
         }
         else if(instruction.opcode == OperatorCode.sub && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.SUB, regA));
+            storeProxyRegister(regA, 0, bC);
         }
         else if(instruction.opcode == OperatorCode.mul && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.MUL, regA));
+            storeProxyRegister(regA, 0, bC);
         }
         else if(instruction.opcode == OperatorCode.div && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.DIV, regA));
+            storeProxyRegister(regA, 0, bC);
         }
         else if(instruction.opcode == OperatorCode.cmp && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.CMP, regA));
+            storeProxyRegister(regA, 0, bC);
         }
         else if(instruction.opcode == OperatorCode.load && regA != 0)
         {
             bC.addAll(computeLoad(instruction, regA));
+            storeProxyRegister(regA, 0, bC);
         }
         else if(instruction.opcode == OperatorCode.store)
         {
@@ -262,6 +271,7 @@ public class MachineCodeGenerator
         else if(instruction.opcode == OperatorCode.read && regA != 0)
         {
             bC.add(new MachineCode(pc++, DLX.RDI, regA));
+            storeProxyRegister(regA, 0, bC);
         }
         else if(instruction.opcode == OperatorCode.write)
         {
@@ -632,6 +642,8 @@ public class MachineCodeGenerator
         {
             if(reg > Constants.SPILL_REGISTER_OFFSET)
             {
+                spilled = true;
+                spilledReg = reg;
                 return getProxyRegister(proxyNum);
             }
         }
@@ -658,9 +670,10 @@ public class MachineCodeGenerator
 
     private void storeProxyRegister(int reg, Integer proxyNum, ArrayList<MachineCode> bC)
     {
-        if(reg > Constants.SPILL_REGISTER_OFFSET)
+        if((reg >= Constants.R_PROXY_OFFSET || reg < Constants.R_PROXY_OFFSET + 3) && spilled)
         {
-            bC.add(new MachineCode(pc++, DLX.STW, getProxyRegister(proxyNum), Constants.R0, reg));
+            spilled = false;
+            bC.add(new MachineCode(pc++, DLX.STW, getProxyRegister(proxyNum), Constants.R0, spilledReg));
         }
     }
 
@@ -681,7 +694,6 @@ public class MachineCodeGenerator
                         if(mCode[id].op == DLX.BSR)
                         {
                             mCode[id].c =  (id2pc.get(fixBranch.get(id).getIid())) - id;
-                            //mCode[id].c =  -1 * (id - (id2pc.get(fixBranch.get(id).getIid())));
                         }
                         else
                         {
