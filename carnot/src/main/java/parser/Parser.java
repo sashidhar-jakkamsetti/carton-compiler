@@ -57,6 +57,7 @@ public class Parser
         cfg = new ControlFlowGraph();
         iCodeGenerator = IntermediateCodeGenerator.getInstance();
         iCodeGenerator.reset();
+        iCodeGenerator.setOptimizerReturnIds(cfg.getAllReturns());
         vManager = cfg.mVariableManager;
         next();
         killCounter = 0;
@@ -146,16 +147,16 @@ public class Parser
                     if(vManager.isVariable(v.address))
                     {
                         v.version = vManager.getSsaVersion(v.address);
-                        if(function != null)
-                        {
-                            function.tamperedGlobals.put(v.address, result.clone());
-                        }
 
                         if(((VariableResult)result).isArray)
                         {
                             iCodeGenerator.loadArrayElement(cBlock, vManager, result, optimize);
                             result = result.toInstruction();
                             result.set(iCodeGenerator.getPC() - 1);
+                        }
+                        else if(function != null)
+                        {
+                            function.tamperedGlobals.put(v.address, result.clone());
                         }
                     }
                     else if(function != null && function.vManager.isVariable(v.address))
@@ -412,7 +413,19 @@ public class Parser
                         IResult pResult = expression(cBlock, function, optimize);
                         if(pResult != null)
                         {
-                            iCodeGenerator.compute(cBlock, OperatorCode.move, callFunction.getParameter(idx++).clone(), pResult, optimize);
+                            if(pResult instanceof VariableResult)
+                            {
+                                Variable v1 = ((VariableResult)pResult).variable;
+                                Variable v2 = ((VariableResult)callFunction.getParameter(idx)).variable;
+
+                                // Recursive call
+                                if(v1.address == v2.address && v1.version != pResult.getIid())
+                                {
+                                    pResult = pResult.clone();
+                                    ((VariableResult)pResult).variable.version = pResult.getIid();
+                                }
+                            }
+                            iCodeGenerator.compute(cBlock, OperatorCode.move, callFunction.getParameter(idx++).clone(), pResult.clone(), optimize);
                         }
                     }while(inputSym.isSameType(TokenType.commaToken));
                     

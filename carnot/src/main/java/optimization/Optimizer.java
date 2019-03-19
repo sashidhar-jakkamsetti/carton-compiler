@@ -74,10 +74,10 @@ public class Optimizer
             {
                 // Don't disturb initialization of formal parameters or usage. But condense them.
                 if(instruction.akaI.operandY instanceof VariableResult 
-                            && ((VariableResult)instruction.akaI.operandY).variable.version == -Constants.FORMAL_PARAMETER_VERSION)
+                            && ((VariableResult)instruction.akaI.operandY).variable.version == Constants.FORMAL_PARAMETER_VERSION)
                 {
                     if(instruction.akaI.operandX instanceof VariableResult 
-                                && ((VariableResult)instruction.akaI.operandY).variable.version == -Constants.FORMAL_PARAMETER_VERSION)
+                                && ((VariableResult)instruction.akaI.operandY).variable.version == Constants.FORMAL_PARAMETER_VERSION)
                     {
                         instruction.deleteMode = DeleteMode.CP;
                     }
@@ -111,7 +111,10 @@ public class Optimizer
                             instructionUseCount[instruction.akaI.operandX.getIid()] -= 1;
                         }
                     }
-                    cpMap.put(instruction.akaI.operandY.getIid(), instruction.akaI.operandX);
+                    if(instruction.akaI.operandY.getIid() > 0)
+                    {
+                        cpMap.put(instruction.akaI.operandY.getIid(), instruction.akaI.operandX);
+                    }
                 }
             }
         }
@@ -138,10 +141,11 @@ public class Optimizer
             if(isReturnResult)
             {
                 block.addSubexpression(instruction.akaI);
+                return;
             }
 
             Instruction cSubexpression;
-            if(instruction.opcode == OperatorCode.load)
+            if(instruction.opcode == OperatorCode.load && !(instruction.akaI.operandY instanceof VariableResult))
             {
                 Instruction fabLoad = instruction.akaI.clone();
                 Instruction addaI = block.getInstruction(instruction.operandY.getIid());
@@ -201,7 +205,7 @@ public class Optimizer
                     }
                 }
 
-                if(instruction.opcode == OperatorCode.store)
+                if(instruction.opcode == OperatorCode.store && !(instruction.akaI.operandY instanceof VariableResult))
                 {
                     Instruction fabStore = new Instruction(0);
                     Instruction addaI = block.getInstruction(instruction.operandY.getIid());
@@ -234,7 +238,10 @@ public class Optimizer
         {
             instructionUseCount[instruction.akaI.operandX.getIid()] -= 1;
             instruction.akaI.operandX = cpMap.get(instruction.akaI.operandX.getIid());
-            instructionUseCount[instruction.akaI.operandX.getIid()] += 1;
+            if(instruction.akaI.operandX instanceof InstructionResult)
+            {
+                instructionUseCount[instruction.akaI.operandX.getIid()] += 1;
+            }
         }
 
         if(returnIds.contains(instruction.akaI.operandX.getIid()))
@@ -251,7 +258,10 @@ public class Optimizer
         {
             instructionUseCount[instruction.akaI.operandY.getIid()] -= 1;
             instruction.akaI.operandY = cpMap.get(instruction.akaI.operandY.getIid());
-            instructionUseCount[instruction.akaI.operandY.getIid()] += 1;
+            if(instruction.akaI.operandY instanceof InstructionResult)
+            {
+                instructionUseCount[instruction.akaI.operandY.getIid()] += 1;
+            }
         }
 
         if(returnIds.contains(instruction.akaI.operandY.getIid()))

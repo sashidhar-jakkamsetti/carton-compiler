@@ -216,7 +216,7 @@ public class IntermediateCodeGenerator
                     VariableResult newVResult = (VariableResult)vResult.clone();
                     newVResult.variable.version = pc;
                     vManager.updateSsaMap(vResult.variable.address, pc);
-                    compute(block, OperatorCode.move, vResult, newVResult, optimize);
+                    compute(block, OperatorCode.move, newVResult, vResult, optimize);
                 }
                 else if(put)
                 {
@@ -230,13 +230,16 @@ public class IntermediateCodeGenerator
     {
         for (Integer ad : vManager.getVariables()) 
         {
-            Variable v = new Variable(ad2id.get(ad), ad);
-            vManager.updateSsaMap(ad, pc);
-            v.version = Constants.GLOBAL_VARIABLE_VERSION;
-            VariableResult vResult = new VariableResult();
-            vResult.set(v);
-            iCodeGenerator.compute(block, OperatorCode.load, null, vResult, optimize);
-            function.globalLog.put(ad, pc - 1);
+            if(!vManager.isArray(ad))
+            {
+                Variable v = new Variable(ad2id.get(ad), ad);
+                vManager.updateSsaMap(ad, pc);
+                v.version = Constants.GLOBAL_VARIABLE_VERSION;
+                VariableResult vResult = new VariableResult();
+                vResult.set(v);
+                iCodeGenerator.compute(block, OperatorCode.load, null, vResult, optimize);
+                function.globalLog.put(ad, pc - 1);
+            }
         }
     }
 
@@ -262,7 +265,7 @@ public class IntermediateCodeGenerator
             v.version = Constants.GLOBAL_VARIABLE_VERSION;
             VariableResult vResult = new VariableResult();
             vResult.set(v);
-            iCodeGenerator.compute(block, OperatorCode.store, tamperedGlobals.get(ad), vResult, optimize);
+            iCodeGenerator.compute(block, OperatorCode.store, vResult, tamperedGlobals.get(ad), optimize);
         }
     }
 

@@ -281,7 +281,7 @@ public class MachineCodeGenerator
         if(instruction.operandY instanceof VariableResult && ((VariableResult)instruction.operandY).variable.version == Constants.GLOBAL_VARIABLE_VERSION)
         {
             Variable v = ((VariableResult)instruction.operandY).variable;
-            bC.add(new MachineCode(pc++, DLX.LDW, regA, Constants.R_GLOBAL_POINTER, -v.address));
+            bC.add(new MachineCode(pc++, DLX.LDW, regA, Constants.R_GLOBAL_POINTER, -1 * v.address));
         }
         else if(instruction.operandY instanceof RegisterResult)
         {
@@ -302,12 +302,12 @@ public class MachineCodeGenerator
             if(instruction.operandY instanceof ConstantResult)
             {
                 bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandY).constant));
-                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, Constants.R_GLOBAL_POINTER, -v.address));
+                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, Constants.R_GLOBAL_POINTER, -1 * v.address));
             }
             else
             {
                 Integer regA = checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
-                bC.add(new MachineCode(pc++, DLX.STW, regA, Constants.R_GLOBAL_POINTER, -v.address));
+                bC.add(new MachineCode(pc++, DLX.STW, regA, Constants.R_GLOBAL_POINTER, -1 * v.address));
             }
         }
         else if(instruction.operandX instanceof RegisterResult)
@@ -459,7 +459,7 @@ public class MachineCodeGenerator
                     int returnReg = checkSpill(cfg.iGraph.get(function.returnInstruction.getIid()).color, 0, true, bC);
                     if(returnReg > 0)
                     {
-                        bC.add(new MachineCode(pc++, DLX.POP, returnReg, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+                        bC.add(new MachineCode(pc++, DLX.POP, returnReg, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
                         storeProxyRegister(returnReg, 0, bC);
                     }
                 }
@@ -543,8 +543,8 @@ public class MachineCodeGenerator
     private void epilog(ArrayList<MachineCode> byteCode)
     {
         byteCode.add(new MachineCode(pc++, DLX.ADD, Constants.R_STACK_POINTER, Constants.R0, Constants.R_FRAME_POINTER));
-        byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_FRAME_POINTER, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
-        byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_RETURN_ADDRESS, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+        byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_FRAME_POINTER, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
+        byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_RETURN_ADDRESS, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
     }
 
     private void pushLocals(ArrayList<MachineCode> byteCode)
@@ -559,7 +559,7 @@ public class MachineCodeGenerator
     {
         for (Integer reg = regSize; reg >= 1; reg--)
         {
-            byteCode.add(new MachineCode(pc++, DLX.POP, reg, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+            byteCode.add(new MachineCode(pc++, DLX.POP, reg, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
         }
     }
 
@@ -567,7 +567,7 @@ public class MachineCodeGenerator
     {
         for (Integer param = function.getParameters().size(); param >= 0; param--)
         {
-            byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_TEMP, Constants.R_STACK_POINTER, -Constants.BYTE_SIZE));
+            byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_TEMP, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
         }
     }
 

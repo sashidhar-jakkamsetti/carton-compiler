@@ -70,18 +70,31 @@ public class Instruction
     {
         if(r != null)
         {
-            // Arrays and formal parameters are not condensed to intruction results. What about global variables?
-            if(r instanceof VariableResult && !((VariableResult)r).isArray 
-                        && ((VariableResult)r).variable.version != Constants.FORMAL_PARAMETER_VERSION)
+            // Arrays, formal parameters and global variables are not condensed to intruction results.
+            if(r instanceof VariableResult && !((VariableResult)r).isArray)
             {
                 Variable v = ((VariableResult)r).variable;
-                if(bOperandX)
+                if(v.version != Constants.FORMAL_PARAMETER_VERSION && v.version != Constants.GLOBAL_VARIABLE_VERSION)
                 {
-                    akaI.operandX = new InstructionResult(v.version);
+                    if(bOperandX)
+                    {
+                        akaI.operandX = new InstructionResult(v.version);
+                    }
+                    else
+                    {
+                        akaI.operandY = new InstructionResult(v.version);
+                    }
                 }
                 else
                 {
-                    akaI.operandY = new InstructionResult(v.version);
+                    if(bOperandX)
+                    {
+                        akaI.operandX = r;
+                    }
+                    else
+                    {
+                        akaI.operandY = r;
+                    }
                 }
             }
             else 
