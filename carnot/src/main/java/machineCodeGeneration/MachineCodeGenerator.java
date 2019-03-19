@@ -82,7 +82,7 @@ public class MachineCodeGenerator
         }
         function.lastMCode = pc;
 
-        if(function.name != "main")
+        if(function.name != "main" && function.returnInstruction == null)
         {
             epilog(byteCode);
 
@@ -90,7 +90,7 @@ public class MachineCodeGenerator
             popFormals(byteCode, function);
 
             // Return to the caller
-            byteCode.add(new MachineCode(pc++, DLX.RET, Constants.R_RETURN_ADDRESS));
+            byteCode.add(new MachineCode(pc++, DLX.RET, null, null, Constants.R_RETURN_ADDRESS));
         }
     }
 
@@ -265,11 +265,11 @@ public class MachineCodeGenerator
             if(instruction.operandX instanceof RegisterResult)
             {
                 int regB = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
-                bC.add(new MachineCode(pc++, DLX.WRD, regB));
+                bC.add(new MachineCode(pc++, DLX.WRD, null, regB, null));
             }
             else if(instruction.operandX instanceof ConstantResult)
             {
-                bC.add(new MachineCode(pc++, DLX.WRD, ((ConstantResult)instruction.operandX).constant));
+                bC.add(new MachineCode(pc++, DLX.WRD, null, ((ConstantResult)instruction.operandX).constant, null));
             }
         }
         else if(instruction.opcode == OperatorCode.writeNL)
@@ -278,7 +278,7 @@ public class MachineCodeGenerator
         }
         else if(instruction.opcode == OperatorCode.end)
         {
-            bC.add(new MachineCode(pc++, DLX.RET, 0));
+            bC.add(new MachineCode(pc++, DLX.RET, null, null, 0));
         }
 
         return bC;
@@ -385,9 +385,10 @@ public class MachineCodeGenerator
             }
 
             // Return to the caller
-            bC.add(new MachineCode(pc++, DLX.RET, Constants.R_RETURN_ADDRESS));
+            bC.add(new MachineCode(pc++, DLX.RET, null, null, Constants.R_RETURN_ADDRESS));
         }
 
+        // Formal params
         if(instruction.operandY instanceof VariableResult 
                 && ((VariableResult)instruction.operandY).variable.version == Constants.FORMAL_PARAMETER_VERSION)
         {
@@ -466,7 +467,7 @@ public class MachineCodeGenerator
             fixBranch.put(pc, instruction.operandY);
 
             // Jump to the callee
-            bC.add(new MachineCode(pc++, DLX.JSR, pc));
+            bC.add(new MachineCode(pc++, DLX.JSR, null, null, pc));
 
             // Pickup return result
             if(function.returnInstruction != null && function.returnInstruction.getIid() > 0)
@@ -488,7 +489,7 @@ public class MachineCodeGenerator
         else
         {
             fixBranch.put(pc, instruction.operandY);
-            bC.add(new MachineCode(pc++, DLX.JSR, pc));
+            bC.add(new MachineCode(pc++, DLX.JSR, null, null, pc));
         }
 
         return bC;
@@ -499,7 +500,7 @@ public class MachineCodeGenerator
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
         int regA = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
         fixBranch.put(pc, instruction.operandY);
-        bC.add(new MachineCode(pc++, opcode, regA, pc));
+        bC.add(new MachineCode(pc++, opcode, regA, null, pc));
         return bC;
     }
 
@@ -554,7 +555,7 @@ public class MachineCodeGenerator
         {
             int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
             int regC = checkSpill(((RegisterResult)opYSub).register, 2, false, bC);
-            bC.add(new MachineCode(pc++, opcode + 16, regA, regB, regC));
+            bC.add(new MachineCode(pc++, opcode, regA, regB, regC));
         }
 
         return bC;
@@ -562,7 +563,7 @@ public class MachineCodeGenerator
 
     private void prolog(ArrayList<MachineCode> byteCode)
     {
-        byteCode.add(new MachineCode(pc++, DLX.ADDI, Constants.R_RETURN_ADDRESS, Constants.R0, (pc + 4)));
+        byteCode.add(new MachineCode(pc++, DLX.ADDI, Constants.R_RETURN_ADDRESS, Constants.R0, (pc + 5)));
         byteCode.add(new MachineCode(pc++, DLX.PSH, Constants.R_RETURN_ADDRESS, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
         byteCode.add(new MachineCode(pc++, DLX.PSH, Constants.R_FRAME_POINTER, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
         byteCode.add(new MachineCode(pc++, DLX.ADD, Constants.R_FRAME_POINTER, Constants.R0, Constants.R_STACK_POINTER));
@@ -649,11 +650,11 @@ public class MachineCodeGenerator
                 if(id2pc.containsKey(fixBranch.get(id).getIid()))
                 {
                     mCode[id].c = id2pc.get(fixBranch.get(id).getIid());
-                    if(funcFirst.containsKey(fixBranch.get(id).getIid()))
-                    {
-                        // To compensate for setting frame pointer of the function.
-                        mCode[id].c -= 1;
-                    }
+                    // if(funcFirst.containsKey(fixBranch.get(id).getIid()))
+                    // {
+                    //     // To compensate for setting frame pointer of the function.
+                    //     mCode[id].c -= 1;
+                    // }
                 }
             }
             else if(fixBranch.get(id) instanceof BranchResult)

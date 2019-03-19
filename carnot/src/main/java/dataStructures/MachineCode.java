@@ -40,13 +40,29 @@ public class MachineCode
         {
             return DLX.assemble(op);
         }
-        else if(b == null && c == null)
+        else if((b == null && c == null))
         {
             return DLX.assemble(op, a);
+        }
+        else if(a == null && c == null)
+        {
+            return DLX.assemble(op, b);
+        }
+        else if(a == null && b == null)
+        {
+            return DLX.assemble(op, c);
         }
         else if(c == null)
         {
             return DLX.assemble(op, a, b);
+        }
+        else if(b == null)
+        {
+            return DLX.assemble(op, a, c);
+        }
+        else if(a == null)
+        {
+            return DLX.assemble(op, b, c);
         }
 
         return DLX.assemble(op, a, b, c);
