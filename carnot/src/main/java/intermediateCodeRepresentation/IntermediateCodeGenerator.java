@@ -118,7 +118,14 @@ public class IntermediateCodeGenerator
             {
                 if(Operator.branchOpCodes.contains(block.getInstructions().get((block.getInstructions().size() - 1)).opcode))
                 {
-                    block.addInstruction(instruction, block.getInstructions().size() - 1);
+                    if(block.getInstructions().get((block.getInstructions().size() - 1)).opcode == OperatorCode.bra)
+                    {
+                        block.addInstruction(instruction, block.getInstructions().size() - 1);
+                    }
+                    else if(block.getInstructions().size() >= 2)
+                    {
+                        block.addInstruction(instruction, block.getInstructions().size() - 2);
+                    }
                 }
                 else
                 {

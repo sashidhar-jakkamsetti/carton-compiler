@@ -84,13 +84,16 @@ public class MachineCodeGenerator
 
         if(function.name != "main" && function.returnInstruction == null)
         {
-            epilog(byteCode);
+            if(function.address > -1 && funcFirst.containsValue(function.address))
+            {
+                epilog(byteCode);
 
-            // Cleanup formals
-            popFormals(byteCode, function);
-
-            // Return to the caller
-            byteCode.add(new MachineCode(pc++, DLX.RET, null, null, Constants.R_RETURN_ADDRESS));
+                // Cleanup formals
+                popFormals(byteCode, function);
+    
+                // Return to the caller
+                byteCode.add(new MachineCode(pc++, DLX.RET, null, null, Constants.R_RETURN_ADDRESS));
+            }
         }
     }
 
@@ -196,27 +199,27 @@ public class MachineCodeGenerator
             storeProxyRegister(regA, 0, bC);
         }
 
-        if(instruction.opcode == OperatorCode.add || instruction.opcode == OperatorCode.adda)
+        if((instruction.opcode == OperatorCode.add || instruction.opcode == OperatorCode.adda) && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.ADD, regA));
         }
-        else if(instruction.opcode == OperatorCode.sub)
+        else if(instruction.opcode == OperatorCode.sub && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.SUB, regA));
         }
-        else if(instruction.opcode == OperatorCode.mul)
+        else if(instruction.opcode == OperatorCode.mul && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.MUL, regA));
         }
-        else if(instruction.opcode == OperatorCode.div)
+        else if(instruction.opcode == OperatorCode.div && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.DIV, regA));
         }
-        else if(instruction.opcode == OperatorCode.cmp)
+        else if(instruction.opcode == OperatorCode.cmp && regA != 0)
         {
             bC.addAll(computeArthimetic(instruction, DLX.CMP, regA));
         }
-        else if(instruction.opcode == OperatorCode.load)
+        else if(instruction.opcode == OperatorCode.load && regA != 0)
         {
             bC.addAll(computeLoad(instruction, regA));
         }
@@ -256,7 +259,7 @@ public class MachineCodeGenerator
         {
             bC.addAll(computeForward(instruction));
         }
-        else if(instruction.opcode == OperatorCode.read)
+        else if(instruction.opcode == OperatorCode.read && regA != 0)
         {
             bC.add(new MachineCode(pc++, DLX.RDI, regA));
         }
@@ -291,7 +294,7 @@ public class MachineCodeGenerator
         if(instruction.operandY instanceof VariableResult && ((VariableResult)instruction.operandY).variable.version == Constants.GLOBAL_VARIABLE_VERSION)
         {
             Variable v = ((VariableResult)instruction.operandY).variable;
-            bC.add(new MachineCode(pc++, DLX.LDW, regA, Constants.R_GLOBAL_POINTER, -1 * v.address));
+            bC.add(new MachineCode(pc++, DLX.LDW, regA, Constants.R_GLOBAL_POINTER, -1 * v.address * Constants.BYTE_SIZE));
         }
         else if(instruction.operandY instanceof RegisterResult)
         {
@@ -312,7 +315,7 @@ public class MachineCodeGenerator
             if(instruction.operandX instanceof ConstantResult)
             {
                 bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandX).constant));
-                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, Constants.R_GLOBAL_POINTER, -1 * v.address));
+                bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, Constants.R_GLOBAL_POINTER, -1 * v.address * Constants.BYTE_SIZE));
             }
             else
             {
@@ -392,24 +395,28 @@ public class MachineCodeGenerator
         if(instruction.operandY instanceof VariableResult 
                 && ((VariableResult)instruction.operandY).variable.version == Constants.FORMAL_PARAMETER_VERSION)
         {
-            // Store locals
-            if(!pushedLocals)
+            Variable v = ((VariableResult)instruction.operandY).variable;
+            if(params2Func.containsKey(v.address) && funcFirst.containsValue(params2Func.get(v.address)))
             {
-                pushLocals(bC);
-                pushedLocals = true;
-            }
+                // Store locals
+                if(!pushedLocals)
+                {
+                    pushLocals(bC);
+                    pushedLocals = true;
+                }
 
-            // Push formal
-            if(instruction.operandX instanceof ConstantResult)
-            {
-                Integer a = ((ConstantResult)instruction.operandX).constant;
-                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, a));
-                bC.add(new MachineCode(pc++, DLX.PSH, Constants.R_TEMP, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
-            }
-            else if(instruction.operandX instanceof RegisterResult)
-            {
-                int regA = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
-                bC.add(new MachineCode(pc++, DLX.PSH, regA, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+                // Push formal
+                if(instruction.operandX instanceof ConstantResult)
+                {
+                    Integer a = ((ConstantResult)instruction.operandX).constant;
+                    bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, a));
+                    bC.add(new MachineCode(pc++, DLX.PSH, Constants.R_TEMP, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+                }
+                else if(instruction.operandX instanceof RegisterResult)
+                {
+                    int regA = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
+                    bC.add(new MachineCode(pc++, DLX.PSH, regA, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+                }
             }
         }
         else if(instruction.operandX instanceof VariableResult 
@@ -427,7 +434,7 @@ public class MachineCodeGenerator
                         Variable v1 = ((VariableResult)function.getParameter(pos)).variable;
                         if(v1.address == v.address)
                         {
-                            Integer paramLoc = 2 * Constants.BYTE_SIZE + function.getParameters().size() - 1 - pos;
+                            Integer paramLoc = (-2 - (function.getParameters().size() - 1 - pos)) * Constants.BYTE_SIZE;
                             if(instruction.operandY instanceof RegisterResult)
                             {
                                 int regA = checkSpill(((RegisterResult)instruction.operandY).register, 0, true, bC);
@@ -464,15 +471,21 @@ public class MachineCodeGenerator
 
             // Prolog
             prolog(bC);
-            fixBranch.put(pc, instruction.operandY);
 
             // Jump to the callee
+            fixBranch.put(pc, instruction.operandY);
             bC.add(new MachineCode(pc++, DLX.JSR, null, null, pc));
+
+            // Pickup return result in temporary
+            if(function.returnInstruction != null && function.returnInstruction.getIid() > 0)
+            {
+                bC.add(new MachineCode(pc++, DLX.POP, Constants.R_TEMP, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
+            }
 
             // Load locals
             popLocals(bC);
 
-            // Pickup return result
+            // Pickup return result in real register
             if(function.returnInstruction != null && function.returnInstruction.getIid() > 0)
             {
                 if(cfg.iGraph.containsKey(function.returnInstruction.getIid()))
@@ -480,7 +493,7 @@ public class MachineCodeGenerator
                     int returnReg = checkSpill(cfg.iGraph.get(function.returnInstruction.getIid()).color, 0, true, bC);
                     if(returnReg > 0)
                     {
-                        bC.add(new MachineCode(pc++, DLX.POP, returnReg, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
+                        bC.add(new MachineCode(pc++, DLX.ADDI, returnReg, Constants.R_TEMP, 0));
                         storeProxyRegister(returnReg, 0, bC);
                     }
                 }
@@ -489,7 +502,7 @@ public class MachineCodeGenerator
         else
         {
             fixBranch.put(pc, instruction.operandY);
-            bC.add(new MachineCode(pc++, DLX.JSR, null, null, pc));
+            bC.add(new MachineCode(pc++, DLX.BSR, null, null, pc));
         }
 
         return bC;
@@ -563,7 +576,7 @@ public class MachineCodeGenerator
 
     private void prolog(ArrayList<MachineCode> byteCode)
     {
-        byteCode.add(new MachineCode(pc++, DLX.ADDI, Constants.R_RETURN_ADDRESS, Constants.R0, (pc + 5)));
+        byteCode.add(new MachineCode(pc++, DLX.ADDI, Constants.R_RETURN_ADDRESS, Constants.R0, (pc + 4) * Constants.BYTE_SIZE));
         byteCode.add(new MachineCode(pc++, DLX.PSH, Constants.R_RETURN_ADDRESS, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
         byteCode.add(new MachineCode(pc++, DLX.PSH, Constants.R_FRAME_POINTER, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
         byteCode.add(new MachineCode(pc++, DLX.ADD, Constants.R_FRAME_POINTER, Constants.R0, Constants.R_STACK_POINTER));
@@ -596,7 +609,7 @@ public class MachineCodeGenerator
     {
         if(function != null)
         {
-            for (Integer param = function.getParameters().size(); param >= 0; param--)
+            for (Integer param = function.getParameters().size() - 1; param >= 0; param--)
             {
                 byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_TEMP, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
             }
@@ -649,13 +662,20 @@ public class MachineCodeGenerator
             {
                 if(id2pc.containsKey(fixBranch.get(id).getIid()))
                 {
-                    if(mCode[id].op == DLX.JSR && returnIds.containsKey(fixBranch.get(id).getIid()))
+                    if(mCode[id].op == DLX.JSR && funcFirst.containsKey(fixBranch.get(id).getIid()))
                     {
-                        mCode[id].c = id2pc.get(fixBranch.get(id).getIid());
+                        mCode[id].c = (id2pc.get(fixBranch.get(id).getIid()) - 1) * Constants.BYTE_SIZE;
                     }
                     else
                     {
-                        mCode[id].c = id2pc.get(fixBranch.get(id).getIid()) + 1;
+                        if(mCode[id].op == DLX.BSR)
+                        {
+                            mCode[id].c =  -1 * (id - (id2pc.get(fixBranch.get(id).getIid())));
+                        }
+                        else
+                        {
+                            mCode[id].c =  id - (id2pc.get(fixBranch.get(id).getIid()));
+                        }
                     }
                 }
             }
