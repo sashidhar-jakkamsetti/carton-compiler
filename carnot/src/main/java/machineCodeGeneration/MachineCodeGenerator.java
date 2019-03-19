@@ -50,7 +50,7 @@ public class MachineCodeGenerator
         // Set stack pointer
         mCode[mCodeCounter++] = new MachineCode(pc++, DLX.ADDI, Constants.R_STACK_POINTER, Constants.R0, 0);
         // Set global variable pointer
-        mCode[mCodeCounter++] = new MachineCode(pc++, DLX.ADDI, Constants.R_GLOBAL_POINTER, Constants.R0, Constants.GLOBAL_VARIABLE_ADDRESS_OFFSET);
+        //mCode[mCodeCounter++] = new MachineCode(pc++, DLX.ADDI, Constants.R_GLOBAL_POINTER, Constants.R0, Constants.GLOBAL_VARIABLE_ADDRESS_OFFSET);
 
         Function main = new Function(cfg.head, cfg.tail);
         main.name = "main";
@@ -320,7 +320,7 @@ public class MachineCodeGenerator
             else
             {
                 Integer regA = checkSpill(((RegisterResult)instruction.operandX).register, 2, false, bC);
-                bC.add(new MachineCode(pc++, DLX.STW, regA, Constants.R_GLOBAL_POINTER, -1 * v.address));
+                bC.add(new MachineCode(pc++, DLX.STW, regA, Constants.R_GLOBAL_POINTER, -1 * v.address * Constants.BYTE_SIZE));
             }
         }
         else if(instruction.operandY instanceof RegisterResult)

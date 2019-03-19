@@ -5,8 +5,7 @@ public class Constants
     public static final Integer SCANNER_IDENTIFIER_ADDRESS_OFFSET = 0;
     public static final Integer FILE_READER_END_OF_FILE_CHAR = 255;
 
-    public static final Integer ARRAY_ADDRESS_OFFSET = 1000;
-    public static final Integer GLOBAL_VARIABLE_ADDRESS_OFFSET = 500;
+    public static final Integer ARRAY_ADDRESS_OFFSET = 500;
 
     public static final Integer INSTRUCTION_START_COUNTER = 0;
     public static final Integer BLOCK_START_COUNTER = 0;

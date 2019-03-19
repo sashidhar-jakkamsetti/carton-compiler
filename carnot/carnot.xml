@@ -1,11 +1,11 @@
 <buildinfo>
-    <program>testprograms/public/</program>
+    <program>testprograms/public/funccall.txt</program>
     <abstractControlFlowGraph>true</abstractControlFlowGraph>
     <optimize>true</optimize>
     <eliminateDeadCode>false</eliminateDeadCode>
     <regsize>8</regsize>
     <allocateRegister>true</allocateRegister>
     <generateMachineCode>true</generateMachineCode>
-    <execute>false</execute>
+    <execute>true</execute>
     <outputpath>graphs/</outputpath>
 </buildinfo>
