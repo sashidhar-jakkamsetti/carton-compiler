@@ -370,7 +370,7 @@ public class MachineCodeGenerator
             popFormals(bC, function);
 
             // Place return result
-            if(instruction.operandY.getIid() > 0 && instruction.operandX instanceof RegisterResult)
+            if(instruction.operandY.getIid() > 0)
             {
                 if(instruction.operandX instanceof RegisterResult)
                 {
@@ -469,6 +469,9 @@ public class MachineCodeGenerator
             // Jump to the callee
             bC.add(new MachineCode(pc++, DLX.JSR, null, null, pc));
 
+            // Load locals
+            popLocals(bC);
+
             // Pickup return result
             if(function.returnInstruction != null && function.returnInstruction.getIid() > 0)
             {
@@ -482,9 +485,6 @@ public class MachineCodeGenerator
                     }
                 }
             }
-
-            // Load locals
-            popLocals(bC);
         }
         else
         {
@@ -649,12 +649,14 @@ public class MachineCodeGenerator
             {
                 if(id2pc.containsKey(fixBranch.get(id).getIid()))
                 {
-                    mCode[id].c = id2pc.get(fixBranch.get(id).getIid());
-                    // if(funcFirst.containsKey(fixBranch.get(id).getIid()))
-                    // {
-                    //     // To compensate for setting frame pointer of the function.
-                    //     mCode[id].c -= 1;
-                    // }
+                    if(mCode[id].op == DLX.JSR && returnIds.containsKey(fixBranch.get(id).getIid()))
+                    {
+                        mCode[id].c = id2pc.get(fixBranch.get(id).getIid());
+                    }
+                    else
+                    {
+                        mCode[id].c = id2pc.get(fixBranch.get(id).getIid()) + 1;
+                    }
                 }
             }
             else if(fixBranch.get(id) instanceof BranchResult)
