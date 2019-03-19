@@ -1,5 +1,5 @@
 <buildinfo>
-    <program>testprograms/public/funccall.txt</program>
+    <program>testprograms/public/test026.txt</program>
     <abstractControlFlowGraph>true</abstractControlFlowGraph>
     <optimize>true</optimize>
     <eliminateDeadCode>false</eliminateDeadCode>

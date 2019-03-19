@@ -151,9 +151,6 @@ public class IntermediateCodeGenerator
                 res = res.toInstruction();
             }
             compute(block, OperatorCode.mul, res, new ConstantResult(4), optimize);
-            compute(block, OperatorCode.add, new ConstantResult(0), vResult, optimize);
-            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
-            compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
@@ -163,9 +160,11 @@ public class IntermediateCodeGenerator
                     res1 = res1.toInstruction();
                 }
                 compute(block, OperatorCode.mul, res1, new ConstantResult(4), optimize);
-                compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
-                compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
+                compute(block, OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
             }
+            compute(block, OperatorCode.add, new ConstantResult(0), vResult, optimize);
+            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
+            compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
         }
     }
 
@@ -181,8 +180,6 @@ public class IntermediateCodeGenerator
                 res = res.toInstruction();
             }
             compute(block, OperatorCode.mul, res, new ConstantResult(4), optimize);
-            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult, optimize);
-            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
 
             for (Integer index = 1; index < array.indexList.size(); index++)
             {
@@ -191,11 +188,11 @@ public class IntermediateCodeGenerator
                 {
                     res1 = res1.toInstruction();
                 }
-                compute(block, OperatorCode.load, null, new InstructionResult(pc - 1), optimize);
                 compute(block, OperatorCode.mul, res1, new ConstantResult(4), optimize);
-                compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
+                compute(block, OperatorCode.add, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
             }
-
+            compute(block, OperatorCode.add, new ConstantResult(0), lhsResult, optimize);
+            compute(block, OperatorCode.adda, new InstructionResult(pc - 1), new InstructionResult(pc - 2), optimize);
             compute(block, OperatorCode.store, new InstructionResult(pc - 1), rhsResult, optimize);
         }
     }
