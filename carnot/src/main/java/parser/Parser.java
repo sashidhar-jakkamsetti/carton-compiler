@@ -389,7 +389,7 @@ public class Parser
                             overlappingGlobals.put(gVar, function.tamperedGlobals.get(gVar));
                         }
                     }
-                    iCodeGenerator.storeGlobals(cBlock, overlappingGlobals, scanner.address2Identifier, optimize);
+                    iCodeGenerator.storeGlobals(cBlock, overlappingGlobals, function, scanner.address2Identifier, optimize);
                 }
                 else
                 {
@@ -400,7 +400,7 @@ public class Parser
                         vResult.set(v);
                         overlappingGlobals.put(var, vResult);
                     }
-                    iCodeGenerator.storeGlobals(cBlock, overlappingGlobals, scanner.address2Identifier, optimize);
+                    iCodeGenerator.storeGlobals(cBlock, overlappingGlobals, function, scanner.address2Identifier, optimize);
                 }
 
                 next();
@@ -419,7 +419,7 @@ public class Parser
                                 Variable v2 = ((VariableResult)callFunction.getParameter(idx)).variable;
 
                                 // Recursive call
-                                if(v1.address == v2.address && v1.version != pResult.getIid())
+                                if(v1.address.equals(v2.address) && !v1.version.equals(pResult.getIid()) && pResult.getIid() > 0)
                                 {
                                     pResult = pResult.clone();
                                     ((VariableResult)pResult).variable.version = pResult.getIid();
@@ -831,7 +831,7 @@ public class Parser
             {
                 if(function != null)
                 {
-                    iCodeGenerator.storeGlobals(cBlock, function.tamperedGlobals, scanner.address2Identifier, optimize);
+                    iCodeGenerator.storeGlobals(cBlock, function.tamperedGlobals, function, scanner.address2Identifier, optimize);
                 }
 
                 InstructionResult iResult = new InstructionResult(iCodeGenerator.getPC());
@@ -1142,7 +1142,7 @@ public class Parser
             if(inputSym.isSameType(TokenType.endToken))
             {
                 next();
-                iCodeGenerator.storeGlobals(function.tail, function.tamperedGlobals, scanner.address2Identifier, optimize);
+                iCodeGenerator.storeGlobals(function.tail, function.tamperedGlobals, function, scanner.address2Identifier, optimize);
                 iCodeGenerator.cleanGlobals(function.head, function);
             }
             else 

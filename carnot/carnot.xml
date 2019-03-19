@@ -1,11 +1,11 @@
 <buildinfo>
-    <program>testprograms/public/test002.txt</program>
+    <program>testprograms/public/</program>
     <abstractControlFlowGraph>true</abstractControlFlowGraph>
     <optimize>true</optimize>
     <eliminateDeadCode>false</eliminateDeadCode>
     <regsize>8</regsize>
     <allocateRegister>true</allocateRegister>
-    <generateMachineCode>false</generateMachineCode>
+    <generateMachineCode>true</generateMachineCode>
     <execute>false</execute>
     <outputpath>graphs/</outputpath>
 </buildinfo>

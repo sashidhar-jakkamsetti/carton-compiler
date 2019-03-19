@@ -15,7 +15,7 @@ public class Optimizer
     private static int[] instructionUseCount;
     private static Integer endInstrId;
     private static Optimizer optimizer;
-    private HashSet<Integer> returnIds;
+    private HashMap<Integer, Integer> returnIds;
     
     private Optimizer()
     {
@@ -41,7 +41,7 @@ public class Optimizer
         return optimizer;
     }
 
-    public void setReturnIds(HashSet<Integer> returnIds)
+    public void setReturnIds(HashMap<Integer, Integer> returnIds)
     {
         this.returnIds = returnIds;
     }
@@ -244,7 +244,7 @@ public class Optimizer
             }
         }
 
-        if(returnIds.contains(instruction.akaI.operandX.getIid()))
+        if(returnIds.containsKey(instruction.akaI.operandX.getIid()))
         {
             return true;
         }
@@ -264,7 +264,7 @@ public class Optimizer
             }
         }
 
-        if(returnIds.contains(instruction.akaI.operandY.getIid()))
+        if(returnIds.containsKey(instruction.akaI.operandY.getIid()))
         {
             return true;
         }

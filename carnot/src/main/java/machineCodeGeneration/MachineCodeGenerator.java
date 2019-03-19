@@ -22,7 +22,7 @@ public class MachineCodeGenerator
     private Integer pc;
     private Integer regSize;
 
-    private HashSet<Integer> returnIds;
+    private HashMap<Integer, Integer> returnIds;
     private HashMap<Integer, Integer> funcFirst;
     private HashMap<Integer, Integer> params2Func;
 
@@ -53,6 +53,7 @@ public class MachineCodeGenerator
         mCode[mCodeCounter++] = new MachineCode(pc++, DLX.ADDI, Constants.R_GLOBAL_POINTER, Constants.R0, Constants.GLOBAL_VARIABLE_ADDRESS_OFFSET);
 
         Function main = new Function(cfg.head, cfg.tail);
+        main.name = "main";
         main.vManager = cfg.mVariableManager;
 
         ArrayList<MachineCode> byteCode = new ArrayList<MachineCode>();
@@ -81,14 +82,16 @@ public class MachineCodeGenerator
         }
         function.lastMCode = pc;
 
-        // Epilog
-        epilog(byteCode);
+        if(function.name != "main")
+        {
+            epilog(byteCode);
 
-        // Cleanup formals
-        popFormals(byteCode, function);
+            // Cleanup formals
+            popFormals(byteCode, function);
 
-        // Return to the caller
-        byteCode.add(new MachineCode(pc++, DLX.RET, Constants.R_RETURN_ADDRESS));
+            // Return to the caller
+            byteCode.add(new MachineCode(pc++, DLX.RET, Constants.R_RETURN_ADDRESS));
+        }
     }
 
     private IBlock generate(IBlock block, ArrayList<MachineCode> byteCode) throws Exception
@@ -96,7 +99,7 @@ public class MachineCodeGenerator
         if(block instanceof IfBlock)
         {
             IfBlock iBlock = (IfBlock)block;
-            generate(iBlock, byteCode);
+            generate((Block)iBlock, byteCode);
 
             IBlock tBlock = iBlock.getThenBlock();
             if(iBlock.getThenBlock() != null)
@@ -124,7 +127,7 @@ public class MachineCodeGenerator
                 }while(!(eBlock instanceof JoinBlock));
             }
 
-            if(tBlock == iBlock.getChild())
+            if(tBlock == iBlock.getJoinBlock())
             {
                 if(iBlock.getChild() != null)
                 {
@@ -140,7 +143,7 @@ public class MachineCodeGenerator
         else if(block instanceof WhileBlock)
         {
             WhileBlock wBlock = (WhileBlock)block;
-            generate(wBlock, byteCode);
+            generate((Block)wBlock, byteCode);
 
             IBlock lBlock = wBlock.getLoopBlock();
             if(lBlock != null)
@@ -163,7 +166,7 @@ public class MachineCodeGenerator
         }
         else
         {
-            generate(block, byteCode);
+            generate((Block)block, byteCode);
             return block.getChild();
         }
 
@@ -259,8 +262,15 @@ public class MachineCodeGenerator
         }
         else if(instruction.opcode == OperatorCode.write)
         {
-            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
-            bC.add(new MachineCode(pc++, DLX.WRD, regB));
+            if(instruction.operandX instanceof RegisterResult)
+            {
+                int regB = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
+                bC.add(new MachineCode(pc++, DLX.WRD, regB));
+            }
+            else if(instruction.operandX instanceof ConstantResult)
+            {
+                bC.add(new MachineCode(pc++, DLX.WRD, ((ConstantResult)instruction.operandX).constant));
+            }
         }
         else if(instruction.opcode == OperatorCode.writeNL)
         {
@@ -296,31 +306,31 @@ public class MachineCodeGenerator
     {
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
 
-        if(instruction.operandX instanceof VariableResult && ((VariableResult)instruction.operandX).variable.version == Constants.GLOBAL_VARIABLE_VERSION)
+        if(instruction.operandY instanceof VariableResult && ((VariableResult)instruction.operandY).variable.version == Constants.GLOBAL_VARIABLE_VERSION)
         {
-            Variable v = ((VariableResult)instruction.operandX).variable;
-            if(instruction.operandY instanceof ConstantResult)
+            Variable v = ((VariableResult)instruction.operandY).variable;
+            if(instruction.operandX instanceof ConstantResult)
             {
-                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandY).constant));
+                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandX).constant));
                 bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, Constants.R_GLOBAL_POINTER, -1 * v.address));
             }
             else
             {
-                Integer regA = checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
+                Integer regA = checkSpill(((RegisterResult)instruction.operandX).register, 2, false, bC);
                 bC.add(new MachineCode(pc++, DLX.STW, regA, Constants.R_GLOBAL_POINTER, -1 * v.address));
             }
         }
-        else if(instruction.operandX instanceof RegisterResult)
+        else if(instruction.operandY instanceof RegisterResult)
         {
-            int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
-            if(instruction.operandY instanceof ConstantResult)
+            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 1, false, bC);
+            if(instruction.operandX instanceof ConstantResult)
             {
-                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandY).constant));
+                bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandX).constant));
                 bC.add(new MachineCode(pc++, DLX.STW, Constants.R_TEMP, regB, 0));
             }
             else
             {
-                Integer regA = checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
+                Integer regA = checkSpill(((RegisterResult)instruction.operandX).register, 2, false, bC);
                 bC.add(new MachineCode(pc++, DLX.STW, regA, regB, 0));
             }
         }
@@ -349,9 +359,9 @@ public class MachineCodeGenerator
         }
 
         // Return instruction
-        if(instruction.operandY instanceof InstructionResult && returnIds.contains(instruction.operandY.getIid()))
+        if(instruction.operandY instanceof InstructionResult && returnIds.containsKey(instruction.operandY.getIid()))
         {
-            Function function = cfg.getFunction(funcFirst.get(instruction.operandY.getIid()));
+            Function function = cfg.getFunction(returnIds.get(instruction.operandY.getIid()));
 
             // Epilog
             epilog(bC);
@@ -360,11 +370,18 @@ public class MachineCodeGenerator
             popFormals(bC, function);
 
             // Place return result
-            if(function.returnInstruction != null && function.returnInstruction.getIid() > 0 
-                        && instruction.operandX instanceof RegisterResult)
+            if(instruction.operandY.getIid() > 0 && instruction.operandX instanceof RegisterResult)
             {
-                int returnReg = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
-                bC.add(new MachineCode(pc++, DLX.PSH, returnReg, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+                if(instruction.operandX instanceof RegisterResult)
+                {
+                    int returnReg = checkSpill(((RegisterResult)instruction.operandX).register, 0, false, bC);
+                    bC.add(new MachineCode(pc++, DLX.PSH, returnReg, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+                }
+                else if(instruction.operandX instanceof ConstantResult)
+                {
+                    bC.add(new MachineCode(pc++, DLX.ADDI, Constants.R_TEMP, Constants.R0, ((ConstantResult)instruction.operandX).constant));
+                    bC.add(new MachineCode(pc++, DLX.PSH, Constants.R_TEMP, Constants.R_STACK_POINTER, Constants.BYTE_SIZE));
+                }
             }
 
             // Return to the caller
@@ -489,43 +506,54 @@ public class MachineCodeGenerator
     private ArrayList<MachineCode> computeArthimetic(Instruction instruction, Integer opcode, int regA) throws Exception
     {
         ArrayList<MachineCode> bC = new ArrayList<MachineCode>();
-        if(instruction.operandX instanceof ConstantResult && instruction.operandY instanceof ConstantResult)
+        IResult opYSub = instruction.operandY;
+        if(opcode == DLX.ADD && opYSub instanceof VariableResult && ((VariableResult)opYSub).isArray)
+        {
+            Integer arrayAddress = ((VariableResult)opYSub).variable.address;
+            if(((VariableResult)opYSub).variable.address <= Constants.ARRAY_ADDRESS_OFFSET)
+            {
+                arrayAddress += Constants.ARRAY_ADDRESS_OFFSET;
+            }
+            opYSub = new ConstantResult(arrayAddress);
+        }
+
+        if(instruction.operandX instanceof ConstantResult && opYSub instanceof ConstantResult)
         {
             Integer res = ((ConstantResult)instruction.operandX).constant 
-                            + ((ConstantResult)instruction.operandY).constant;
+                            + ((ConstantResult)opYSub).constant;
             if(opcode == 1 || opcode == 5)
             {
                 res = ((ConstantResult)instruction.operandX).constant 
-                        - ((ConstantResult)instruction.operandY).constant;
+                        - ((ConstantResult)opYSub).constant;
             }
             else if(opcode == 2)
             {
                 res = ((ConstantResult)instruction.operandX).constant 
-                        * ((ConstantResult)instruction.operandY).constant;
+                        * ((ConstantResult)opYSub).constant;
             }
             else if(opcode == 3)
             {
                 res = ((ConstantResult)instruction.operandX).constant 
-                        / ((ConstantResult)instruction.operandY).constant;
+                        / ((ConstantResult)opYSub).constant;
             }
             bC.add(new MachineCode(pc++, DLX.ADDI, regA, 0, res));
         }
         else if(instruction.operandX instanceof ConstantResult)
         {
-            int regB = checkSpill(((RegisterResult)instruction.operandY).register, 1, false, bC);
+            int regB = checkSpill(((RegisterResult)opYSub).register, 1, false, bC);
             Integer c = ((ConstantResult)instruction.operandX).constant;
             bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
         }
-        else if(instruction.operandX instanceof ConstantResult)
+        else if(opYSub instanceof ConstantResult)
         {
             int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
-            Integer c = ((ConstantResult)instruction.operandY).constant;
+            Integer c = ((ConstantResult)opYSub).constant;
             bC.add(new MachineCode(pc++, opcode + 16, regA, regB, c));
         }
         else
         {
             int regB = checkSpill(((RegisterResult)instruction.operandX).register, 1, false, bC);
-            int regC = checkSpill(((RegisterResult)instruction.operandY).register, 2, false, bC);
+            int regC = checkSpill(((RegisterResult)opYSub).register, 2, false, bC);
             bC.add(new MachineCode(pc++, opcode + 16, regA, regB, regC));
         }
 
@@ -565,9 +593,12 @@ public class MachineCodeGenerator
 
     private void popFormals(ArrayList<MachineCode> byteCode, Function function)
     {
-        for (Integer param = function.getParameters().size(); param >= 0; param--)
+        if(function != null)
         {
-            byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_TEMP, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
+            for (Integer param = function.getParameters().size(); param >= 0; param--)
+            {
+                byteCode.add(new MachineCode(pc++, DLX.POP, Constants.R_TEMP, Constants.R_STACK_POINTER, -1 * Constants.BYTE_SIZE));
+            }
         }
     }
 

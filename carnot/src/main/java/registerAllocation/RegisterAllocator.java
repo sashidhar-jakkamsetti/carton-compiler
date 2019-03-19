@@ -51,7 +51,7 @@ public class RegisterAllocator
         
         if(checkColoring())
         {
-            HashSet<Integer> returnIds = cfg.getAllReturns();
+            HashMap<Integer, Integer> returnIds = cfg.getAllReturns();
             // setting the color.
             for (IBlock block : cfg.getAllBlocks())
             {

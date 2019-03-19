@@ -83,7 +83,7 @@ public class carnot
         return false;
     }
 
-    public static void main( String[] args )
+    public static void main( String[] args)
     {
         String buildFile;
         if(args.length > 0) 

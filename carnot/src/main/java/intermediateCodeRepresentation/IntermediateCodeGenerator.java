@@ -50,7 +50,7 @@ public class IntermediateCodeGenerator
         pc++;
     }
 
-    public void setOptimizerReturnIds(HashSet<Integer> returnIds)
+    public void setOptimizerReturnIds(HashMap<Integer, Integer> returnIds)
     {
         optimizer.setReturnIds(returnIds);
     }
@@ -257,10 +257,21 @@ public class IntermediateCodeGenerator
         }
     }
 
-    public void storeGlobals(IBlock block, HashMap<Integer, IResult> tamperedGlobals, HashMap<Integer, String> ad2id, Boolean optimize)
+    public void storeGlobals(IBlock block, HashMap<Integer, IResult> tamperedGlobals, Function function, HashMap<Integer, String> ad2id, Boolean optimize)
     {
         for (Integer ad : tamperedGlobals.keySet())
         {
+            if(function != null && function.globalLog.containsKey(ad))
+            {
+                if(tamperedGlobals.get(ad) instanceof VariableResult)
+                {
+                    Variable v = ((VariableResult)tamperedGlobals.get(ad)).variable;
+                    if(v.version.equals(function.globalLog.get(ad)))
+                    {
+                        continue;
+                    }
+                }
+            }
             Variable v = new Variable(ad2id.get(ad), ad);
             v.version = Constants.GLOBAL_VARIABLE_VERSION;
             VariableResult vResult = new VariableResult();

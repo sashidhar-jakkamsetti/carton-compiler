@@ -119,13 +119,13 @@ public class Instruction
         operandY = y;
     }
 
-    public void setColoredInstruction(HashMap<Integer, LiveRange> iGraph, HashSet<Integer> returnIds)
+    public void setColoredInstruction(HashMap<Integer, LiveRange> iGraph, HashMap<Integer, Integer> returnIds)
     {
         setColoredInstructionOperand(iGraph, returnIds, true);
         setColoredInstructionOperand(iGraph, returnIds, false);
     }
 
-    public void setColoredInstructionOperand(HashMap<Integer, LiveRange> iGraph, HashSet<Integer> returnIds, Boolean bOperandX)
+    public void setColoredInstructionOperand(HashMap<Integer, LiveRange> iGraph, HashMap<Integer, Integer> returnIds, Boolean bOperandX)
     {
         if(akaI != null)
         {
@@ -145,12 +145,12 @@ public class Instruction
                 coloredI.operandY = akaI.operandY;
                 if(akaI.operandY instanceof InstructionResult)
                 {
-                    if(iGraph.containsKey(akaI.operandY.getIid()) && !returnIds.contains(akaI.operandY.getIid()))
+                    if(iGraph.containsKey(akaI.operandY.getIid()) && !(opcode == OperatorCode.move && returnIds.containsKey(akaI.operandY.getIid())))
                     {
                         coloredI.operandY = new RegisterResult(iGraph.get(akaI.operandY.getIid()).color);
                     }
                     else if(!iGraph.containsKey(akaI.operandY.getIid()) 
-                            && akaI.operandX instanceof VariableResult && !returnIds.contains(akaI.operandY.getIid()))
+                            && akaI.operandX instanceof VariableResult && !returnIds.containsKey(akaI.operandY.getIid()))
                     {
                         deleteMode = DeleteMode.CP;
                     }
